@@ -24,3 +24,4 @@ Open http://localhost:3000 — the first visit asks you to create the owner acco
 1. Add a PostgreSQL database to the project.
 2. Add a service from this repo and set `DATABASE_URL` to `${{Postgres.DATABASE_URL}}`.
 3. Generate a domain. Tables are created automatically on boot.
+4. Pushes to the connected branch deploy automatically.
