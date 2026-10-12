@@ -112,7 +112,7 @@ app.use(wrap(async (req, _res, next) => {
   const token = parseCookies(req.headers.cookie)[COOKIE];
   if (token) {
     const { rows } = await db.query(
-      `SELECT u.id, u.name, u.email FROM sessions s JOIN users u ON u.id = s.user_id
+      `SELECT u.id, u.name, u.email, u.role FROM sessions s JOIN users u ON u.id = s.user_id
        WHERE s.token = $1 AND s.expires_at > now()`,
       [crypto.createHash('sha256').update(token).digest('hex')],
     );
@@ -128,6 +128,11 @@ app.param('id', (req, res, next, id) => {
 
 function requireAuth(req, res, next) {
   if (!req.user) return bad(res, 'Not signed in', 401);
+  next();
+}
+
+function requireOwner(req, res, next) {
+  if (!req.user || req.user.role !== 'owner') return bad(res, 'Only the account owner can do that', 403);
   next();
 }
 
@@ -170,7 +175,7 @@ app.post('/api/setup', wrap(async (req, res) => {
     const { rows: existing } = await client.query('SELECT 1 FROM users LIMIT 1');
     if (existing.length) { await client.query('ROLLBACK'); return bad(res, 'Setup is already complete', 403); }
     const { rows } = await client.query(
-      'INSERT INTO users (name, email, password_hash) VALUES ($1, lower($2), $3) RETURNING id, name, email',
+      `INSERT INTO users (name, email, password_hash, role) VALUES ($1, lower($2), $3, 'owner') RETURNING id, name, email, role`,
       [name, email, hashPassword(password)],
     );
     await client.query('COMMIT');
@@ -193,7 +198,7 @@ app.post('/api/login', wrap(async (req, res) => {
     return bad(res, 'Incorrect email or password', 401);
   }
   await startSession(req, res, user.id);
-  res.json({ user: { id: user.id, name: user.name, email: user.email } });
+  res.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role } });
 }));
 
 app.post('/api/logout', wrap(async (req, res) => {
@@ -208,11 +213,11 @@ app.use('/api', requireAuth);
 /* ---------------------------------------------------------------- users */
 
 app.get('/api/users', wrap(async (_req, res) => {
-  const { rows } = await db.query('SELECT id, name, email, created_at FROM users ORDER BY id');
+  const { rows } = await db.query(`SELECT id, name, email, role, created_at FROM users ORDER BY role = 'owner' DESC, id`);
   res.json(rows);
 }));
 
-app.post('/api/users', wrap(async (req, res) => {
+app.post('/api/users', requireOwner, wrap(async (req, res) => {
   const name = cleanText(req.body.name, 100);
   const email = cleanText(req.body.email, 200);
   const password = String(req.body.password || '');
@@ -220,7 +225,7 @@ app.post('/api/users', wrap(async (req, res) => {
   if (password.length < 8) return bad(res, 'Password must be at least 8 characters');
   try {
     const { rows } = await db.query(
-      'INSERT INTO users (name, email, password_hash) VALUES ($1, lower($2), $3) RETURNING id, name, email, created_at',
+      'INSERT INTO users (name, email, password_hash) VALUES ($1, lower($2), $3) RETURNING id, name, email, role, created_at',
       [name, email, hashPassword(password)],
     );
     res.json(rows[0]);
@@ -230,10 +235,10 @@ app.post('/api/users', wrap(async (req, res) => {
   }
 }));
 
-app.delete('/api/users/:id', wrap(async (req, res) => {
+app.delete('/api/users/:id', requireOwner, wrap(async (req, res) => {
   const id = Number(req.params.id);
   if (id === req.user.id) return bad(res, 'You cannot remove yourself');
-  await db.query('DELETE FROM users WHERE id = $1', [id]);
+  await db.query(`DELETE FROM users WHERE id = $1 AND role <> 'owner'`, [id]);
   res.json({ ok: true });
 }));
 
@@ -722,6 +727,57 @@ app.get('/api/analytics', wrap(async (req, res) => {
     stages: await db.getStages(),
     totals: totals[0], byStage, calls: calls[0], outcomes, callsDaily, leadsDaily, dqReasons, recent, followUps,
   });
+}));
+
+/* ---------------------------------------------------------------- team performance (owner only) */
+
+app.get('/api/team-stats', requireOwner, wrap(async (req, res) => {
+  const tz = /^[A-Za-z_]+\/[A-Za-z_\/-]+$|^UTC$/.test(String(req.query.tz || '')) ? req.query.tz : 'UTC';
+  const period = ['today', '7d', '30d', 'all'].includes(req.query.period) ? req.query.period : '7d';
+  const since = {
+    today: `(date_trunc('day', now() AT TIME ZONE $1) AT TIME ZONE $1)`,
+    '7d': `now() - interval '7 days'`,
+    '30d': `now() - interval '30 days'`,
+    all: `'-infinity'::timestamptz`,
+  }[period];
+  const [{ rows: people }, { rows: daily }] = await Promise.all([
+    db.query(
+      `SELECT u.id, u.name, u.email, u.role,
+         count(a.id) FILTER (WHERE a.type = 'call')::int AS calls,
+         count(a.id) FILTER (WHERE a.type = 'call' AND a.outcome = 'connected')::int AS connected,
+         count(a.id) FILTER (WHERE a.type = 'call' AND a.outcome IS NOT NULL)::int AS logged,
+         count(a.id) FILTER (WHERE a.type = 'call' AND a.outcome = 'voicemail')::int AS voicemails,
+         count(a.id) FILTER (WHERE a.type = 'note')::int AS notes,
+         count(DISTINCT a.lead_id) FILTER (WHERE a.type IN ('call','note','stage','disqualified'))::int AS leads_worked,
+         count(a.id) FILTER (WHERE a.type = 'stage' AND (a.meta->>'to')::int > (a.meta->>'from')::int)::int AS advanced,
+         count(a.id) FILTER (WHERE a.type = 'stage' AND (a.meta->>'to')::int = 4)::int AS appointments,
+         count(a.id) FILTER (WHERE a.type = 'stage' AND (a.meta->>'to')::int = 5)::int AS won,
+         count(a.id) FILTER (WHERE a.type = 'disqualified')::int AS disqualified,
+         (SELECT max(created_at) FROM activities x WHERE x.user_id = u.id AND x.type <> 'created') AS last_active
+       FROM users u
+       LEFT JOIN activities a ON a.user_id = u.id AND a.created_at >= ${since}
+       GROUP BY u.id ORDER BY calls DESC, u.name`,
+      period === 'today' ? [tz] : [],
+    ),
+    db.query(
+      `SELECT a.user_id, (a.created_at AT TIME ZONE $1)::date AS day, count(*)::int AS n
+       FROM activities a
+       WHERE a.type = 'call' AND a.user_id IS NOT NULL
+         AND (a.created_at AT TIME ZONE $1)::date > (now() AT TIME ZONE $1)::date - 14
+       GROUP BY 1, 2`,
+      [tz],
+    ),
+  ]);
+  const days = [];
+  const today = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    days.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+  }
+  const byUser = {};
+  daily.forEach((r) => { (byUser[r.user_id] = byUser[r.user_id] || {})[r.day] = r.n; });
+  people.forEach((p) => { p.daily = days.map((d) => ({ day: d, n: (byUser[p.id] || {})[d] || 0 })); });
+  res.json({ period, people });
 }));
 
 /* ---------------------------------------------------------------- static + errors */

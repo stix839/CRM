@@ -530,3 +530,24 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
   .funnel-val span { display: none; }
   .hbar { grid-template-columns: 96px minmax(0, 1fr) 32px; }
 }
+
+/* ---------------------------------------------------------------- team performance */
+.team-kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px; background: var(--line-2); border: 1px solid var(--line-2); border-radius: 10px; overflow: hidden; }
+.team-kpis > div { background: #fff; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.team-kpis span { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.team-kpis b { font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+.team-tbl th.sorted { color: var(--ink); }
+.team-tbl td { max-width: none; }
+.calls-cell { display: flex; align-items: center; gap: 10px; min-width: 120px; }
+.calls-cell b { min-width: 28px; }
+.calls-cell .bar-track { flex: 1; height: 8px; border-radius: 3px; }
+.calls-cell .bar-fill { border-radius: 0 3px 3px 0; }
+.spark { display: block; }
+.spark rect { fill: var(--black); }
+.spark rect.zero { fill: var(--line); }
+#team-card .seg button { padding: 0 10px; }
+@media (max-width: 900px) { .team-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .team-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } #team-card .card-h .right { margin-left: 0; } }
+.hidden-form, form[hidden] { display: none !important; }
+.team-tbl th:first-child, .team-tbl td:first-child { position: sticky; left: 0; background: #fff; z-index: 1; box-shadow: 1px 0 0 var(--line-2); }
+.team-tbl th:first-child { z-index: 2; }

@@ -107,6 +107,14 @@ async function migrate() {
     );
     CREATE INDEX IF NOT EXISTS activities_lead ON activities (lead_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS activities_type_time ON activities (type, created_at);
+    CREATE INDEX IF NOT EXISTS activities_user_time ON activities (user_id, created_at);
+
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'member';
+  `);
+  // The first account created is the owner.
+  await pool.query(`
+    UPDATE users SET role = 'owner'
+    WHERE id = (SELECT min(id) FROM users) AND NOT EXISTS (SELECT 1 FROM users WHERE role = 'owner')
   `);
 }
 

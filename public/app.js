@@ -568,6 +568,7 @@
             </div>
           </div>
         </div>
+        ${isOwner() ? '<div class="card" id="team-card"></div>' : ''}
       </div>`;
 
     view.querySelectorAll('[data-lead]').forEach((el) => el.addEventListener('click', () => openLead(Number(el.dataset.lead))));
@@ -578,6 +579,93 @@
     const dq = $('#see-dq');
     if (dq) dq.addEventListener('click', () => { state.leadsView = { ...state.leadsView, status: 'disqualified', stage: '', page: 0 }; });
     bindTips(view);
+    if (isOwner()) renderTeamCard();
+  }
+
+  /* ---------------------------------------------------------------- team performance (owner only) */
+
+  const isOwner = () => state.user && state.user.role === 'owner';
+  const TEAM_PERIODS = [['today', 'Today'], ['7d', '7 days'], ['30d', '30 days'], ['all', 'All time']];
+
+  async function renderTeamCard() {
+    const card = $('#team-card');
+    if (!card) return;
+    const period = state.teamPeriod || '7d';
+    if (!card.innerHTML) card.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    let data;
+    try { data = await api(`/api/team-stats?period=${period}&tz=${encodeURIComponent(TZ)}`); } catch (e) {
+      card.innerHTML = `<div class="card-b muted">${esc(e.message)}</div>`;
+      return;
+    }
+    if (!$('#team-card')) return;
+    const people = data.people;
+    const sortKey = state.teamSort || 'calls';
+    people.sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0) || a.name.localeCompare(b.name));
+    const totals = people.reduce((t, p) => {
+      ['calls', 'connected', 'logged', 'notes', 'leads_worked', 'appointments', 'won', 'disqualified'].forEach((k) => { t[k] = (t[k] || 0) + p[k]; });
+      return t;
+    }, {});
+    const maxCalls = Math.max(1, ...people.map((p) => p.calls));
+    const rate = (p) => (p.logged ? Math.round((p.connected / p.logged) * 100) + '%' : '—');
+    const label = TEAM_PERIODS.find(([k]) => k === period)[1].toLowerCase();
+    const th = (k, t) => `<th data-tsort="${k}" class="${sortKey === k ? 'sorted' : ''}">${t}${sortKey === k ? '<span class="arrow">▼</span>' : ''}</th>`;
+
+    card.innerHTML = `
+      <div class="card-h">
+        <h3>Team performance</h3><span class="chip outline">${icon('award')}Owner only</span>
+        <div class="right seg" id="team-period">${TEAM_PERIODS.map(([k, t]) => `<button data-p="${k}" class="${k === period ? 'on' : ''}">${t}</button>`).join('')}</div>
+      </div>
+      <div class="card-b">
+        <div class="team-kpis">
+          <div><span>Calls</span><b class="tnum">${(totals.calls || 0).toLocaleString()}</b></div>
+          <div><span>Connected</span><b class="tnum">${(totals.connected || 0).toLocaleString()}</b></div>
+          <div><span>Notes</span><b class="tnum">${(totals.notes || 0).toLocaleString()}</b></div>
+          <div><span>Leads worked</span><b class="tnum">${(totals.leads_worked || 0).toLocaleString()}</b></div>
+          <div><span>${esc(state.stages[3])}</span><b class="tnum">${(totals.appointments || 0).toLocaleString()}</b></div>
+          <div><span>${esc(state.stages[4])}</span><b class="tnum">${(totals.won || 0).toLocaleString()}</b></div>
+        </div>
+        <div class="table-wrap" style="border:1px solid var(--line);border-radius:10px;margin-top:14px">
+          <table class="tbl team-tbl">
+            <thead><tr>
+              <th class="nosort">Teammate</th>
+              ${th('calls', 'Calls')}${th('connected', 'Connected')}<th class="nosort">Connect rate</th>
+              ${th('notes', 'Notes')}${th('leads_worked', 'Leads worked')}${th('advanced', 'Moved forward')}
+              ${th('appointments', esc(state.stages[3]))}${th('won', esc(state.stages[4]))}${th('disqualified', 'Disqualified')}
+              <th class="nosort">Calls · last 14 days</th><th class="nosort">Last active</th>
+            </tr></thead>
+            <tbody>
+              ${people.map((p) => `<tr style="cursor:default">
+                <td><div class="name-cell"><div class="avatar">${esc(initials({ first_name: p.name }))}</div><div style="min-width:0"><div>${esc(p.name)}${p.role === 'owner' ? ' <span class="chip" style="margin-left:4px">Owner</span>' : ''}</div><div class="muted" style="font-weight:400;font-size:12px">${esc(p.email)}</div></div></div></td>
+                <td><div class="calls-cell"><b class="tnum">${p.calls.toLocaleString()}</b><div class="bar-track"><div class="bar-fill" style="width:${(p.calls / maxCalls) * 100}%"></div></div></div></td>
+                <td class="tnum">${p.connected.toLocaleString()}</td>
+                <td class="tnum">${rate(p)}</td>
+                <td class="tnum">${p.notes.toLocaleString()}</td>
+                <td class="tnum">${p.leads_worked.toLocaleString()}</td>
+                <td class="tnum">${p.advanced.toLocaleString()}</td>
+                <td class="tnum">${p.appointments.toLocaleString()}</td>
+                <td class="tnum">${p.won.toLocaleString()}</td>
+                <td class="tnum">${p.disqualified.toLocaleString()}</td>
+                <td>${sparkline(p.daily)}</td>
+                <td class="muted">${p.last_active ? esc(relTime(p.last_active)) : 'Never'}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+        ${people.length < 2 ? `<p class="muted" style="margin:12px 0 0;font-size:13px">Add teammates in <a href="#/settings">Settings</a>. Every call, note, stage move and disqualification they make is tracked here, ${esc(label)}.</p>` : ''}
+      </div>`;
+    $$('#team-period button', card).forEach((b) => b.onclick = () => { state.teamPeriod = b.dataset.p; renderTeamCard(); });
+    $$('th[data-tsort]', card).forEach((h) => h.onclick = () => { state.teamSort = h.dataset.tsort; renderTeamCard(); });
+    bindTips(card);
+  }
+
+  function sparkline(daily) {
+    const W = 112; const H = 26; const max = Math.max(1, ...daily.map((d) => d.n));
+    const step = W / daily.length; const bw = Math.max(2, step - 2);
+    const total = daily.reduce((a, d) => a + d.n, 0);
+    return `<svg class="spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" data-tip="<b>${total.toLocaleString()}</b> calls in the last 14 days">${daily.map((d, i) => {
+      const h = d.n ? Math.max(2, (d.n / max) * (H - 2)) : 1;
+      return `<rect x="${i * step + 1}" y="${H - h}" width="${bw}" height="${h}" rx="1" class="${d.n ? '' : 'zero'}"/>`;
+    }).join('')}</svg>`;
   }
 
   function bindTips(root) {
@@ -1759,8 +1847,10 @@
           <div class="card-h"><h3>Team</h3><span class="sub">People who can sign in to this CRM</span></div>
           <div class="card-b">
             ${users.map((u) => `<div class="user-row"><div class="avatar">${esc(initials({ first_name: u.name }))}</div><div class="li-main"><div class="li-title">${esc(u.name)}${u.id === state.user.id ? ' <span class="chip" style="margin-left:6px">You</span>' : ''}</div><div class="li-sub">${esc(u.email)}</div></div>
-              ${u.id === state.user.id ? '' : `<button class="btn sm ghost danger" data-rm="${u.id}" data-name="${esc(u.name)}">Remove</button>`}</div>`).join('')}
-            <form id="user-form" class="grid-2" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line-2)">
+              ${u.role === 'owner' ? '<span class="chip dark">Owner</span>' : '<span class="chip outline">Teammate</span>'}
+              ${u.id === state.user.id || !isOwner() || u.role === 'owner' ? '' : `<button class="btn sm ghost danger" data-rm="${u.id}" data-name="${esc(u.name)}">Remove</button>`}</div>`).join('')}
+            ${!isOwner() ? '<p class="muted" style="margin:12px 0 0;font-size:13px">Only the account owner can add or remove teammates.</p>' : ''}
+            <form id="user-form" ${isOwner() ? '' : 'hidden'} class="grid-2" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line-2)">
               <label class="field"><span>Name</span><input class="input" name="name" required></label>
               <label class="field"><span>Email</span><input class="input" name="email" type="email" required></label>
               <label class="field"><span>Temporary password</span><input class="input" name="password" type="password" minlength="8" required autocomplete="new-password"></label>
@@ -1793,7 +1883,7 @@
       const stages = [0, 1, 2, 3, 4].map((i) => fd.get('s' + i));
       try { state.stages = await api('/api/stages', { method: 'PUT', body: { stages } }); toast('Stages saved'); } catch (err) { fail(err); }
     };
-    $('#user-form').onsubmit = async (e) => {
+    if ($('#user-form')) $('#user-form').onsubmit = async (e) => {
       e.preventDefault();
       try {
         await api('/api/users', { method: 'POST', body: Object.fromEntries(new FormData(e.target)) });
