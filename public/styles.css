@@ -551,3 +551,58 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 .hidden-form, form[hidden] { display: none !important; }
 .team-tbl th:first-child, .team-tbl td:first-child { position: sticky; left: 0; background: #fff; z-index: 1; box-shadow: 1px 0 0 var(--line-2); }
 .team-tbl th:first-child { z-index: 2; }
+
+/* ---------------------------------------------------------------- talk track */
+.talk-panel {
+  position: fixed; top: 0; bottom: 0; right: 580px; width: min(460px, calc(100vw - 580px - 24px)); z-index: 105;
+  background: #fff; border-right: 1px solid var(--line); box-shadow: -12px 0 40px rgba(0, 0, 0, .12);
+  display: flex; flex-direction: column; transform: translateX(calc(100% + 580px)); transition: transform .22s cubic-bezier(.2, .8, .2, 1);
+}
+.talk-panel.show { transform: translateX(0); }
+.talk-head { display: flex; align-items: center; gap: 10px; padding: 18px 18px 14px; border-bottom: 1px solid var(--line); background: var(--black); color: #fff; }
+.talk-head .muted { color: #a1a1aa; font-size: 12px; }
+.talk-head .btn.ghost { color: #a1a1aa; }
+.talk-head .btn.ghost:hover { background: #27272a; color: #fff; }
+.talk-title { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.talk-title b { font-size: 15px; }
+.talk-title > svg { width: 20px; height: 20px; }
+.talk-scroll { flex: 1; overflow-y: auto; padding: 16px 18px 28px; }
+.talk-track { display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 1.55; }
+.tt-h { margin: 10px 0 0; font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 800; display: flex; align-items: center; gap: 8px; }
+.tt-h::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.tt-p { margin: 0; color: var(--ink-2); }
+.tt-say { margin: 0; padding: 12px 14px; border-left: 3px solid var(--black); background: #f6f6f7; border-radius: 0 10px 10px 0; color: var(--ink); font-size: 14.5px; }
+.tt-ol { margin: 0; padding-left: 0; list-style: none; counter-reset: q; display: flex; flex-direction: column; gap: 8px; }
+.tt-ol li { counter-increment: q; position: relative; padding: 10px 12px 10px 42px; border: 1px solid var(--line); border-radius: 10px; }
+.tt-ol li::before { content: counter(q); position: absolute; left: 12px; top: 10px; width: 20px; height: 20px; border-radius: 6px; background: var(--black); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+.tt-ul { margin: 0; padding-left: 20px; }
+.tt-checks { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.tt-checks .check { align-items: flex-start; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; font-weight: 500; }
+.tt-checks .check input { margin-top: 3px; flex: none; }
+.tt-checks .check:has(input:checked) { background: #f6f6f7; }
+.tt-checks .check:has(input:checked) span { text-decoration: line-through; color: var(--muted); }
+.tok { border-radius: 4px; padding: 0 3px; font-weight: 700; }
+.tok.filled { background: var(--black); color: #fff; }
+.tok.blank { border: 1px dashed #a1a1aa; color: var(--muted); font-weight: 600; }
+.tt-prep { border: 1.5px solid var(--black); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.tt-prep-h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; }
+.tt-links { display: flex; gap: 6px; flex-wrap: wrap; }
+.tt-links svg.i { width: 13px; height: 13px; }
+.tt-editor { min-height: 420px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; line-height: 1.6; }
+.tt-help { font-size: 12px; margin-top: 8px; line-height: 1.6; }
+
+/* side panel on wide screens; tabs inside the drawer on narrow ones */
+.drawer-tabs { display: none; margin-top: 14px; width: 100%; }
+.drawer-tabs button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.drawer-tabs svg.i { width: 14px; height: 14px; }
+.drawer-script { display: none; flex: 1; overflow-y: auto; padding: 16px 22px 28px; }
+.show-talk { display: none; }
+body.talk-hidden .talk-panel { display: none; }
+@media (min-width: 1180px) { body.talk-hidden .show-talk { display: inline-flex; } }
+@media (max-width: 1179px) {
+  .talk-panel { display: none; }
+  .drawer-tabs { display: flex; }
+  .drawer.tab-script .drawer-script { display: block; }
+  .drawer.tab-script .drawer-body { display: none; }
+}
+@media (max-width: 560px) { .drawer-script { padding: 14px 16px 24px; } }

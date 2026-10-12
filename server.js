@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const express = require('express');
 const ExcelJS = require('exceljs');
 const db = require('./db');
+const DEFAULT_TALK_TRACK = require('./talktrack');
 
 const PORT = process.env.PORT || 3000;
 const SESSION_DAYS = 30;
@@ -53,7 +54,7 @@ function bad(res, msg, code = 400) {
 
 const LEAD_FIELDS = [
   'first_name', 'last_name', 'company', 'title', 'phone', 'phone_alt', 'email', 'website',
-  'address', 'city', 'state', 'zip', 'source', 'value', 'next_follow_up', 'notes',
+  'address', 'city', 'state', 'zip', 'source', 'value', 'next_follow_up', 'notes', 'social_note',
 ];
 
 function cleanText(v, max = 500) {
@@ -268,6 +269,28 @@ app.put('/api/stages', wrap(async (req, res) => {
     [JSON.stringify(stages)],
   );
   res.json(stages);
+}));
+
+/* ---------------------------------------------------------------- talk track */
+
+app.get('/api/talk-track', wrap(async (_req, res) => {
+  const { rows } = await db.query(`SELECT value FROM settings WHERE key = 'talk_track'`);
+  const custom = rows[0] && typeof rows[0].value === 'string' ? rows[0].value : null;
+  res.json({ text: custom || DEFAULT_TALK_TRACK, isDefault: !custom, defaultText: DEFAULT_TALK_TRACK });
+}));
+
+app.put('/api/talk-track', requireOwner, wrap(async (req, res) => {
+  const text = typeof req.body.text === 'string' ? req.body.text.slice(0, 50000) : '';
+  if (!text.trim() || req.body.reset) {
+    await db.query(`DELETE FROM settings WHERE key = 'talk_track'`);
+    return res.json({ text: DEFAULT_TALK_TRACK, isDefault: true, defaultText: DEFAULT_TALK_TRACK });
+  }
+  await db.query(
+    `INSERT INTO settings (key, value) VALUES ('talk_track', $1)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+    [JSON.stringify(text)],
+  );
+  res.json({ text, isDefault: false, defaultText: DEFAULT_TALK_TRACK });
 }));
 
 /* ---------------------------------------------------------------- leads */

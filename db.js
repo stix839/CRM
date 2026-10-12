@@ -110,6 +110,7 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS activities_user_time ON activities (user_id, created_at);
 
     ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'member';
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS social_note TEXT;
   `);
   // The first account created is the owner.
   await pool.query(`

@@ -41,6 +41,9 @@
     right: '<path d="m9 18 6-6-6-6"/>',
     upright: '<path d="M7 7h10v10"/><path d="M7 17 17 7"/>',
     move: '<path d="M5 9l-3 3 3 3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/>',
+    script: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/>',
+    eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+    external: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
   };
   const icon = (name, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
 
@@ -1152,9 +1155,11 @@
       drawer = document.createElement('aside'); drawer.className = 'drawer';
       drawer.setAttribute('role', 'dialog');
       drawer.setAttribute('aria-modal', 'true');
-      document.body.append(scrim, drawer);
+      const panel = document.createElement('aside'); panel.className = 'talk-panel';
+      panel.setAttribute('aria-label', 'Talk track');
+      document.body.append(scrim, panel, drawer);
       scrim.onclick = () => closeDrawer();
-      requestAnimationFrame(() => { scrim.classList.add('show'); drawer.classList.add('show'); });
+      requestAnimationFrame(() => { scrim.classList.add('show'); drawer.classList.add('show'); panel.classList.add('show'); });
       drawer.innerHTML = '<div class="loading" style="flex:1"><div class="spinner"></div></div>';
     }
     await loadDrawer(id);
@@ -1163,11 +1168,11 @@
   function closeDrawer(instant) {
     state.openLeadId = null;
     state.drawerEdit = false;
-    const scrim = $('.scrim'); const drawer = $('.drawer');
+    const scrim = $('.scrim'); const drawer = $('.drawer'); const panel = $('.talk-panel');
     if (!drawer) return;
-    if (instant) { scrim.remove(); drawer.remove(); return; }
-    scrim.classList.remove('show'); drawer.classList.remove('show');
-    setTimeout(() => { scrim.remove(); drawer.remove(); }, 220);
+    if (instant) { scrim.remove(); drawer.remove(); if (panel) panel.remove(); return; }
+    scrim.classList.remove('show'); drawer.classList.remove('show'); if (panel) panel.classList.remove('show');
+    setTimeout(() => { scrim.remove(); drawer.remove(); if (panel) panel.remove(); }, 220);
   }
 
   function refreshDrawerIf(id) { if (state.openLeadId === id) loadDrawer(id); }
@@ -1206,7 +1211,12 @@
             <h2>${esc(leadName(lead))}</h2>
             <div class="sub">${esc(sub || (lead.city || lead.state ? [lead.city, lead.state].filter(Boolean).join(', ') : 'Lead #' + lead.id))}</div>
           </div>
+          <button class="btn sm show-talk" id="show-talk" title="Show talk track">${icon('script')} Talk track</button>
           <button class="btn ghost icon close" id="drawer-close" aria-label="Close">${icon('x')}</button>
+        </div>
+        <div class="drawer-tabs seg">
+          <button data-tab="lead" class="${state.drawerTab !== 'script' ? 'on' : ''}">${icon('users')} Lead</button>
+          <button data-tab="script" class="${state.drawerTab === 'script' ? 'on' : ''}">${icon('script')} Talk track</button>
         </div>
         ${isDq ? `
           <div class="dq-banner">${icon('ban')}<div><div class="t">Disqualified · ${esc(lead.dq_reason || 'Other')}</div><div class="s">${esc(relTime(lead.dq_at))} · was in ${esc(state.stages[lead.stage - 1])}</div></div>
@@ -1215,6 +1225,7 @@
             ${state.stages.map((s, i) => `<button class="step ${lead.stage === i + 1 ? 'current' : lead.stage > i + 1 ? 'done' : ''}" data-stage="${i + 1}" title="${esc(s)}">${esc(s)}</button>`).join('')}
           </div>`}
       </div>
+      <div class="drawer-script">${talkTrackHtml(lead, 'tab')}</div>
       <div class="drawer-body">
         <div class="call-panel">
           <a class="call-btn ${tel ? '' : 'disabled'}" ${tel ? `href="${esc(tel)}"` : ''} id="call-main">
@@ -1307,6 +1318,15 @@
 
     $('.drawer-body').scrollTop = scroll;
     $('#drawer-close').onclick = () => closeDrawer();
+    drawer.classList.toggle('tab-script', state.drawerTab === 'script');
+    $$('.drawer-tabs button', drawer).forEach((b) => b.onclick = () => {
+      state.drawerTab = b.dataset.tab;
+      drawer.classList.toggle('tab-script', state.drawerTab === 'script');
+      $$('.drawer-tabs button', drawer).forEach((x) => x.classList.toggle('on', x === b));
+    });
+    $('#show-talk').onclick = () => setTalkPanelHidden(false);
+    bindTalkTrack($('.drawer-script', drawer), lead);
+    renderTalkPanel(lead);
 
     $$('.step', drawer).forEach((b) => b.onclick = async () => {
       const s = Number(b.dataset.stage);
@@ -1425,6 +1445,136 @@
       rerenderIfOn('pipeline', 'leads');
       loadDrawer(id);
     } catch (e) { fail(e); }
+  }
+
+  /* ---------------------------------------------------------------- talk track */
+
+  function talkPanelHidden() { try { return localStorage.getItem('m2.talkPanel') === 'hidden'; } catch { return false; } }
+  function setTalkPanelHidden(hidden) {
+    try { localStorage.setItem('m2.talkPanel', hidden ? 'hidden' : 'shown'); } catch { /* ignore */ }
+    document.body.classList.toggle('talk-hidden', hidden);
+  }
+
+  function renderTalkPanel(lead) {
+    const panel = $('.talk-panel');
+    if (!panel) return;
+    document.body.classList.toggle('talk-hidden', talkPanelHidden());
+    // Only rebuild when switching leads so checkboxes, scroll and typing survive drawer refreshes.
+    if (panel.dataset.lead === String(lead.id) && panel.innerHTML) return;
+    panel.dataset.lead = lead.id;
+    panel.innerHTML = `
+      <div class="talk-head">
+        <div class="talk-title">${icon('script')}<div><b>Talk track</b><div class="muted">${esc(leadName(lead))}${lead.company && (lead.first_name || lead.last_name) ? ' · ' + esc(lead.company) : ''}</div></div></div>
+        <button class="btn ghost icon sm" id="hide-talk" title="Hide talk track" aria-label="Hide talk track">${icon('x')}</button>
+      </div>
+      <div class="talk-scroll">${talkTrackHtml(lead, 'panel')}</div>`;
+    $('#hide-talk').onclick = () => setTalkPanelHidden(true);
+    bindTalkTrack($('.talk-scroll', panel), lead);
+  }
+
+  function talkTokens(lead) {
+    const me = (state.user && state.user.name || '').trim().split(/\s+/)[0];
+    return { owner: lead.first_name, name: me, company: spokenCompany(lead.company), town: lead.city, observation: lead.social_note };
+  }
+
+  // "Heart of Texas Mechanical Contracting, LLC" -> "Heart of Texas Mechanical Contracting" (how you'd say it on a call)
+  function spokenCompany(name) {
+    let n = String(name || '').replace(/\s*\([^)]*\)/g, '').trim();
+    let prev;
+    do {
+      prev = n;
+      n = n.replace(/[,\s]+(l\.?l\.?c\.?|inc\.?|incorporated|corp\.?|corporation|ltd\.?|llp|pllc|lp)$/i, '').trim();
+    } while (n !== prev && n);
+    return n || String(name || '').trim();
+  }
+
+  function fillTokens(escapedText, tokens) {
+    return escapedText.replace(/\[([^\]\n]{1,60})\]/g, (m, label) => {
+      const key = label.trim().toLowerCase();
+      if (key in tokens) {
+        const v = tokens[key];
+        return v
+          ? `<span class="tok filled" data-tok="${key}">${esc(v)}</span>`
+          : `<span class="tok blank" data-tok="${key}">${label}</span>`;
+      }
+      return `<span class="tok blank">${label}</span>`;
+    }).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  }
+
+  function talkTrackHtml(lead, where) {
+    const tokens = talkTokens(lead);
+    const checked = (state.talkChecks && state.talkChecks[lead.id]) || {};
+    const lines = String(state.talkTrack || '').replace(/\r/g, '').split('\n');
+    let html = '';
+    let list = null;
+    let checkIdx = 0;
+    const closeList = () => { if (list) { html += `</${list}>`; list = null; } };
+    const openList = (tag, cls) => { if (list !== tag) { closeList(); html += `<${tag} class="${cls}">`; list = tag; } };
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) { closeList(); continue; }
+      let m;
+      if ((m = line.match(/^#{1,3}\s+(.*)/))) { closeList(); html += `<h4 class="tt-h">${fillTokens(esc(m[1]), tokens)}</h4>`; continue; }
+      if ((m = line.match(/^>\s?(.*)/))) { closeList(); html += `<blockquote class="tt-say">${fillTokens(esc(m[1]), tokens)}</blockquote>`; continue; }
+      if ((m = line.match(/^[-*]\s+\[( |x)\]\s+(.*)/i))) {
+        openList('ul', 'tt-checks');
+        const i = checkIdx++;
+        html += `<li><label class="check"><input type="checkbox" data-check="${i}" ${checked[i] ? 'checked' : ''}><span>${fillTokens(esc(m[2]), tokens)}</span></label></li>`;
+        continue;
+      }
+      if ((m = line.match(/^\d+[.)]\s+(.*)/))) { openList('ol', 'tt-ol'); html += `<li>${fillTokens(esc(m[1]), tokens)}</li>`; continue; }
+      if ((m = line.match(/^[-*]\s+(.*)/))) { openList('ul', 'tt-ul'); html += `<li>${fillTokens(esc(m[1]), tokens)}</li>`; continue; }
+      closeList();
+      html += `<p class="tt-p">${fillTokens(esc(line), tokens)}</p>`;
+    }
+    closeList();
+
+    const q = [lead.company || leadName(lead), lead.city].filter(Boolean).join(' ');
+    const website = lead.website ? (/^https?:\/\//i.test(lead.website) ? lead.website : 'https://' + lead.website) : null;
+    const prep = `
+      <div class="tt-prep">
+        <div class="tt-prep-h">${icon('eye')} Before you dial</div>
+        <div class="tt-links">
+          <a class="btn sm" target="_blank" rel="noopener" href="https://www.facebook.com/search/top?q=${encodeURIComponent(q)}">Facebook ${icon('external')}</a>
+          <a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/search?q=${encodeURIComponent(q + ' instagram')}">Instagram ${icon('external')}</a>
+          ${website ? `<a class="btn sm" target="_blank" rel="noopener" href="${esc(website)}">Website ${icon('external')}</a>` : ''}
+        </div>
+        <label class="field"><span>What you noticed on their page <span class="muted" style="font-weight:500">· fills in [observation]</span></span>
+          <input class="input tt-obs" data-where="${where}" placeholder="e.g. last post was in March" value="${esc(lead.social_note || '')}" maxlength="300">
+        </label>
+      </div>`;
+    return `<div class="talk-track">${prep}${html}</div>`;
+  }
+
+  function bindTalkTrack(root, lead) {
+    if (!root) return;
+    const obs = root.querySelector('.tt-obs');
+    if (obs) {
+      const sync = () => {
+        const v = obs.value.trim();
+        $$('.tok[data-tok="observation"]').forEach((t) => {
+          t.textContent = v || 'observation';
+          t.classList.toggle('filled', !!v); t.classList.toggle('blank', !v);
+        });
+        $$('.tt-obs').forEach((o) => { if (o !== obs) o.value = obs.value; });
+      };
+      obs.addEventListener('input', sync);
+      obs.addEventListener('change', async () => {
+        const v = obs.value.trim();
+        if (v === (lead.social_note || '')) return;
+        try {
+          const u = await api(`/api/leads/${lead.id}`, { method: 'PATCH', body: { social_note: v } });
+          lead.social_note = u.social_note;
+          toast('Observation saved');
+        } catch (e) { fail(e); }
+      });
+    }
+    root.querySelectorAll('[data-check]').forEach((c) => c.addEventListener('change', () => {
+      state.talkChecks = state.talkChecks || {};
+      const map = (state.talkChecks[lead.id] = state.talkChecks[lead.id] || {});
+      map[c.dataset.check] = c.checked;
+      $$(`[data-check="${c.dataset.check}"]`).forEach((x) => { x.checked = c.checked; });
+    }));
   }
 
   function activityTitle(a) {
@@ -1843,6 +1993,22 @@
           </form>
         </div>
 
+        ${isOwner() ? `
+        <div class="card">
+          <div class="card-h"><h3>Talk track</h3><span class="sub">Shown next to every lead you open</span><span class="chip outline right">${icon('award')}Owner only</span></div>
+          <form class="card-b" id="tt-form">
+            <textarea class="textarea tt-editor" name="text" spellcheck="true">${esc(state.talkTrack || '')}</textarea>
+            <div class="tt-help muted">
+              <b>## Heading</b> starts a section · <b>&gt; line</b> is something to say out loud · <b>1.</b> numbered question · <b>- [ ]</b> checkbox · <b>**bold**</b><br>
+              <b>[Owner]</b>, <b>[Company]</b>, <b>[town]</b>, <b>[Name]</b> (you) and <b>[observation]</b> fill in automatically. Any other <b>[text]</b> shows as a blank to fill on the call.
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+              <button class="btn" type="button" id="tt-reset">Reset to original</button>
+              <button class="btn primary" type="submit">Save talk track</button>
+            </div>
+          </form>
+        </div>` : ''}
+
         <div class="card">
           <div class="card-h"><h3>Team</h3><span class="sub">People who can sign in to this CRM</span></div>
           <div class="card-b">
@@ -1877,6 +2043,25 @@
         </div>
       </div>`;
 
+    if ($('#tt-form')) {
+      $('#tt-form').onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+          const r = await api('/api/talk-track', { method: 'PUT', body: { text: e.target.text.value } });
+          state.talkTrack = r.text;
+          toast('Talk track saved');
+        } catch (err) { fail(err); }
+      };
+      $('#tt-reset').onclick = async () => {
+        if (!(await confirmDialog('Reset the talk track?', 'This replaces your edits with the original script.', 'Reset'))) return;
+        try {
+          const r = await api('/api/talk-track', { method: 'PUT', body: { reset: true } });
+          state.talkTrack = r.text;
+          $('#tt-form').text.value = r.text;
+          toast('Talk track reset');
+        } catch (err) { fail(err); }
+      };
+    }
     $('#stages-form').onsubmit = async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
@@ -1908,6 +2093,7 @@
     if (!me.user) { renderAuth(me.needsSetup); return; }
     state.user = me.user;
     state.stages = await api('/api/stages');
+    state.talkTrack = await api('/api/talk-track').then((r) => r.text).catch(() => '');
     renderShell();
     await loadLeads().catch(() => {});
     if (!location.hash) location.hash = '#/dashboard';
