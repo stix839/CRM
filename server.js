@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const express = require('express');
@@ -107,6 +108,7 @@ async function logActivity(client, leadId, userId, type, body = null, meta = {},
 /* ---------------------------------------------------------------- middleware */
 
 app.use(express.json({ limit: '25mb' }));
+app.use('/api', (_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
 
 app.use(wrap(async (req, _res, next) => {
   const token = parseCookies(req.headers.cookie)[COOKIE];
@@ -784,8 +786,28 @@ app.get('/api/team-stats', requireOwner, wrap(async (req, res) => {
 
 app.use('/api', (_req, res) => bad(res, 'Not found', 404));
 
-app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h', index: false }));
-app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+// Fingerprint app.js / styles.css so every deploy gets new URLs and browsers never run stale code.
+const PUBLIC_DIR = path.join(__dirname, 'public');
+const ASSET_VERSION = crypto.createHash('sha256')
+  .update(fs.readFileSync(path.join(PUBLIC_DIR, 'app.js')))
+  .update(fs.readFileSync(path.join(PUBLIC_DIR, 'styles.css')))
+  .digest('hex').slice(0, 12);
+const INDEX_HTML = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8')
+  .replace('/styles.css"', `/styles.css?v=${ASSET_VERSION}"`)
+  .replace('/app.js"', `/app.js?v=${ASSET_VERSION}"`);
+
+app.use(express.static(PUBLIC_DIR, {
+  index: false,
+  setHeaders(res, filePath) {
+    // Versioned URLs can be cached for a long time; everything else revalidates on each load.
+    const versioned = /\.(js|css)$/.test(filePath);
+    res.setHeader('Cache-Control', versioned ? 'public, max-age=31536000, immutable' : 'no-cache');
+  },
+}));
+app.get('*', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.type('html').send(INDEX_HTML);
+});
 
 app.use((err, _req, res, _next) => {
   console.error(err);
