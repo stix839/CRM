@@ -1,0 +1,26 @@
+{
+  "name": "m2-crm",
+  "version": "1.0.0",
+  "description": "M2 — call pipeline CRM",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stix839/CRM.git"
+  },
+  "bugs": {
+    "url": "https://github.com/stix839/CRM/issues"
+  },
+  "homepage": "https://github.com/stix839/CRM#readme",
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "express": "^4.22.3",
+    "pg": "^8.23.1"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "private": true
+}
