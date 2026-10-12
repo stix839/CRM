@@ -55,8 +55,19 @@
   const DQ_REASONS = ['Not interested', 'Not a fit', 'Wrong number', 'Do not call', 'Unreachable', 'Duplicate', 'Bad timing', 'Other'];
 
   function digits(p) { return String(p || '').replace(/\D/g, ''); }
+  // Pull the first phone-looking number out of text like "254-965-3000 (Stephenville)".
+  function firstPhone(p) {
+    const m = String(p || '').match(/\+?\d[\d\s().-]{5,}\d/);
+    return m ? m[0].trim() : String(p || '').trim();
+  }
+  function phoneNote(p) {
+    const raw = String(p || '').trim();
+    const rest = raw.replace(firstPhone(raw), '').replace(/^[\s,;/–-]+|[\s,;/–-]+$/g, '').replace(/^\((.*)\)$/, '$1');
+    return rest;
+  }
   function fmtPhone(p) {
     if (!p) return '';
+    p = firstPhone(p);
     let d = digits(p);
     if (d.length === 11 && d[0] === '1') d = d.slice(1);
     const raw = String(p).trim();
@@ -65,7 +76,8 @@
     return String(p).trim();
   }
   function telHref(p) {
-    const raw = String(p || '').trim();
+    if (/^\s*fax\b/i.test(String(p || ''))) return null;
+    const raw = firstPhone(p);
     const d = digits(raw);
     if (!d) return null;
     if (raw.startsWith('+')) return `tel:+${d}`;
@@ -1119,10 +1131,10 @@
         <div class="call-panel">
           <a class="call-btn ${tel ? '' : 'disabled'}" ${tel ? `href="${esc(tel)}"` : ''} id="call-main">
             <span class="ring">${icon('phone')}</span>
-            <span><small>${tel ? 'Tap to call' : 'No phone number'}</small><span class="tnum">${tel ? esc(fmtPhone(lead.phone)) : 'Add a number to call'}</span></span>
+            <span><small>${tel ? 'Tap to call' : 'No phone number'}</small><span class="tnum">${tel ? esc(fmtPhone(lead.phone)) : 'Add a number to call'}</span>${tel && phoneNote(lead.phone) ? `<small>${esc(phoneNote(lead.phone))}</small>` : ''}</span>
             ${tel ? `<span class="arrow">${icon('upright')}</span>` : ''}
           </a>
-          ${tel2 ? `<a class="btn sm" style="align-self:flex-start" href="${esc(tel2)}" id="call-alt">${icon('phone')} Alt: ${esc(fmtPhone(lead.phone_alt))}</a>` : ''}
+          ${tel2 ? `<a class="btn sm" style="align-self:flex-start" href="${esc(tel2)}" id="call-alt">${icon('phone')} Alt: ${esc(fmtPhone(lead.phone_alt))}${phoneNote(lead.phone_alt) ? ` <span class="muted" style="font-weight:500">· ${esc(phoneNote(lead.phone_alt))}</span>` : ''}</a>` : lead.phone_alt ? `<div class="muted" style="font-size:12.5px">Other: ${esc(lead.phone_alt)}</div>` : ''}
           <div>
             <div class="outcome-q">${pending ? 'How did the call go?' : 'Log a call outcome'}</div>
             <div class="outcomes" style="margin-top:8px">
@@ -1162,7 +1174,7 @@
               ${infoCell('Company', esc(lead.company))}
               ${infoCell('Job title', esc(lead.title))}
               ${infoCell('Phone', tel ? `<a href="${esc(tel)}" data-dial>${esc(fmtPhone(lead.phone))}</a>` : '')}
-              ${infoCell('Email', lead.email ? `<a href="mailto:${esc(lead.email)}">${esc(lead.email)}</a>` : '')}
+              ${infoCell('Email', lead.email ? lead.email.split(/[;,\s]+/).filter(Boolean).map((e) => `<a href="mailto:${esc(e)}">${esc(e)}</a>`).join('<br>') : '')}
               ${infoCell('Location', esc([lead.address, lead.city, [lead.state, lead.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ')), { span: true })}
               ${infoCell('Website', website ? `<a href="${esc(website)}" target="_blank" rel="noopener">${esc(lead.website)}</a>` : '')}
               ${infoCell('Source', esc(lead.source))}
@@ -1446,7 +1458,7 @@
   /* ================================================================ import */
 
   const IMPORT_FIELDS = [
-    ['full_name', 'Full name', ['name', 'fullname', 'contactname', 'contact', 'leadname', 'ownername', 'customername', 'clientname', 'prospectname']],
+    ['full_name', 'Full name', ['name', 'fullname', 'contactname', 'owner', 'ownerkeycontact', 'keycontact', 'primarycontact', 'contactperson', 'decisionmaker', 'ownername2', 'contact', 'leadname', 'ownername', 'customername', 'clientname', 'prospectname']],
     ['first_name', 'First name', ['firstname', 'first', 'fname', 'givenname', 'contactfirstname']],
     ['last_name', 'Last name', ['lastname', 'last', 'lname', 'surname', 'familyname', 'contactlastname']],
     ['company', 'Company', ['company', 'companyname', 'business', 'businessname', 'organization', 'organisation', 'account', 'accountname', 'firm', 'employer']],
@@ -1635,9 +1647,12 @@
       }
       if (mapping[i] === undefined) {
         // fuzzy contains-match
-        const fuzzy = [['phone', /phone|mobile|cell/], ['email', /email/], ['company', /company|business/], ['first_name', /first/], ['last_name', /last/]];
+        const fuzzy = [['phone', /phone|mobile|cell/], ['phone_alt', /phone|mobile|cell/], ['email', /email/], ['title', /title/],
+          ['full_name', /contact|owner/], ['company', /company|business/], ['first_name', /first/], ['last_name', /last/]];
         for (const [k, re] of fuzzy) {
           if (re.test(n) && !used.has(k)) { mapping[i] = k; used.add(k); break; }
+          if (re.test(n) && (k === 'phone' || k === 'phone_alt')) continue;
+          if (re.test(n)) break;
         }
       }
       if (mapping[i] === undefined) mapping[i] = '';
@@ -1660,7 +1675,8 @@
         if (!m) { if (keepExtra) lead.extra[h] = val; return; }
         if (m === 'full_name') {
           const parts = val.split(/\s+/);
-          if (val.includes(',') && parts.length >= 2) {
+          const afterComma = val.split(',').slice(1).join(',').trim();
+          if (val.includes(',') && parts.length >= 2 && !/^(jr|sr|ii|iii|iv|phd|pe)\.?$/i.test(afterComma)) {
             const [last, first] = val.split(',').map((x) => x.trim());
             lead.first_name = first; lead.last_name = last;
           } else {
@@ -1683,7 +1699,7 @@
     try {
       const buf = await file.arrayBuffer();
       const res = await api(`/api/import/parse?filename=${encodeURIComponent(file.name)}`, { method: 'POST', body: buf, raw: true });
-      const sheetIdx = Math.max(0, res.sheets.findIndex((sh) => sh.rows.length > 0));
+      const sheetIdx = res.sheets.reduce((best, sh, i) => (sh.rows.length > res.sheets[best].rows.length ? i : best), 0);
       Object.assign(importState, {
         step: 2, filename: file.name, sheets: res.sheets, sheetIdx,
         mapping: autoMap(res.sheets[sheetIdx].headers), stage: 1, skipDuplicates: true, keepExtra: true,

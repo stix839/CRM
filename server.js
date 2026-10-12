@@ -90,7 +90,8 @@ function cleanLeadInput(body) {
 }
 
 function phoneDigits(p) {
-  const d = String(p || '').replace(/\D/g, '');
+  const m = String(p || '').match(/\+?\d[\d\s().-]{5,}\d/);
+  const d = (m ? m[0] : '').replace(/\D/g, '');
   return d.length === 11 && d.startsWith('1') ? d.slice(1) : d;
 }
 
