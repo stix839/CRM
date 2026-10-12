@@ -7,7 +7,8 @@ A black-and-white, single-workspace CRM for working a phone pipeline.
 - **Lead detail drawer**: one-tap call button, call-outcome logging, notes, follow-up dates, full activity timeline
 - **Disqualify** leads with a reason (drag onto the drop zone or use the button); restore any time
 - **Dashboard**: pipeline by stage, calls per day, connect rate, call outcomes, new leads, follow-ups, DQ reasons
-- Team logins, CSV export
+- Team logins with an owner role; the owner's dashboard shows per-teammate call and outreach stats
+- CSV export
 
 ## Run locally
 
