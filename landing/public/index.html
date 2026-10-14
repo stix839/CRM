@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>M2 — Social media that brings contractors work</title>
+  <meta name="description" content="M2 turns contractors' own Facebook and Instagram into a steady source of new jobs. We shoot your work and crew, run your pages, and turn the attention into calls. No ads. No paying for leads.">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="M2 — Social media that brings contractors work">
+  <meta property="og:description" content="We shoot your jobs and crew, run your Facebook and Instagram, and turn the attention into calls. No ads. No paying for leads.">
+  <meta property="og:image" content="/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --black: #0a0a0a; --ink: #111; --ink-2: #3f3f46; --muted: #71717a; --faint: #a1a1aa;
+      --line: #e4e4e7; --soft: #f4f4f5; --bg: #ffffff; --dark-line: #27272a; --dark-muted: #a1a1aa;
+      --max: 1120px; --gutter: 24px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; line-height: 1.55; }
+    a { color: inherit; }
+    svg.i { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+    .wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
+    .eyebrow { font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+    .dark .eyebrow { color: var(--dark-muted); }
+    h1, h2, h3 { letter-spacing: -.03em; line-height: 1.05; margin: 0; }
+    h2 { font-size: clamp(32px, 4.6vw, 52px); font-weight: 900; }
+    .lead-p { font-size: clamp(17px, 1.6vw, 19px); color: var(--ink-2); max-width: 640px; }
+    .hero .lead-p, .process .lead-p, .cta .lead-p { color: #d4d4d8; }
+    .process .eyebrow, .cta .eyebrow, .hero .eyebrow { color: var(--dark-muted); }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 52px; padding: 0 22px; border-radius: 12px; font-weight: 700; font-size: 15.5px; text-decoration: none; border: 1.5px solid currentColor; transition: transform .08s, background .15s, color .15s; white-space: nowrap; }
+    .btn:active { transform: translateY(1px); }
+    .btn.solid { background: #fff; color: var(--black); border-color: #fff; }
+    .btn.solid:hover { background: #e4e4e7; border-color: #e4e4e7; }
+    .btn.ghost { color: #fff; border-color: #52525b; }
+    .btn.ghost:hover { border-color: #fff; }
+    .btn.black { background: var(--black); color: #fff; border-color: var(--black); }
+    .btn.black:hover { background: #27272a; }
+    .btn.line { color: var(--black); border-color: var(--line); background: #fff; }
+    .btn.line:hover { border-color: var(--black); }
+
+    /* nav */
+    .nav { position: sticky; top: 0; z-index: 20; background: rgba(10,10,10,.92); backdrop-filter: saturate(1.4) blur(10px); -webkit-backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid var(--dark-line); color: #fff; }
+    .nav .wrap { display: flex; align-items: center; gap: 24px; height: 68px; }
+    .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; }
+    .logo { width: 40px; height: 40px; border-radius: 10px; background: #fff; color: var(--black); display: grid; place-items: center; font-weight: 900; font-size: 16px; letter-spacing: -.03em; }
+    .brand-name { font-weight: 800; font-size: 17px; letter-spacing: -.02em; }
+    .nav-links { display: flex; gap: 26px; margin-left: auto; font-size: 14.5px; font-weight: 600; }
+    .nav-links a { text-decoration: none; color: var(--dark-muted); }
+    .nav-links a:hover { color: #fff; }
+    .nav .btn { height: 42px; padding: 0 16px; font-size: 14px; }
+
+    /* hero */
+    .hero { background: var(--black); color: #fff; padding: clamp(64px, 9vw, 120px) 0 clamp(64px, 8vw, 100px); position: relative; overflow: hidden; }
+    .hero::after { content: ""; position: absolute; right: -10%; top: -30%; width: 70%; height: 160%; background: radial-gradient(closest-side, rgba(255,255,255,.07), transparent 70%); pointer-events: none; }
+    .hero-grid { display: grid; grid-template-columns: 1.25fr .9fr; gap: 56px; align-items: center; position: relative; z-index: 1; }
+    .hero h1 { font-size: clamp(42px, 7vw, 84px); font-weight: 900; letter-spacing: -.045em; line-height: .98; margin: 18px 0 22px; }
+    .hero h1 .outline { color: transparent; -webkit-text-stroke: 1.5px #fff; }
+    .hero .lead-p { margin: 0 0 32px; }
+    .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+    .pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 34px; }
+    .pill { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--dark-line); font-size: 13px; font-weight: 600; color: #d4d4d8; }
+    .pill svg.i { width: 14px; height: 14px; }
+
+    /* phone mock */
+    .phone { justify-self: center; width: min(320px, 100%); aspect-ratio: 9 / 18.5; border-radius: 42px; border: 10px solid #1c1c1e; background: #fff; box-shadow: 0 40px 80px rgba(0,0,0,.6), 0 0 0 1px #3f3f46; overflow: hidden; position: relative; color: var(--ink); transform: rotate(2.5deg); }
+    .phone .notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 34%; height: 22px; border-radius: 12px; background: #1c1c1e; z-index: 2; }
+    .phone .screen { padding: 40px 14px 14px; display: flex; flex-direction: column; gap: 10px; height: 100%; }
+    .ph-profile { display: flex; align-items: center; gap: 10px; }
+    .ph-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--black); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 13px; flex: none; }
+    .ph-name { font-weight: 800; font-size: 13.5px; }
+    .ph-sub { font-size: 11px; color: var(--muted); }
+    .ph-stats { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 8px 0; }
+    .ph-stats b { display: block; font-size: 13px; }
+    .ph-stats span { font-size: 10px; color: var(--muted); }
+    .ph-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+    .ph-grid div { aspect-ratio: 1; border-radius: 3px; background: var(--soft); position: relative; overflow: hidden; }
+    .ph-grid div:nth-child(3n+1) { background: #18181b; }
+    .ph-grid div:nth-child(4n+2) { background: #d4d4d8; }
+    .ph-grid div:nth-child(5n) { background: #52525b; }
+    .ph-grid div::after { content: ""; position: absolute; inset: 22% 18%; border: 2px solid rgba(255,255,255,.35); border-radius: 2px; }
+    .ph-dm { margin-top: auto; background: var(--soft); border-radius: 14px; padding: 10px 12px; font-size: 12px; }
+    .ph-dm b { display: block; font-size: 11px; margin-bottom: 2px; }
+    .ph-dm.me { background: var(--black); color: #fff; align-self: flex-end; margin-top: 0; }
+
+    /* sections */
+    section { padding: clamp(72px, 9vw, 120px) 0; }
+    .sec-head { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: end; margin-bottom: 52px; }
+    .sec-head .eyebrow { margin-bottom: 14px; display: block; }
+    .sec-head p { margin: 0; }
+
+    /* about */
+    .about-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 64px; align-items: start; }
+    .about-copy p { font-size: 17.5px; color: var(--ink-2); margin: 0 0 18px; }
+    .about-copy p:first-of-type { font-size: 21px; color: var(--ink); font-weight: 500; line-height: 1.5; }
+    .about-side { display: flex; flex-direction: column; gap: 12px; }
+    .about-card { border: 1.5px solid var(--black); border-radius: 18px; padding: 24px; }
+    .about-card h3 { font-size: 20px; margin-bottom: 8px; }
+    .about-card p { margin: 0; color: var(--ink-2); }
+    .about-card.inv { background: var(--black); color: #fff; }
+    .about-card.inv p { color: #d4d4d8; }
+
+    /* services */
+    .services { background: var(--soft); }
+    .svc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .svc { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 26px 22px; display: flex; flex-direction: column; gap: 12px; }
+    .svc .ic { width: 46px; height: 46px; border-radius: 12px; background: var(--black); color: #fff; display: grid; place-items: center; }
+    .svc .ic svg.i { width: 21px; height: 21px; }
+    .svc h3 { font-size: 19px; }
+    .svc p { margin: 0; color: var(--ink-2); font-size: 15px; }
+
+    /* process */
+    .process { background: var(--black); color: #fff; }
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; position: relative; counter-reset: s; }
+    .step { position: relative; padding: 0 20px 0 0; }
+    .step-top { display: flex; align-items: center; margin-bottom: 22px; }
+    .step-num { width: 54px; height: 54px; border-radius: 50%; background: #fff; color: var(--black); display: grid; place-items: center; font-weight: 900; font-size: 20px; flex: none; position: relative; z-index: 1; }
+    .step-line { flex: 1; height: 2px; background: repeating-linear-gradient(90deg, #52525b 0 8px, transparent 8px 14px); margin-left: 10px; position: relative; }
+    .step-line::after { content: ""; position: absolute; right: -2px; top: -5px; border: 6px solid transparent; border-left: 9px solid #71717a; }
+    .step:last-child .step-line { display: none; }
+    .step h3 { font-size: 22px; margin-bottom: 10px; }
+    .step p { margin: 0; color: #d4d4d8; font-size: 15px; }
+    .step .tag { display: inline-block; margin-top: 14px; font-size: 12px; font-weight: 700; color: var(--dark-muted); border: 1px solid var(--dark-line); padding: 4px 10px; border-radius: 999px; }
+
+    .funnel-wrap { margin-top: 84px; display: grid; grid-template-columns: .9fr 1.1fr; gap: 56px; align-items: center; }
+    .funnel-wrap h3 { font-size: clamp(28px, 3.4vw, 40px); font-weight: 900; margin: 14px 0 16px; }
+    .funnel-wrap p { color: #d4d4d8; margin: 0; font-size: 16.5px; }
+    .funnel { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .f-row { height: 74px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 22px; color: var(--black); background: #fff; clip-path: polygon(0 0, 100% 0, calc(100% - 22px) 100%, 22px 100%); }
+    .f-row:nth-child(1) { width: 100%; }
+    .f-row:nth-child(2) { width: 84%; background: #e4e4e7; }
+    .f-row:nth-child(3) { width: 68%; background: #a1a1aa; }
+    .f-row:nth-child(4) { width: 52%; background: #52525b; color: #fff; }
+    .f-row:nth-child(5) { width: 36%; background: #fff; clip-path: none; border-radius: 12px; justify-content: center; outline: 2px solid #fff; outline-offset: 4px; }
+    .f-row b { font-size: 16px; font-weight: 800; letter-spacing: -.01em; }
+    .f-row span { font-size: 12.5px; font-weight: 600; opacity: .75; text-align: right; }
+    .f-row:nth-child(5) > span:not(.lbl) { display: none; }
+    .f-row svg.i { width: 18px; height: 18px; }
+    .f-row .lbl { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+    /* compare */
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .cmp { border-radius: 20px; padding: 30px; }
+    .cmp h3 { font-size: 22px; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+    .cmp ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; }
+    .cmp li { display: flex; gap: 12px; align-items: flex-start; font-size: 16px; }
+    .cmp li svg.i { margin-top: 3px; }
+    .cmp.them { border: 1px solid var(--line); color: var(--ink-2); }
+    .cmp.them h3 { color: var(--muted); }
+    .cmp.us { background: var(--black); color: #fff; }
+
+    /* contact */
+    .contact { background: var(--soft); }
+    .people { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .person { background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 30px; display: flex; flex-direction: column; gap: 22px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    .person-top { display: flex; align-items: center; gap: 16px; }
+    .p-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--black); color: #fff; display: grid; place-items: center; font-weight: 900; font-size: 22px; letter-spacing: -.02em; flex: none; }
+    .person h3 { font-size: 26px; }
+    .role { font-size: 13px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+    .p-lines { display: flex; flex-direction: column; gap: 8px; }
+    .p-line { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); text-decoration: none; font-weight: 600; font-size: 16px; transition: border-color .15s, background .15s; min-width: 0; }
+    .p-line:hover { border-color: var(--black); }
+    .p-line .k { font-size: 12px; color: var(--muted); font-weight: 600; display: block; }
+    .p-line .v { display: block; overflow-wrap: anywhere; }
+    .p-line .txt { min-width: 0; }
+    .p-line .go { margin-left: auto; color: var(--faint); }
+    .p-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .p-actions .btn { height: 46px; font-size: 14px; padding: 0 10px; }
+    .p-actions svg.i { width: 16px; height: 16px; }
+
+    .cta { background: var(--black); color: #fff; text-align: center; }
+    .cta h2 { max-width: 760px; margin: 16px auto 18px; }
+    .cta .lead-p { margin: 0 auto 32px; }
+    .cta .hero-ctas { justify-content: center; }
+
+    footer { background: var(--black); color: var(--dark-muted); border-top: 1px solid var(--dark-line); padding: 28px 0; font-size: 13.5px; }
+    footer .wrap { display: flex; align-items: center; gap: 16px; justify-content: space-between; flex-wrap: wrap; }
+    footer .brand-name { color: #fff; }
+    footer .logo { width: 32px; height: 32px; font-size: 13px; border-radius: 8px; }
+
+    .people > *, .svc-grid > *, .compare > *, .about-grid > *, .hero-grid > *, .sec-head > *, .funnel-wrap > * { min-width: 0; }
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s cubic-bezier(.2,.8,.2,1); }
+    .reveal.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }
+
+    @media (max-width: 980px) {
+      .hero-grid, .about-grid, .funnel-wrap, .sec-head { grid-template-columns: 1fr; }
+      .hero-grid { gap: 56px; }
+      .phone { width: min(280px, 80%); }
+      .svc-grid { grid-template-columns: 1fr 1fr; }
+      .steps { grid-template-columns: 1fr 1fr; row-gap: 44px; }
+      .step:nth-child(2) .step-line { display: none; }
+      .nav-links { display: none; }
+      .nav .btn { margin-left: auto; }
+    }
+    @media (max-width: 680px) {
+      :root { --gutter: 16px; }
+      .svc-grid, .compare, .people { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: 1fr; }
+      .step { padding: 0 0 0 76px; min-height: 60px; }
+      .step-top { position: absolute; left: 0; top: 0; bottom: -44px; flex-direction: column; margin: 0; }
+      .step-line { width: 2px; height: auto; flex: 1; margin: 8px 0 0; background: repeating-linear-gradient(180deg, #52525b 0 8px, transparent 8px 14px); }
+      .step-line::after { display: none; }
+      .step:nth-child(2) .step-line { display: block; }
+      .step:last-child .step-line { display: none; }
+      .f-row { height: 64px; padding: 0 16px; }
+      .f-row:nth-child(2) { width: 90%; } .f-row:nth-child(3) { width: 80%; } .f-row:nth-child(4) { width: 70%; } .f-row:nth-child(5) { width: 60%; }
+      .f-row > span:not(.lbl) { display: none; }
+      .f-row { justify-content: center; }
+      .person, .cmp { padding: 22px; }
+      .p-actions { grid-template-columns: 1fr 1fr; }
+      .p-actions .btn:last-child { grid-column: span 2; }
+      .nav .btn span { display: none; }
+      .nav .btn { width: 42px; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></symbol>
+    <symbol id="i-trend" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+    <symbol id="i-hammer" viewBox="0 0 24 24"><path d="m15 12-8.5 8.5a2.12 2.12 0 1 1-3-3L12 9"/><path d="M17.64 15 22 10.64"/><path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 0 0-3.94-1.64H9l.92.82A6.18 6.18 0 0 1 12 8.4v1.56l2 2h2.47l2.26 1.91"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+    <symbol id="i-layout" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></symbol>
+  </svg>
+
+  <header class="nav">
+    <div class="wrap">
+      <a class="brand" href="#top" aria-label="M2 home"><span class="logo">M2</span></a>
+      <nav class="nav-links" aria-label="Sections">
+        <a href="#about">About</a>
+        <a href="#services">What we do</a>
+        <a href="#process">Process</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <a class="btn solid" href="tel:+13252495262" aria-label="Call M2"><svg class="i"><use href="#i-phone"/></svg><span>Call us</span></a>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- hero -->
+    <div class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <span class="eyebrow">Social media for contractors</span>
+          <h1>Your work is<br>your best <span class="outline">ad.</span></h1>
+          <p class="lead-p">M2 turns your own Facebook and Instagram into a steady source of new jobs. We shoot your work and your crew, run your pages for you, and turn the attention into calls. No ads. No paying for leads.</p>
+          <div class="hero-ctas">
+            <a class="btn solid" href="#contact"><svg class="i"><use href="#i-cal"/></svg> Book a 20-minute call</a>
+            <a class="btn ghost" href="#process">See how it works <svg class="i"><use href="#i-arrow"/></svg></a>
+          </div>
+          <div class="pills">
+            <span class="pill"><svg class="i"><use href="#i-camera"/></svg>We come to your jobs</span>
+            <span class="pill"><svg class="i"><use href="#i-layout"/></svg>We run your pages</span>
+            <span class="pill"><svg class="i"><use href="#i-phone"/></svg>You take the calls</span>
+          </div>
+        </div>
+        <div class="phone" aria-hidden="true">
+          <div class="notch"></div>
+          <div class="screen">
+            <div class="ph-profile"><div class="ph-avatar">YC</div><div><div class="ph-name">Your Company</div><div class="ph-sub">Roofing · Your town</div></div></div>
+            <div class="ph-stats"><div><b>Weekly</b><span>posts</span></div><div><b>Real</b><span>job photos</span></div><div><b>Local</b><span>followers</span></div></div>
+            <div class="ph-grid"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+            <div class="ph-dm"><b>Homeowner nearby</b>Saw the roof you just finished down the street. Can you come look at ours?</div>
+            <div class="ph-dm me">Absolutely. Does Thursday morning work?</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- about -->
+    <section id="about" class="reveal">
+      <div class="wrap about-grid">
+        <div class="about-copy">
+          <span class="eyebrow">About M2</span>
+          <h2 style="margin:14px 0 26px">We make the work you already do bring in more work.</h2>
+          <p>M2 is a social media team built for contractors. Roofers, plumbers, electricians, HVAC, builders and remodelers. People who do great work but don't have time to post about it.</p>
+          <p>When someone gets referred to you, the first thing they do is look you up. If your page hasn't posted in months, that referral goes cold. We fix that. We show up on your jobs, capture your crew and your finished work, and keep your Facebook and Instagram active, professional and local.</p>
+          <p>Then we turn that attention into a funnel, so the people who see your work have a clear, easy way to reach you. You stay on the job. We handle the rest.</p>
+        </div>
+        <div class="about-side">
+          <div class="about-card inv">
+            <h3>No ads. No paying for leads.</h3>
+            <p>Your page, your content, your customers. Not shared leads sold to five other contractors.</p>
+          </div>
+          <div class="about-card">
+            <h3>Completely off your plate</h3>
+            <p>We shoot it, write it, post it and keep it consistent, even in your busiest weeks.</p>
+          </div>
+          <div class="about-card">
+            <h3>Built for your town</h3>
+            <p>Real jobs and a real crew, shown to the homeowners and businesses in the area you actually serve.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- services -->
+    <section id="services" class="services">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <div><span class="eyebrow">What we do</span><h2>Everything it takes to turn your page into a pipeline.</h2></div>
+          <p class="lead-p">One team handling the whole thing, from the camera on your job site to the message in your inbox.</p>
+        </div>
+        <div class="svc-grid">
+          <div class="svc reveal"><div class="ic"><svg class="i"><use href="#i-camera"/></svg></div><h3>On-site content</h3><p>We come to your jobs and shoot photos and video of the work, the before-and-afters, and the crew that does it.</p></div>
+          <div class="svc reveal"><div class="ic"><svg class="i"><use href="#i-layout"/></svg></div><h3>Page management</h3><p>We run your Facebook and Instagram: a steady posting schedule, captions written in your voice, and a page that looks the part.</p></div>
+          <div class="svc reveal"><div class="ic"><svg class="i"><use href="#i-trend"/></svg></div><h3>Local growth</h3><p>We build a following of the people in your service area, the homeowners and businesses who'll actually call.</p></div>
+          <div class="svc reveal"><div class="ic"><svg class="i"><use href="#i-filter"/></svg></div><h3>Lead funnel</h3><p>We turn views into messages and calls, with clear ways to reach you and quick follow-up, so interest becomes booked jobs.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- process -->
+    <section id="process" class="process">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <div><span class="eyebrow">Our process</span><h2>From your job site to your phone ringing.</h2></div>
+          <p class="lead-p">We take your social media, grow it, and turn it into a lead funnel. Here's how it works.</p>
+        </div>
+        <div class="steps">
+          <div class="step reveal">
+            <div class="step-top"><div class="step-num">1</div><div class="step-line"></div></div>
+            <h3>Take it over</h3>
+            <p>We take your Facebook and Instagram completely off your plate and get your profiles looking sharp and professional.</p>
+            <span class="tag">Your social media</span>
+          </div>
+          <div class="step reveal">
+            <div class="step-top"><div class="step-num">2</div><div class="step-line"></div></div>
+            <h3>Capture the work</h3>
+            <p>We visit your jobs and shoot your crew and your finished work. Real content no stock photo can match.</p>
+            <span class="tag">Real jobs, real crew</span>
+          </div>
+          <div class="step reveal">
+            <div class="step-top"><div class="step-num">3</div><div class="step-line"></div></div>
+            <h3>Grow it</h3>
+            <p>Consistent posts reach more people in your town every week, and your page becomes the one locals recognize.</p>
+            <span class="tag">Local reach</span>
+          </div>
+          <div class="step reveal">
+            <div class="step-top"><div class="step-num">4</div><div class="step-line"></div></div>
+            <h3>Turn it into leads</h3>
+            <p>Views become messages, messages become calls, and calls become booked jobs, without paying for a single lead.</p>
+            <span class="tag">Your lead funnel</span>
+          </div>
+        </div>
+
+        <div class="funnel-wrap reveal">
+          <div>
+            <span class="eyebrow">The funnel</span>
+            <h3>Attention in at the top. Booked jobs out the bottom.</h3>
+            <p>Every post works for you long after it goes up. As your page grows, more of your town sees your work, more of them reach out, and more of them become customers. That's a pipeline you own.</p>
+          </div>
+          <div class="funnel" role="img" aria-label="Lead funnel: people in your town see your posts, follow your page, message or call you, get an estimate, and become booked jobs.">
+            <div class="f-row"><span class="lbl"><svg class="i"><use href="#i-users"/></svg><b>Your town sees your work</b></span><span>Posts &amp; video</span></div>
+            <div class="f-row"><span class="lbl"><svg class="i"><use href="#i-trend"/></svg><b>They follow your page</b></span><span>Local audience</span></div>
+            <div class="f-row"><span class="lbl"><svg class="i"><use href="#i-msg"/></svg><b>They reach out</b></span><span>Messages &amp; calls</span></div>
+            <div class="f-row"><span class="lbl"><svg class="i"><use href="#i-cal"/></svg><b>Estimates</b></span><span>On your calendar</span></div>
+            <div class="f-row"><span class="lbl"><svg class="i"><use href="#i-hammer"/></svg><b>Booked jobs</b></span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- compare -->
+    <section class="reveal">
+      <div class="wrap">
+        <div class="sec-head">
+          <div><span class="eyebrow">Why M2</span><h2>Stop renting leads. Build something you own.</h2></div>
+          <p class="lead-p">Lead sites charge you for names they sell to everyone else. Your own page keeps working for you.</p>
+        </div>
+        <div class="compare">
+          <div class="cmp them">
+            <h3><svg class="i"><use href="#i-x"/></svg>Paying for leads</h3>
+            <ul>
+              <li><svg class="i"><use href="#i-x"/></svg>The same lead is sold to several contractors</li>
+              <li><svg class="i"><use href="#i-x"/></svg>You pay whether it turns into a job or not</li>
+              <li><svg class="i"><use href="#i-x"/></svg>Stop paying and the leads stop</li>
+              <li><svg class="i"><use href="#i-x"/></svg>Nothing that shows off your actual work</li>
+            </ul>
+          </div>
+          <div class="cmp us">
+            <h3><svg class="i"><use href="#i-check"/></svg>Growing with M2</h3>
+            <ul>
+              <li><svg class="i"><use href="#i-check"/></svg>People reach out to you, not a list of five</li>
+              <li><svg class="i"><use href="#i-check"/></svg>Your real jobs and crew do the selling</li>
+              <li><svg class="i"><use href="#i-check"/></svg>Your page and audience keep growing over time</li>
+              <li><svg class="i"><use href="#i-check"/></svg>Referrals find an active, professional page</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- contact -->
+    <section id="contact" class="contact">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <div><span class="eyebrow">Contact</span><h2>Let's talk about your business.</h2></div>
+          <p class="lead-p">Grab 20 minutes with us, at your shop or on a quick Zoom. We'll show you what we'd post for you and what it would cost.</p>
+        </div>
+        <div class="people">
+          <div class="person reveal">
+            <div class="person-top"><div class="p-avatar">CD</div><div><h3>Caden Dorman</h3><div class="role">Owner</div></div></div>
+            <div class="p-lines">
+              <a class="p-line" href="tel:+13252495262"><svg class="i"><use href="#i-phone"/></svg><span class="txt"><span class="k">Phone</span><span class="v">(325) 249-5262</span></span><svg class="i go"><use href="#i-arrow"/></svg></a>
+              <a class="p-line" href="mailto:caden.dorman839@outlook.com"><svg class="i"><use href="#i-mail"/></svg><span class="txt"><span class="k">Email</span><span class="v">caden.dorman839@outlook.com</span></span><svg class="i go"><use href="#i-arrow"/></svg></a>
+            </div>
+            <div class="p-actions">
+              <a class="btn black" href="tel:+13252495262"><svg class="i"><use href="#i-phone"/></svg>Call</a>
+              <a class="btn line" href="sms:+13252495262"><svg class="i"><use href="#i-msg"/></svg>Text</a>
+              <a class="btn line" href="/caden-dorman.vcf" download><svg class="i"><use href="#i-download"/></svg>Save contact</a>
+            </div>
+          </div>
+          <div class="person reveal">
+            <div class="person-top"><div class="p-avatar">ZD</div><div><h3>Zakry Dorman</h3><div class="role">Co-Owner</div></div></div>
+            <div class="p-lines">
+              <a class="p-line" href="tel:+13259987711"><svg class="i"><use href="#i-phone"/></svg><span class="txt"><span class="k">Phone</span><span class="v">(325) 998-7711</span></span><svg class="i go"><use href="#i-arrow"/></svg></a>
+              <a class="p-line" href="mailto:zakrydorman@outlook.com"><svg class="i"><use href="#i-mail"/></svg><span class="txt"><span class="k">Email</span><span class="v">zakrydorman@outlook.com</span></span><svg class="i go"><use href="#i-arrow"/></svg></a>
+            </div>
+            <div class="p-actions">
+              <a class="btn black" href="tel:+13259987711"><svg class="i"><use href="#i-phone"/></svg>Call</a>
+              <a class="btn line" href="sms:+13259987711"><svg class="i"><use href="#i-msg"/></svg>Text</a>
+              <a class="btn line" href="/zakry-dorman.vcf" download><svg class="i"><use href="#i-download"/></svg>Save contact</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- cta -->
+    <section class="cta">
+      <div class="wrap reveal">
+        <span class="eyebrow">Ready when you are</span>
+        <h2>Your next customer is already looking you up.</h2>
+        <p class="lead-p">Let's make sure they find real work from your crew.</p>
+        <div class="hero-ctas">
+          <a class="btn solid" href="tel:+13252495262"><svg class="i"><use href="#i-phone"/></svg> Call Caden</a>
+          <a class="btn ghost" href="tel:+13259987711"><svg class="i"><use href="#i-phone"/></svg> Call Zakry</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <a class="brand" href="#top"><span class="logo">M2</span></a>
+      <span>Social media for contractors · © <span id="yr">2026</span> M2</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('yr').textContent = new Date().getFullYear();
+    (function () {
+      var els = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) { els.forEach(function (e) { e.classList.add('in'); }); return; }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      els.forEach(function (e) { io.observe(e); });
+    })();
+  </script>
+</body>
+</html>

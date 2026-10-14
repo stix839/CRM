@@ -1,0 +1,13 @@
+{
+  "name": "m2-landing",
+  "version": "1.0.0",
+  "description": "M2 landing page — digital business card for prospects",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
