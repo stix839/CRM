@@ -41,6 +41,8 @@
     right: '<path d="m9 18 6-6-6-6"/>',
     upright: '<path d="M7 7h10v10"/><path d="M7 17 17 7"/>',
     move: '<path d="M5 9l-3 3 3 3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/>',
+    up: '<path d="m18 15-6-6-6 6"/>',
+    down: '<path d="m6 9 6 6 6-6"/>',
     script: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/>',
     eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
     external: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
@@ -194,16 +196,61 @@
 
   const state = {
     user: null,
-    stages: [],
-    leads: [],          // active leads
+    pipelines: [],      // pipelines this user can see, each with its stages
+    pipelineId: null,   // pipeline shown on the board
+    dashScope: 'all',   // 'all' or a pipeline id
+    leads: [],          // active leads across visible pipelines
     leadsLoaded: false,
     openLeadId: null,
     pipelineFilter: '',
     pipelineFollowOnly: false,
     colLimit: {},
-    leadsView: { status: 'active', stage: '', q: '', sort: 'created_at', dir: 'desc', page: 0 },
+    leadsView: { status: 'active', pipeline: 'all', stage: '', q: '', sort: 'created_at', dir: 'desc', page: 0 },
     otherLeads: { disqualified: null, all: null },
   };
+
+  /* pipelines & stages */
+  const STAGE_KIND_LABEL = { open: 'Stage', appointment: 'Appointment', won: 'Won' };
+  function pipelineById(id) { return state.pipelines.find((p) => p.id === Number(id)) || null; }
+  function currentPipeline() { return pipelineById(state.pipelineId) || state.pipelines[0] || null; }
+  function stageInfo(stageId) {
+    for (const p of state.pipelines) {
+      const index = p.stages.findIndex((s) => s.id === Number(stageId));
+      if (index > -1) return { pipeline: p, stage: p.stages[index], index };
+    }
+    return null;
+  }
+  function stageName(stageId) { const i = stageInfo(stageId); return i ? i.stage.name : '—'; }
+  function multiPipeline() { return state.pipelines.length > 1; }
+  function stageSortKey(l) {
+    const i = stageInfo(l.stage_id);
+    return i ? state.pipelines.indexOf(i.pipeline) * 100 + i.index : 9999;
+  }
+  function setPipeline(id) {
+    state.pipelineId = Number(id);
+    try { localStorage.setItem('m2.pipeline', String(state.pipelineId)); } catch { /* ignore */ }
+  }
+  async function loadPipelines() {
+    state.pipelines = await api('/api/pipelines');
+    if (!pipelineById(state.pipelineId)) {
+      let saved = null;
+      try { saved = Number(localStorage.getItem('m2.pipeline')); } catch { /* ignore */ }
+      const mine = state.pipelines.find((p) => p.user_id === (state.user && state.user.id));
+      state.pipelineId = (pipelineById(saved) || mine || state.pipelines[0] || {}).id || null;
+    }
+    if (state.dashScope !== 'all' && !pipelineById(state.dashScope)) state.dashScope = 'all';
+    if (state.leadsView.pipeline !== 'all' && !pipelineById(state.leadsView.pipeline)) state.leadsView.pipeline = 'all';
+  }
+  function pipelineLabel(p) {
+    return p.name + (isOwner() && p.user_name && !p.name.toLowerCase().startsWith(p.user_name.split(' ')[0].toLowerCase()) ? ` · ${p.user_name}` : '');
+  }
+  function pipelineOptions(selected, withAll) {
+    return (withAll ? `<option value="all" ${selected === 'all' ? 'selected' : ''}>All pipelines</option>` : '')
+      + state.pipelines.map((p) => `<option value="${p.id}" ${String(selected) === String(p.id) ? 'selected' : ''}>${esc(pipelineLabel(p))}</option>`).join('');
+  }
+  function stageOptions(pipeline, selected) {
+    return (pipeline ? pipeline.stages : []).map((s, i) => `<option value="${s.id}" ${String(selected) === String(s.id) ? 'selected' : ''}>${i + 1}. ${esc(s.name)}</option>`).join('');
+  }
 
   async function loadLeads() {
     state.leads = await api('/api/leads?status=active');
@@ -388,7 +435,7 @@
         <div class="sr ${i === sel ? 'sel' : ''}" data-id="${l.id}">
           <div class="avatar" style="width:28px;height:28px;font-size:11px">${esc(initials(l))}</div>
           <div class="li-main"><div class="li-title">${esc(leadName(l))}</div><div class="li-sub">${esc([leadSub(l), fmtPhone(l.phone)].filter(Boolean).join(' · '))}</div></div>
-          <span class="chip">${esc(state.stages[l.stage - 1])}</span>
+          <span class="chip">${esc(stageName(l.stage_id))}</span>
         </div>`).join('') : '<div class="sr-empty">No active leads match.</div>';
       box.classList.remove('hidden');
     };
@@ -432,12 +479,27 @@
   /* ================================================================ dashboard */
 
   async function renderDashboard(view, alive) {
-    const [a] = await Promise.all([api(`/api/analytics?tz=${encodeURIComponent(TZ)}`), state.leadsLoaded ? null : loadLeads()]);
+    const scope = state.dashScope;
+    const [a] = await Promise.all([
+      api(`/api/analytics?tz=${encodeURIComponent(TZ)}&pipeline=${scope}`),
+      state.leadsLoaded ? null : loadLeads(),
+      loadPipelines(),
+    ]);
     if (!alive()) return;
     const t = a.totals;
-    const stageCount = (s) => (a.byStage.find((x) => x.stage === s) || { n: 0 }).n;
-    const won = stageCount(5);
-    const appts = stageCount(4);
+    const scopePipeline = scope !== 'all' ? pipelineById(scope) : (state.pipelines.length === 1 ? state.pipelines[0] : null);
+    const stageCount = (id) => (a.byStage.find((x) => x.stage_id === id) || { n: 0 }).n;
+    const won = t.won;
+    const appts = t.appointments;
+    const kindName = (kind, fallback) => {
+      const st = scopePipeline && scopePipeline.stages.find((x) => x.kind === kind);
+      return st ? st.name : fallback;
+    };
+    const scopeBar = multiPipeline() ? `
+      <div class="scope-bar">
+        <span class="muted">Showing</span>
+        <select class="select" id="dash-scope">${pipelineOptions(scope, true)}</select>
+      </div>` : '';
     const connectRate = a.calls.logged_month ? Math.round((a.calls.connected_month / a.calls.logged_month) * 100) : null;
     const decided = won + t.disqualified;
     const winRate = decided ? Math.round((won / decided) * 100) : null;
@@ -445,10 +507,11 @@
     if (!t.total) {
       view.innerHTML = `
         <div class="dash">
+          ${scopeBar}
           <div class="card"><div class="empty">
             <div class="ic">${icon('upload')}</div>
             <h3>Welcome to M2</h3>
-            <p>Your pipeline is empty. Import a spreadsheet of leads or add your first one by hand.</p>
+            <p>${state.pipelines.length ? 'This pipeline is empty. Import a spreadsheet of leads or add your first one by hand.' : "You don't have a pipeline yet. Ask the account owner to set one up for you."}</p>
             <div style="display:flex;gap:8px;justify-content:center;margin-top:18px">
               <a class="btn primary" href="#/import">${icon('upload')} Import from Excel</a>
               <button class="btn" id="dash-add">${icon('plus')} Add a lead</button>
@@ -456,16 +519,19 @@
           </div></div>
         </div>`;
       $('#dash-add').onclick = () => openAddLead();
+      if ($('#dash-scope')) $('#dash-scope').onchange = (e) => { state.dashScope = e.target.value === 'all' ? 'all' : Number(e.target.value); route(); };
       return;
     }
 
     const maxStage = Math.max(1, ...a.byStage.map((x) => x.n));
+    const maxPipe = Math.max(1, ...a.byPipeline.map((x) => x.active));
     const outcomeTotal = a.outcomes.reduce((s, o) => s + o.n, 0);
     const maxOutcome = Math.max(1, ...a.outcomes.map((o) => o.n));
     const maxDq = Math.max(1, ...a.dqReasons.map((o) => o.n));
 
     view.innerHTML = `
       <div class="dash">
+        ${scopeBar}
         <div class="kpis">
           <div class="card kpi inverse">
             <div class="label">${icon('users')} Active leads</div>
@@ -483,27 +549,32 @@
             <div class="foot"><b>${a.calls.connected_month.toLocaleString()}</b> of ${a.calls.logged_month.toLocaleString()} logged calls · 30d</div>
           </div>
           <div class="card kpi">
-            <div class="label">${icon('award')} ${esc(a.stages[4])}</div>
+            <div class="label">${icon('award')} ${esc(kindName('won', 'Won'))}</div>
             <div class="value tnum">${won.toLocaleString()}</div>
-            <div class="foot">${winRate === null ? 'No closed leads yet' : `<b>${winRate}%</b> win rate`} · <b>${appts.toLocaleString()}</b> ${esc(a.stages[3].toLowerCase())}</div>
+            <div class="foot">${winRate === null ? 'No closed leads yet' : `<b>${winRate}%</b> win rate`} · <b>${appts.toLocaleString()}</b> ${esc(kindName('appointment', 'Appointments').toLowerCase())}</div>
           </div>
         </div>
 
         <div class="dash-row r2">
           <div class="card">
-            <div class="card-h"><h3>Pipeline</h3><span class="sub">Active leads by stage</span><a class="btn sm right" href="#/pipeline">Open board ${icon('arrow')}</a></div>
+            <div class="card-h"><h3>${scopePipeline ? esc(scopePipeline.name) : 'Pipelines'}</h3><span class="sub">${scopePipeline ? 'Active leads by stage' : 'Active leads by pipeline'}</span><a class="btn sm right" href="#/pipeline" id="open-board">Open board ${icon('arrow')}</a></div>
             <div class="card-b">
               <div class="funnel">
-                ${a.stages.map((name, i) => {
-                  const n = stageCount(i + 1);
+                ${scopePipeline ? scopePipeline.stages.map((st, i) => {
+                  const n = stageCount(st.id);
                   const pct = t.active ? Math.round((n / t.active) * 100) : 0;
-                  const v = (a.byStage.find((x) => x.stage === i + 1) || {}).value;
-                  return `<div class="funnel-row" data-stage="${i + 1}" data-tip="<b>${esc(name)}</b><br>${n.toLocaleString()} leads${v ? ' · ' + esc(money(v)) : ''}">
-                    <div class="funnel-name"><span class="n">${i + 1}</span>${esc(name)}</div>
+                  const v = (a.byStage.find((x) => x.stage_id === st.id) || {}).value;
+                  return `<div class="funnel-row" data-stage="${st.id}" data-pipe="${scopePipeline.id}" data-tip="<b>${esc(st.name)}</b><br>${n.toLocaleString()} leads${v ? ' · ' + esc(money(v)) : ''}">
+                    <div class="funnel-name"><span class="n">${i + 1}</span>${esc(st.name)}</div>
                     <div class="bar-track"><div class="bar-fill" style="width:${(n / maxStage) * 100}%"></div></div>
                     <div class="funnel-val tnum"><b>${n.toLocaleString()}</b><span>${pct}%</span></div>
                   </div>`;
-                }).join('')}
+                }).join('') : a.byPipeline.map((pp) => `
+                  <div class="funnel-row" data-pipe="${pp.id}" data-tip="<b>${esc(pp.name)}</b><br>${pp.active.toLocaleString()} active · ${pp.appointments.toLocaleString()} appointments · ${pp.won.toLocaleString()} won">
+                    <div class="funnel-name" title="${esc(pp.name)}">${esc(pp.name)}</div>
+                    <div class="bar-track"><div class="bar-fill" style="width:${(pp.active / maxPipe) * 100}%"></div></div>
+                    <div class="funnel-val tnum"><b>${pp.active.toLocaleString()}</b><span>${pp.won} won</span></div>
+                  </div>`).join('')}
               </div>
               <div style="display:flex;gap:24px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line-2);font-size:13px;flex-wrap:wrap" class="muted">
                 <span>Open pipeline value <b style="color:var(--ink)">${money(t.open_value) || '$0'}</b></span>
@@ -543,7 +614,7 @@
               ${a.followUps.length ? a.followUps.map((l) => `
                 <div class="list-item" data-lead="${l.id}">
                   <div class="avatar light" style="width:30px;height:30px;font-size:11px">${esc(initials(l))}</div>
-                  <div class="li-main"><div class="li-title">${esc(leadName(l))}</div><div class="li-sub">${esc(a.stages[l.stage - 1])}${l.phone ? ' · ' + esc(fmtPhone(l.phone)) : ''}</div></div>
+                  <div class="li-main"><div class="li-title">${esc(leadName(l))}</div><div class="li-sub">${esc(stageName(l.stage_id))}${!scopePipeline && pipelineById(l.pipeline_id) ? ' · ' + esc(pipelineById(l.pipeline_id).name) : ''}${l.phone ? ' · ' + esc(fmtPhone(l.phone)) : ''}</div></div>
                   ${followUpChip(l)}
                 </div>`).join('') : '<div class="muted" style="padding:8px 0">Nothing scheduled. Set a follow-up date on any lead.</div>'}
             </div></div>
@@ -576,11 +647,18 @@
 
     view.querySelectorAll('[data-lead]').forEach((el) => el.addEventListener('click', () => openLead(Number(el.dataset.lead))));
     view.querySelectorAll('.funnel-row').forEach((el) => el.addEventListener('click', () => {
-      state.leadsView = { ...state.leadsView, status: 'active', stage: el.dataset.stage, page: 0 };
-      location.hash = '#/leads';
+      if (el.dataset.stage) {
+        state.leadsView = { ...state.leadsView, status: 'active', pipeline: Number(el.dataset.pipe), stage: el.dataset.stage, page: 0 };
+        location.hash = '#/leads';
+      } else {
+        setPipeline(el.dataset.pipe);
+        location.hash = '#/pipeline';
+      }
     }));
+    if ($('#open-board') && scopePipeline) $('#open-board').addEventListener('click', () => setPipeline(scopePipeline.id));
+    if ($('#dash-scope')) $('#dash-scope').onchange = (e) => { state.dashScope = e.target.value === 'all' ? 'all' : Number(e.target.value); route(); };
     const dq = $('#see-dq');
-    if (dq) dq.addEventListener('click', () => { state.leadsView = { ...state.leadsView, status: 'disqualified', stage: '', page: 0 }; });
+    if (dq) dq.addEventListener('click', () => { state.leadsView = { ...state.leadsView, status: 'disqualified', pipeline: scope, stage: '', page: 0 }; });
     bindTips(view);
     if (isOwner()) renderTeamCard();
   }
@@ -624,8 +702,8 @@
           <div><span>Connected</span><b class="tnum">${(totals.connected || 0).toLocaleString()}</b></div>
           <div><span>Notes</span><b class="tnum">${(totals.notes || 0).toLocaleString()}</b></div>
           <div><span>Leads worked</span><b class="tnum">${(totals.leads_worked || 0).toLocaleString()}</b></div>
-          <div><span>${esc(state.stages[3])}</span><b class="tnum">${(totals.appointments || 0).toLocaleString()}</b></div>
-          <div><span>${esc(state.stages[4])}</span><b class="tnum">${(totals.won || 0).toLocaleString()}</b></div>
+          <div><span>Appointments</span><b class="tnum">${(totals.appointments || 0).toLocaleString()}</b></div>
+          <div><span>Won</span><b class="tnum">${(totals.won || 0).toLocaleString()}</b></div>
         </div>
         <div class="table-wrap" style="border:1px solid var(--line);border-radius:10px;margin-top:14px">
           <table class="tbl team-tbl">
@@ -633,7 +711,7 @@
               <th class="nosort">Teammate</th>
               ${th('calls', 'Calls')}${th('connected', 'Connected')}<th class="nosort">Connect rate</th>
               ${th('notes', 'Notes')}${th('leads_worked', 'Leads worked')}${th('advanced', 'Moved forward')}
-              ${th('appointments', esc(state.stages[3]))}${th('won', esc(state.stages[4]))}${th('disqualified', 'Disqualified')}
+              ${th('appointments', 'Appointments')}${th('won', 'Won')}${th('disqualified', 'Disqualified')}
               <th class="nosort">Calls · last 14 days</th><th class="nosort">Last active</th>
             </tr></thead>
             <tbody>
@@ -729,28 +807,36 @@
   const COL_PAGE = 60;
 
   async function renderPipeline(view, alive, fromCache) {
-    if (!fromCache || !state.leadsLoaded) await loadLeads();
+    if (!fromCache || !state.leadsLoaded) await Promise.all([loadLeads(), loadPipelines()]);
     if (!alive()) return;
     const q = state.pipelineFilter.trim().toLowerCase();
     const qd = digits(q);
     const today = todayStr();
-    const visible = state.leads.filter((l) => matches(l, q, qd) && (!state.pipelineFollowOnly || (l.next_follow_up && l.next_follow_up <= today)));
-    const byStage = [1, 2, 3, 4, 5].map((s) => visible.filter((l) => l.stage === s));
-    const total = state.leads.length;
+    const pipe = currentPipeline();
+    if (!pipe) {
+      view.innerHTML = `<div class="card" style="margin:24px"><div class="empty"><div class="ic">${icon('pipeline')}</div><h3>No pipeline yet</h3><p>${isOwner() ? 'Create a pipeline in Settings to get started.' : 'Ask the account owner to set up a pipeline for you.'}</p>${isOwner() ? `<a class="btn primary" href="#/settings" style="margin-top:14px">${icon('settings')} Open settings</a>` : ''}</div></div>`;
+      return;
+    }
+    const inPipe = state.leads.filter((l) => l.pipeline_id === pipe.id);
+    const visible = inPipe.filter((l) => matches(l, q, qd) && (!state.pipelineFollowOnly || (l.next_follow_up && l.next_follow_up <= today)));
+    const byStage = pipe.stages.map((st) => visible.filter((l) => l.stage_id === st.id));
+    const total = inPipe.length;
 
     view.innerHTML = `
       <div class="board-toolbar">
+        ${multiPipeline() ? `<select class="select pipe-switch" id="pipe-switch" aria-label="Pipeline">${pipelineOptions(pipe.id, false)}</select>` : `<b class="pipe-name">${esc(pipe.name)}</b>`}
         <div class="filter-input">${icon('search')}<input class="input" id="board-filter" placeholder="Filter cards…" value="${esc(state.pipelineFilter)}"></div>
         <label class="check" style="font-size:13px;font-weight:500"><input type="checkbox" id="follow-only" ${state.pipelineFollowOnly ? 'checked' : ''}> Follow-ups due</label>
         <span class="stat" style="margin-left:auto"><b>${visible.length.toLocaleString()}</b>${visible.length !== total ? ` of ${total.toLocaleString()}` : ''} active leads · drag cards between stages</span>
       </div>
       <div class="board" id="board">
         ${byStage.map((list, i) => {
-          const s = i + 1;
+          const st = pipe.stages[i];
+          const s = st.id;
           const limit = state.colLimit[s] || COL_PAGE;
           const val = list.reduce((a, l) => a + (Number(l.value) || 0), 0);
           return `<section class="column" data-stage="${s}">
-            <div class="col-head"><span class="col-num">${s}</span><span class="col-title">${esc(state.stages[i])}</span><span class="col-count tnum">${list.length.toLocaleString()}</span></div>
+            <div class="col-head"><span class="col-num">${i + 1}</span><span class="col-title">${esc(st.name)}</span>${st.kind !== 'open' ? `<span class="kind-dot" title="${esc(STAGE_KIND_LABEL[st.kind])} stage">${icon(st.kind === 'won' ? 'award' : 'calendar')}</span>` : ''}<span class="col-count tnum">${list.length.toLocaleString()}</span></div>
             <div class="col-meta">${val ? esc(money(val)) + ' in pipeline' : ''}</div>
             <div class="col-body" data-stage="${s}">
               ${list.length ? list.slice(0, limit).map(cardHtml).join('') : `<div class="col-empty">${q || state.pipelineFollowOnly ? 'No matches' : 'Drop leads here'}</div>`}
@@ -771,6 +857,7 @@
       }, 150);
     });
     $('#follow-only').onchange = (e) => { state.pipelineFollowOnly = e.target.checked; rerenderIfOn('pipeline'); };
+    if ($('#pipe-switch')) $('#pipe-switch').onchange = (e) => { setPipeline(e.target.value); rerenderIfOn('pipeline'); };
     $$('[data-more]', view).forEach((b) => b.addEventListener('click', () => {
       const s = Number(b.dataset.more);
       state.colLimit[s] = (state.colLimit[s] || COL_PAGE) + COL_PAGE;
@@ -949,18 +1036,18 @@
       d.card.classList.remove('dragging-src');
 
       // optimistic local update
-      const prevStage = lead.stage;
-      lead.stage = toStage;
+      const prevStage = lead.stage_id;
+      lead.stage_id = toStage;
       reorderLocal(lead, beforeId);
       rerenderIfOn('pipeline');
       try {
-        const updated = await api(`/api/leads/${id}/move`, { method: 'POST', body: { stage: toStage, beforeId } });
+        const updated = await api(`/api/leads/${id}/move`, { method: 'POST', body: { stage_id: toStage, beforeId } });
         Object.assign(lead, updated);
         if (prevStage !== toStage) {
-          toast(`Moved to ${state.stages[toStage - 1]}`, {
+          toast(`Moved to ${stageName(toStage)}`, {
             action: 'Undo',
             onAction: async () => {
-              const u = await api(`/api/leads/${id}/move`, { method: 'POST', body: { stage: prevStage } }).catch(fail);
+              const u = await api(`/api/leads/${id}/move`, { method: 'POST', body: { stage_id: prevStage } }).catch(fail);
               if (u) { Object.assign(lead, u); sortLocal(); rerenderIfOn('pipeline'); refreshDrawerIf(id); }
             },
           });
@@ -995,7 +1082,7 @@
   }
 
   function reorderLocal(lead, beforeId) {
-    const same = state.leads.filter((l) => l.stage === lead.stage && l.id !== lead.id).sort((a, b) => a.position - b.position);
+    const same = state.leads.filter((l) => l.stage_id === lead.stage_id && l.id !== lead.id).sort((a, b) => a.position - b.position);
     const idx = beforeId ? same.findIndex((l) => l.id === beforeId) : -1;
     if (idx === -1) lead.position = (same.length ? same[same.length - 1].position : 0) + 1;
     else {
@@ -1004,7 +1091,7 @@
     }
     sortLocal();
   }
-  function sortLocal() { state.leads.sort((a, b) => a.stage - b.stage || a.position - b.position || a.id - b.id); }
+  function sortLocal() { state.leads.sort((a, b) => a.position - b.position || a.id - b.id); }
 
   /* ================================================================ calls */
 
@@ -1034,13 +1121,18 @@
     if (!alive()) return;
     const q = v.q.trim().toLowerCase();
     const qd = digits(q);
-    let list = rows.filter((l) => matches(l, q, qd) && (!v.stage || String(l.stage) === String(v.stage)));
+    const scopePipe = v.pipeline !== 'all' ? pipelineById(v.pipeline) : (state.pipelines.length === 1 ? state.pipelines[0] : null);
+    if (v.stage && !(scopePipe && scopePipe.stages.some((st) => String(st.id) === String(v.stage)))) v.stage = '';
+    const showPipeCol = multiPipeline() && v.pipeline === 'all';
+    let list = rows.filter((l) => matches(l, q, qd)
+      && (v.pipeline === 'all' || l.pipeline_id === Number(v.pipeline))
+      && (!v.stage || String(l.stage_id) === String(v.stage)));
     const key = v.sort;
     const dir = v.dir === 'asc' ? 1 : -1;
     const val = (l) => {
       if (key === 'name') return leadName(l).toLowerCase();
       if (key === 'company') return (l.company || '').toLowerCase();
-      if (key === 'stage') return l.stage;
+      if (key === 'stage') return stageSortKey(l);
       if (key === 'call_count') return l.call_count || 0;
       if (key === 'value') return Number(l.value) || 0;
       if (key === 'next_follow_up') return l.next_follow_up || '9999';
@@ -1063,10 +1155,11 @@
             ${['active', 'disqualified', 'all'].map((s) => `<button data-s="${s}" class="${v.status === s ? 'on' : ''}">${s[0].toUpperCase() + s.slice(1)}</button>`).join('')}
           </div>
           <div class="filter-input">${icon('search')}<input class="input" id="leads-q" placeholder="Search leads…" value="${esc(v.q)}"></div>
-          <select class="select" id="leads-stage" style="width:auto;height:34px">
+          ${multiPipeline() ? `<select class="select" id="leads-pipe" style="width:auto;height:34px">${pipelineOptions(v.pipeline, true)}</select>` : ''}
+          ${scopePipe ? `<select class="select" id="leads-stage" style="width:auto;height:34px">
             <option value="">All stages</option>
-            ${state.stages.map((s, i) => `<option value="${i + 1}" ${String(v.stage) === String(i + 1) ? 'selected' : ''}>${esc(s)}</option>`).join('')}
-          </select>
+            ${stageOptions(scopePipe, v.stage)}
+          </select>` : ''}
           <span class="spacer"></span>
           <a class="btn sm" href="/api/export.csv">${icon('download')} Export CSV</a>
         </div>
@@ -1075,7 +1168,7 @@
           <div class="table-wrap">
             <table class="tbl">
               <thead><tr>
-                ${th('name', 'Name')}${th('company', 'Company')}${th('phone', 'Phone', true)}${th('stage', 'Stage')}
+                ${th('name', 'Name')}${th('company', 'Company')}${th('phone', 'Phone', true)}${showPipeCol ? th('stage', 'Pipeline · Stage') : th('stage', 'Stage')}
                 ${v.status !== 'active' ? th('dq', 'Status', true) : ''}
                 ${th('call_count', 'Calls')}${th('last_contacted_at', 'Last contacted')}${th('next_follow_up', 'Follow-up')}${th('created_at', 'Added')}
               </tr></thead>
@@ -1086,7 +1179,7 @@
                     <td><div class="name-cell"><div class="avatar ${l.status === 'disqualified' ? 'light' : ''}">${esc(initials(l))}</div><span style="overflow:hidden;text-overflow:ellipsis">${esc(leadName(l))}</span></div></td>
                     <td>${esc(l.first_name || l.last_name ? l.company || '' : '')}</td>
                     <td>${tel ? `<a class="tel tnum" href="${esc(tel)}" data-call="${l.id}">${icon('phone')}${esc(fmtPhone(l.phone))}</a>` : '<span class="muted">—</span>'}</td>
-                    <td><span class="chip">${l.stage}. ${esc(state.stages[l.stage - 1])}</span></td>
+                    <td>${showPipeCol && pipelineById(l.pipeline_id) ? `<span class="muted" style="font-size:12px">${esc(pipelineById(l.pipeline_id).name)} · </span>` : ''}<span class="chip">${esc(stageName(l.stage_id))}</span></td>
                     ${v.status !== 'active' ? `<td>${l.status === 'disqualified' ? `<span class="chip dark">${icon('ban')}${esc(l.dq_reason || 'Disqualified')}</span>` : '<span class="chip outline">Active</span>'}</td>` : ''}
                     <td class="tnum">${l.call_count || 0}</td>
                     <td class="muted">${esc(relTime(l.last_contacted_at)) || '—'}</td>
@@ -1124,7 +1217,8 @@
         const f = $('#leads-q'); f.focus(); f.setSelectionRange(f.value.length, f.value.length);
       }, 150);
     });
-    $('#leads-stage').onchange = (e) => { v.stage = e.target.value; v.page = 0; rerenderIfOn('leads'); };
+    if ($('#leads-stage')) $('#leads-stage').onchange = (e) => { v.stage = e.target.value; v.page = 0; rerenderIfOn('leads'); };
+    if ($('#leads-pipe')) $('#leads-pipe').onchange = (e) => { v.pipeline = e.target.value === 'all' ? 'all' : Number(e.target.value); v.stage = ''; v.page = 0; rerenderIfOn('leads'); };
     $$('th[data-sort]', view).forEach((h) => h.onclick = () => {
       const k = h.dataset.sort;
       if (v.sort === k) v.dir = v.dir === 'asc' ? 'desc' : 'asc';
@@ -1198,6 +1292,9 @@
     const extra = Object.entries(lead.extra || {});
     const edit = state.drawerEdit;
     const sub = leadSub(lead);
+    const leadPipe = pipelineById(lead.pipeline_id);
+    const leadStages = leadPipe ? leadPipe.stages : [];
+    const curIdx = leadStages.findIndex((st) => st.id === lead.stage_id);
 
     const infoCell = (k, v, opts = {}) => `<div class="info ${opts.span ? 'span-2' : ''}"><div class="k">${esc(k)}</div><div class="v ${v ? '' : 'empty-v'}">${v || '—'}</div></div>`;
     const field = (name, label, type = 'text', span) => `<label class="field ${span ? 'span-2' : ''}"><span>${label}</span><input class="input" name="${name}" type="${type}" value="${esc(lead[name] ?? '')}"></label>`;
@@ -1219,11 +1316,15 @@
           <button data-tab="script" class="${state.drawerTab === 'script' ? 'on' : ''}">${icon('script')} Talk track</button>
         </div>
         ${isDq ? `
-          <div class="dq-banner">${icon('ban')}<div><div class="t">Disqualified · ${esc(lead.dq_reason || 'Other')}</div><div class="s">${esc(relTime(lead.dq_at))} · was in ${esc(state.stages[lead.stage - 1])}</div></div>
+          <div class="dq-banner">${icon('ban')}<div><div class="t">Disqualified · ${esc(lead.dq_reason || 'Other')}</div><div class="s">${esc(relTime(lead.dq_at))} · was in ${esc(stageName(lead.stage_id))}</div></div>
             <button class="btn sm" id="requalify">${icon('undo')} Restore</button></div>` : `
-          <div class="stepper">
-            ${state.stages.map((s, i) => `<button class="step ${lead.stage === i + 1 ? 'current' : lead.stage > i + 1 ? 'done' : ''}" data-stage="${i + 1}" title="${esc(s)}">${esc(s)}</button>`).join('')}
+          <div class="stepper" style="grid-template-columns:repeat(${leadStages.length}, minmax(0, 1fr))">
+            ${leadStages.map((st, i) => `<button class="step ${i === curIdx ? 'current' : i < curIdx ? 'done' : ''}" data-stage="${st.id}" title="${esc(st.name)}">${esc(st.name)}</button>`).join('')}
           </div>`}
+        ${isOwner() && multiPipeline() ? `
+          <label class="pipe-move"><span>Pipeline</span>
+            <select class="select" id="lead-pipe">${pipelineOptions(lead.pipeline_id, false)}</select>
+          </label>` : ''}
       </div>
       <div class="drawer-script">${talkTrackHtml(lead, 'tab')}</div>
       <div class="drawer-body">
@@ -1330,15 +1431,27 @@
 
     $$('.step', drawer).forEach((b) => b.onclick = async () => {
       const s = Number(b.dataset.stage);
-      if (s === lead.stage) return;
+      if (s === lead.stage_id) return;
       try {
-        const u = await api(`/api/leads/${lead.id}/move`, { method: 'POST', body: { stage: s } });
+        const u = await api(`/api/leads/${lead.id}/move`, { method: 'POST', body: { stage_id: s } });
         upsertLocal(u); sortLocal();
-        toast(`Moved to ${state.stages[s - 1]}`);
+        toast(`Moved to ${stageName(s)}`);
         rerenderIfOn('pipeline', 'leads');
         loadDrawer(lead.id);
       } catch (e) { fail(e); }
     });
+
+    if ($('#lead-pipe')) $('#lead-pipe').onchange = async (e) => {
+      const target = pipelineById(e.target.value);
+      if (!target || target.id === lead.pipeline_id) return;
+      try {
+        const u = await api(`/api/leads/${lead.id}/move`, { method: 'POST', body: { pipeline_id: target.id } });
+        upsertLocal(u); sortLocal();
+        toast(`Moved to ${target.name} · ${stageName(u.stage_id)}`);
+        rerenderIfOn('pipeline', 'leads');
+        loadDrawer(lead.id);
+      } catch (err) { fail(err); e.target.value = lead.pipeline_id; }
+    };
 
     const onDial = () => recordDialFromDrawer(lead.id);
     if (tel) $('#call-main').addEventListener('click', onDial);
@@ -1418,7 +1531,7 @@
       try {
         const u = await api(`/api/leads/${lead.id}/requalify`, { method: 'POST' });
         upsertLocal(u); sortLocal();
-        toast(`Restored to ${state.stages[u.stage - 1]}`);
+        toast(`Restored to ${stageName(u.stage_id)}`);
         rerenderIfOn('pipeline', 'leads', 'dashboard');
         loadDrawer(lead.id);
       } catch (e) { fail(e); }
@@ -1672,13 +1785,15 @@
             <label class="field"><span>City</span><input class="input" name="city"></label>
             <label class="field"><span>State</span><input class="input" name="state"></label>
             <label class="field"><span>Deal value ($)</span><input class="input" name="value" type="number" min="0" step="any"></label>
-            <label class="field"><span>Stage</span><select class="select" name="stage">${state.stages.map((s, i) => `<option value="${i + 1}">${esc(s)}</option>`).join('')}</select></label>
+            ${multiPipeline() ? `<label class="field"><span>Pipeline</span><select class="select" name="pipeline_id" id="add-pipe">${pipelineOptions((currentPipeline() || {}).id, false)}</select></label>` : ''}
+            <label class="field"><span>Stage</span><select class="select" name="stage_id" id="add-stage">${stageOptions(currentPipeline(), '')}</select></label>
             <label class="field span-2"><span>Notes</span><textarea class="textarea" name="notes" style="min-height:64px"></textarea></label>
           </div>
         </div>
         <div class="modal-f"><button type="button" class="btn" data-close>Cancel</button><button type="submit" class="btn primary">${icon('plus')} Add lead</button></div>
       </form>`);
     $('input[name=first_name]', m).focus();
+    if ($('#add-pipe')) $('#add-pipe').onchange = (e) => { $('#add-stage').innerHTML = stageOptions(pipelineById(e.target.value), ''); };
     $('#add-form').onsubmit = async (e) => {
       e.preventDefault();
       const body = Object.fromEntries(new FormData(e.target));
@@ -1805,7 +1920,8 @@
 
           <div class="card"><div class="card-b">
             <div class="import-opts">
-              <label class="field"><span>Add leads to stage</span><select class="select" id="imp-stage">${state.stages.map((st, i) => `<option value="${i + 1}" ${s.stage === i + 1 ? 'selected' : ''}>${i + 1}. ${esc(st)}</option>`).join('')}</select></label>
+              ${multiPipeline() ? `<label class="field"><span>Add leads to pipeline</span><select class="select" id="imp-pipe">${pipelineOptions(s.pipelineId, false)}</select></label>` : ''}
+              <label class="field"><span>Starting stage</span><select class="select" id="imp-stage">${stageOptions(pipelineById(s.pipelineId), s.stageId)}</select></label>
               <label class="check" style="height:38px"><input type="checkbox" id="imp-dupes" ${s.skipDuplicates ? 'checked' : ''}> Skip duplicates (same phone or email)</label>
               <label class="check" style="height:38px"><input type="checkbox" id="imp-extra" ${s.keepExtra ? 'checked' : ''}> Keep unmatched columns as extra info</label>
             </div>
@@ -1834,7 +1950,12 @@
       });
       if ($('#sheet-sel')) $('#sheet-sel').onchange = (e) => { s.sheetIdx = Number(e.target.value); s.mapping = autoMap(s.sheets[s.sheetIdx].headers); rerenderImport(); };
       $('#restart').onclick = () => { importState.step = 1; rerenderImport(); };
-      $('#imp-stage').onchange = (e) => { s.stage = Number(e.target.value); };
+      $('#imp-stage').onchange = (e) => { s.stageId = Number(e.target.value); };
+      if ($('#imp-pipe')) $('#imp-pipe').onchange = (e) => {
+        s.pipelineId = Number(e.target.value);
+        s.stageId = (pipelineById(s.pipelineId).stages[0] || {}).id;
+        $('#imp-stage').innerHTML = stageOptions(pipelineById(s.pipelineId), s.stageId);
+      };
       $('#imp-dupes').onchange = (e) => { s.skipDuplicates = e.target.checked; };
       $('#imp-extra').onchange = (e) => { s.keepExtra = e.target.checked; rerenderImport(); };
       $('#do-import').onclick = () => runImport(preview);
@@ -1849,7 +1970,7 @@
           <div class="card"><div class="empty">
             <div class="ic" style="background:var(--black);color:#fff">${icon('check')}</div>
             <div class="result-big tnum" style="margin-top:14px">${r.inserted.toLocaleString()}</div>
-            <h3 style="margin-top:0">leads imported into ${esc(state.stages[s.stage - 1])}</h3>
+            <h3 style="margin-top:0">leads imported into ${multiPipeline() && pipelineById(s.pipelineId) ? esc(pipelineById(s.pipelineId).name) + ' · ' : ''}${esc(stageName(s.stageId))}</h3>
             <p>${r.skipped ? `${r.skipped.toLocaleString()} duplicate${r.skipped === 1 ? '' : 's'} skipped. ` : ''}${r.empty ? `${r.empty.toLocaleString()} empty row${r.empty === 1 ? '' : 's'} ignored.` : ''}</p>
             <div style="display:flex;gap:8px;justify-content:center;margin-top:18px">
               <a class="btn primary" href="#/pipeline">${icon('pipeline')} Open pipeline</a>
@@ -1940,7 +2061,8 @@
       const sheetIdx = res.sheets.reduce((best, sh, i) => (sh.rows.length > res.sheets[best].rows.length ? i : best), 0);
       Object.assign(importState, {
         step: 2, filename: file.name, sheets: res.sheets, sheetIdx,
-        mapping: autoMap(res.sheets[sheetIdx].headers), stage: 1, skipDuplicates: true, keepExtra: true,
+        mapping: autoMap(res.sheets[sheetIdx].headers), skipDuplicates: true, keepExtra: true,
+        pipelineId: (currentPipeline() || {}).id, stageId: ((currentPipeline() || { stages: [] }).stages[0] || {}).id,
       });
     } catch (e) {
       fail(e);
@@ -1959,7 +2081,10 @@
         btn.innerHTML = `<div class="spinner" style="border-color:#52525b;border-top-color:#fff"></div> Importing ${Math.min(total, i + 2000).toLocaleString()} / ${total.toLocaleString()}…`;
         const r = await api('/api/import', {
           method: 'POST',
-          body: { leads: rows.slice(i, i + 2000), stage: importState.stage, skipDuplicates: importState.skipDuplicates, filename: importState.filename },
+          body: {
+            leads: rows.slice(i, i + 2000), pipeline_id: importState.pipelineId, stage_id: importState.stageId,
+            skipDuplicates: importState.skipDuplicates, filename: importState.filename,
+          },
         });
         result.inserted += r.inserted; result.skipped += r.skipped; result.empty += r.empty;
       }
@@ -1979,19 +2104,22 @@
   /* ================================================================ settings */
 
   async function renderSettings(view, alive) {
-    const users = await api('/api/users');
+    const [users] = await Promise.all([api('/api/users'), loadPipelines()]);
     if (!alive()) return;
     view.innerHTML = `
       <div class="settings">
+        ${isOwner() ? `
         <div class="card">
-          <div class="card-h"><h3>Pipeline stages</h3><span class="sub">Rename the five stages to match your process</span></div>
-          <form class="card-b" id="stages-form">
-            <div class="stage-inputs">
-              ${state.stages.map((s, i) => `<label><span class="col-num">${i + 1}</span><input class="input" name="s${i}" value="${esc(s)}" maxlength="40" required></label>`).join('')}
-            </div>
-            <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" type="submit">Save stages</button></div>
-          </form>
-        </div>
+          <div class="card-h"><h3>Pipelines</h3><span class="sub">Give each teammate their own pipeline and stages</span><span class="chip outline right">${icon('award')}Owner only</span></div>
+          <div class="card-b">
+            <div id="pipe-list" class="pipe-list"></div>
+            <form id="new-pipe" class="new-pipe">
+              <label class="field"><span>New pipeline name</span><input class="input" name="name" placeholder="e.g. Zakry's pipeline" maxlength="60" required></label>
+              <label class="field"><span>Assigned to</span><select class="select" name="user_id"><option value="">Unassigned (owner only)</option>${users.map((u) => `<option value="${u.id}">${esc(u.name)}</option>`).join('')}</select></label>
+              <button class="btn" type="submit">${icon('plus')} Add pipeline</button>
+            </form>
+          </div>
+        </div>` : ''}
 
         ${isOwner() ? `
         <div class="card">
@@ -2021,6 +2149,7 @@
               <label class="field"><span>Email</span><input class="input" name="email" type="email" required></label>
               <label class="field"><span>Temporary password</span><input class="input" name="password" type="password" minlength="8" required autocomplete="new-password"></label>
               <div style="display:flex;align-items:flex-end"><button class="btn block" type="submit">${icon('plus')} Add teammate</button></div>
+              <label class="check span-2" style="font-size:13px"><input type="checkbox" name="createPipeline" checked> Create their own pipeline with the standard stages</label>
             </form>
           </div>
         </div>
@@ -2062,17 +2191,26 @@
         } catch (err) { fail(err); }
       };
     }
-    $('#stages-form').onsubmit = async (e) => {
+    if ($('#pipe-list')) renderPipelineEditors(users);
+    if ($('#new-pipe')) $('#new-pipe').onsubmit = async (e) => {
       e.preventDefault();
-      const fd = new FormData(e.target);
-      const stages = [0, 1, 2, 3, 4].map((i) => fd.get('s' + i));
-      try { state.stages = await api('/api/stages', { method: 'PUT', body: { stages } }); toast('Stages saved'); } catch (err) { fail(err); }
+      const body = Object.fromEntries(new FormData(e.target));
+      try {
+        const r = await api('/api/pipelines', { method: 'POST', body });
+        state.pipelines = r.pipelines;
+        toast(`${body.name} created`);
+        e.target.reset();
+        renderPipelineEditors(users);
+      } catch (err) { fail(err); }
     };
     if ($('#user-form')) $('#user-form').onsubmit = async (e) => {
       e.preventDefault();
+      const body = Object.fromEntries(new FormData(e.target));
+      body.createPipeline = !!e.target.createPipeline.checked;
       try {
-        await api('/api/users', { method: 'POST', body: Object.fromEntries(new FormData(e.target)) });
-        toast('Teammate added — share their email and temporary password with them');
+        await api('/api/users', { method: 'POST', body });
+        await loadPipelines();
+        toast(body.createPipeline ? `Teammate added with their own pipeline. Share their email and temporary password with them.` : 'Teammate added. Share their email and temporary password with them.');
         route();
       } catch (err) { fail(err); }
     };
@@ -2086,13 +2224,145 @@
     };
   }
 
+  /* ---------------------------------------------------------------- pipeline editors (owner) */
+
+  const pipeDrafts = {};
+
+  function draftFor(p) {
+    if (!pipeDrafts[p.id]) {
+      pipeDrafts[p.id] = {
+        name: p.name, user_id: p.user_id || '',
+        stages: p.stages.map((st) => ({ id: st.id, name: st.name, kind: st.kind, lead_count: Number(st.lead_count) || 0 })),
+        dirty: false,
+      };
+    }
+    return pipeDrafts[p.id];
+  }
+
+  function renderPipelineEditors(users) {
+    const list = $('#pipe-list');
+    if (!list) return;
+    list.innerHTML = state.pipelines.map((p) => {
+      const d = draftFor(p);
+      return `
+      <div class="pipe-edit" data-pid="${p.id}">
+        <div class="pipe-edit-head">
+          <label class="field" style="flex:1.4"><span>Pipeline name</span><input class="input" data-f="name" value="${esc(d.name)}" maxlength="60"></label>
+          <label class="field" style="flex:1"><span>Assigned to</span><select class="select" data-f="user_id"><option value="">Unassigned (owner only)</option>${users.map((u) => `<option value="${u.id}" ${String(d.user_id) === String(u.id) ? 'selected' : ''}>${esc(u.name)}</option>`).join('')}</select></label>
+          <div class="pipe-meta"><span class="chip">${p.active_count.toLocaleString()} active · ${p.lead_count.toLocaleString()} total</span></div>
+        </div>
+        <div class="stage-rows">
+          ${d.stages.map((st, i) => `
+            <div class="stage-row" data-i="${i}">
+              <div class="stage-order">
+                <button type="button" class="btn ghost icon sm" data-act="up" ${i === 0 ? 'disabled' : ''} aria-label="Move up">${icon('up')}</button>
+                <button type="button" class="btn ghost icon sm" data-act="down" ${i === d.stages.length - 1 ? 'disabled' : ''} aria-label="Move down">${icon('down')}</button>
+              </div>
+              <span class="col-num">${i + 1}</span>
+              <input class="input" data-sf="name" value="${esc(st.name)}" maxlength="40" placeholder="Stage name">
+              <select class="select kind-select" data-sf="kind" title="Appointment and Won stages feed the dashboard and team stats">
+                ${['open', 'appointment', 'won'].map((k) => `<option value="${k}" ${st.kind === k ? 'selected' : ''}>${STAGE_KIND_LABEL[k]}</option>`).join('')}
+              </select>
+              <span class="stage-count muted tnum" title="Leads in this stage">${st.id ? st.lead_count : 'new'}</span>
+              <button type="button" class="btn ghost icon sm" data-act="remove" ${d.stages.length === 1 ? 'disabled' : ''} aria-label="Remove stage">${icon('x')}</button>
+            </div>`).join('')}
+        </div>
+        <div class="pipe-edit-foot">
+          <button type="button" class="btn sm" data-act="add">${icon('plus')} Add stage</button>
+          <span class="muted pipe-hint">Mark one stage <b>Appointment</b> and one <b>Won</b> so the dashboard counts them.</span>
+          <span style="flex:1"></span>
+          ${state.pipelines.length > 1 ? `<button type="button" class="btn sm ghost danger" data-act="delete">${icon('trash')} Delete</button>` : ''}
+          <button type="button" class="btn sm ${d.dirty ? 'primary' : ''}" data-act="save">${icon('check')} Save</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    $$('.pipe-edit', list).forEach((box) => {
+      const p = pipelineById(box.dataset.pid);
+      const d = draftFor(p);
+      const touch = () => { d.dirty = true; const b = box.querySelector('[data-act="save"]'); b.classList.add('primary'); };
+      box.querySelectorAll('[data-f]').forEach((inp) => inp.addEventListener('input', () => { d[inp.dataset.f] = inp.value; touch(); }));
+      box.querySelectorAll('.stage-row').forEach((row) => {
+        const st = d.stages[Number(row.dataset.i)];
+        row.querySelectorAll('[data-sf]').forEach((inp) => inp.addEventListener('input', () => { st[inp.dataset.sf] = inp.value; touch(); }));
+      });
+      box.addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-act]');
+        if (!btn) return;
+        const act = btn.dataset.act;
+        const row = btn.closest('.stage-row');
+        const i = row ? Number(row.dataset.i) : -1;
+        if (act === 'up' && i > 0) { [d.stages[i - 1], d.stages[i]] = [d.stages[i], d.stages[i - 1]]; d.dirty = true; renderPipelineEditors(users); }
+        if (act === 'down' && i < d.stages.length - 1) { [d.stages[i + 1], d.stages[i]] = [d.stages[i], d.stages[i + 1]]; d.dirty = true; renderPipelineEditors(users); }
+        if (act === 'remove') { d.stages.splice(i, 1); d.dirty = true; renderPipelineEditors(users); }
+        if (act === 'add') {
+          if (d.stages.length >= 15) { toast('A pipeline can have up to 15 stages', { error: true }); return; }
+          d.stages.push({ id: null, name: '', kind: 'open', lead_count: 0 });
+          d.dirty = true;
+          renderPipelineEditors(users);
+          const inputs = $$(`.pipe-edit[data-pid="${p.id}"] [data-sf="name"]`);
+          inputs[inputs.length - 1].focus();
+        }
+        if (act === 'save') await savePipeline(p, d, users);
+        if (act === 'delete') await deletePipeline(p, users);
+      });
+    });
+  }
+
+  async function savePipeline(p, d, users) {
+    if (!d.name.trim()) { toast('Give the pipeline a name', { error: true }); return; }
+    if (d.stages.some((st) => !st.name.trim())) { toast('Every stage needs a name', { error: true }); return; }
+    const removed = p.stages.filter((st) => !d.stages.some((x) => x.id === st.id));
+    const moving = removed.reduce((n, st) => n + (Number(st.lead_count) || 0), 0);
+    if (moving && !(await confirmDialog(
+      `Remove ${removed.length === 1 ? `"${removed[0].name}"` : `${removed.length} stages`}?`,
+      `${moving} lead${moving === 1 ? '' : 's'} in ${removed.length === 1 ? 'that stage' : 'those stages'} will move to the stage before it.`,
+      'Remove and save',
+    ))) return;
+    try {
+      await api(`/api/pipelines/${p.id}`, { method: 'PATCH', body: { name: d.name, user_id: d.user_id || null } });
+      state.pipelines = await api(`/api/pipelines/${p.id}/stages`, {
+        method: 'PUT', body: { stages: d.stages.map((st) => ({ id: st.id, name: st.name, kind: st.kind })) },
+      });
+      delete pipeDrafts[p.id];
+      await loadPipelines();
+      await loadLeads();
+      toast(`${d.name} saved`);
+      renderPipelineEditors(users);
+    } catch (err) { fail(err); }
+  }
+
+  async function deletePipeline(p, users) {
+    const others = state.pipelines.filter((x) => x.id !== p.id);
+    let moveTo = null;
+    if (p.lead_count) {
+      moveTo = await new Promise((resolve) => {
+        const m = openModal(`
+          <div class="modal-h"><div><h3>Delete ${esc(p.name)}?</h3><p>It has ${p.lead_count.toLocaleString()} lead${p.lead_count === 1 ? '' : 's'}. Choose where to move them. They'll land in that pipeline's first stage.</p></div></div>
+          <div class="modal-b"><label class="field"><span>Move leads to</span><select class="select" id="del-target">${others.map((x) => `<option value="${x.id}">${esc(pipelineLabel(x))}</option>`).join('')}</select></label></div>
+          <div class="modal-f"><button class="btn" data-close>Cancel</button><button class="btn primary" id="del-ok">${icon('trash')} Move leads and delete</button></div>`);
+        m._onClose = () => resolve(false);
+        $('#del-ok').onclick = () => { const v = $('#del-target').value; m._onClose = null; closeModal(); resolve(v); };
+      });
+      if (!moveTo) return;
+    } else if (!(await confirmDialog(`Delete ${p.name}?`, 'This pipeline has no leads. Its stages will be removed.', 'Delete pipeline'))) return;
+    try {
+      state.pipelines = await api(`/api/pipelines/${p.id}${moveTo ? `?move_to=${moveTo}` : ''}`, { method: 'DELETE' });
+      delete pipeDrafts[p.id];
+      await loadPipelines();
+      await loadLeads();
+      toast(`${p.name} deleted`);
+      renderPipelineEditors(users);
+    } catch (err) { fail(err); }
+  }
+
   /* ================================================================ boot */
 
   async function boot() {
     const me = await api('/api/me');
     if (!me.user) { renderAuth(me.needsSetup); return; }
     state.user = me.user;
-    state.stages = await api('/api/stages');
+    await loadPipelines();
     state.talkTrack = await api('/api/talk-track').then((r) => r.text).catch(() => '');
     renderShell();
     await loadLeads().catch(() => {});

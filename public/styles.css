@@ -606,3 +606,35 @@ body.talk-hidden .talk-panel { display: none; }
   .drawer.tab-script .drawer-body { display: none; }
 }
 @media (max-width: 560px) { .drawer-script { padding: 14px 16px 24px; } }
+
+/* ---------------------------------------------------------------- multiple pipelines */
+.scope-bar { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.scope-bar .select { width: auto; min-width: 220px; height: 36px; font-weight: 600; }
+.pipe-switch { width: auto; min-width: 200px; height: 34px; font-weight: 700; }
+.pipe-name { font-size: 14px; letter-spacing: -.01em; }
+.kind-dot { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--line); background: #fff; color: var(--ink); flex: none; }
+.kind-dot svg.i { width: 12px; height: 12px; }
+.pipe-move { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.pipe-move .select { height: 32px; width: auto; flex: 1; max-width: 320px; font-size: 13px; color: var(--ink); }
+.import-opts { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+.pipe-list { display: flex; flex-direction: column; gap: 14px; }
+.pipe-edit { border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.pipe-edit-head { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.pipe-edit-head .field { min-width: 180px; }
+.pipe-meta { padding-bottom: 8px; }
+.stage-rows { display: flex; flex-direction: column; gap: 6px; }
+.stage-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr) 140px 44px auto; gap: 8px; align-items: center; }
+.stage-row .input, .stage-row .select { height: 34px; }
+.stage-order { display: flex; gap: 0; }
+.stage-order .btn.sm.icon { width: 26px; height: 28px; }
+.stage-count { font-size: 12px; text-align: center; }
+.pipe-edit-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pipe-hint { font-size: 12px; }
+.new-pipe { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-2); }
+.new-pipe .field { flex: 1; min-width: 180px; }
+@media (max-width: 560px) {
+  .stage-row { grid-template-columns: auto minmax(0, 1fr) 110px auto; }
+  .stage-row .col-num, .stage-row .stage-count { display: none; }
+  .scope-bar .select { min-width: 0; flex: 1; }
+}

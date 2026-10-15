@@ -181,6 +181,11 @@ app.post('/api/setup', wrap(async (req, res) => {
       `INSERT INTO users (name, email, password_hash, role) VALUES ($1, lower($2), $3, 'owner') RETURNING id, name, email, role`,
       [name, email, hashPassword(password)],
     );
+    // A fresh install starts with one unassigned pipeline; it becomes the owner's.
+    await client.query(
+      `UPDATE pipelines SET user_id = $1, name = $2 WHERE user_id IS NULL AND (SELECT count(*) FROM pipelines) = 1`,
+      [rows[0].id, `${name.split(' ')[0]}'s pipeline`],
+    );
     await client.query('COMMIT');
     await startSession(req, res, rows[0].id);
     res.json({ user: rows[0] });
@@ -226,15 +231,24 @@ app.post('/api/users', requireOwner, wrap(async (req, res) => {
   const password = String(req.body.password || '');
   if (!name || !email) return bad(res, 'Name and email are required');
   if (password.length < 8) return bad(res, 'Password must be at least 8 characters');
+  const client = await db.pool.connect();
   try {
-    const { rows } = await db.query(
+    await client.query('BEGIN');
+    const { rows } = await client.query(
       'INSERT INTO users (name, email, password_hash) VALUES ($1, lower($2), $3) RETURNING id, name, email, role, created_at',
       [name, email, hashPassword(password)],
     );
+    if (req.body.createPipeline !== false) {
+      await db.createPipeline(client, `${name.split(' ')[0]}'s pipeline`, rows[0].id);
+    }
+    await client.query('COMMIT');
     res.json(rows[0]);
   } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
     if (e.code === '23505') return bad(res, 'A user with that email already exists');
     throw e;
+  } finally {
+    client.release();
   }
 }));
 
@@ -254,21 +268,184 @@ app.post('/api/password', wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
-/* ---------------------------------------------------------------- stages */
+/* ---------------------------------------------------------------- pipelines */
 
-app.get('/api/stages', wrap(async (_req, res) => {
-  res.json(await db.getStages());
+const isOwner = (req) => req.user && req.user.role === 'owner';
+const STAGE_KINDS = ['open', 'appointment', 'won'];
+
+// Pipeline ids this user may see: the owner sees all, teammates see the ones assigned to them.
+async function accessiblePipelineIds(req, client = db) {
+  const { rows } = isOwner(req)
+    ? await client.query('SELECT id FROM pipelines ORDER BY position, id')
+    : await client.query('SELECT id FROM pipelines WHERE user_id = $1 ORDER BY position, id', [req.user.id]);
+  return rows.map((r) => r.id);
+}
+
+// Returns the lead if this user may work it, else null.
+async function leadForUser(req, id, client = db, forUpdate = false) {
+  const { rows } = await client.query(
+    `SELECT l.* FROM leads l JOIN pipelines p ON p.id = l.pipeline_id
+     WHERE l.id = $1 AND ($2::boolean OR p.user_id = $3) ${forUpdate ? 'FOR UPDATE OF l' : ''}`,
+    [id, isOwner(req), req.user.id],
+  );
+  return rows[0] || null;
+}
+
+// Works out which pipeline/stage a new or moved lead lands in, checking access. Throws {status, message}.
+async function resolveStage(req, client, { pipeline_id: pipelineId, stage_id: stageId }) {
+  const allowed = await accessiblePipelineIds(req, client);
+  let row;
+  if (stageId) {
+    ({ rows: [row] } = await client.query(
+      `SELECT s.id AS stage_id, s.name AS stage_name, s.kind, s.position, s.pipeline_id, p.name AS pipeline_name
+       FROM pipeline_stages s JOIN pipelines p ON p.id = s.pipeline_id WHERE s.id = $1`, [Number(stageId)]));
+  } else {
+    const pid = pipelineId ? Number(pipelineId) : allowed[0];
+    ({ rows: [row] } = await client.query(
+      `SELECT s.id AS stage_id, s.name AS stage_name, s.kind, s.position, s.pipeline_id, p.name AS pipeline_name
+       FROM pipeline_stages s JOIN pipelines p ON p.id = s.pipeline_id WHERE s.pipeline_id = $1
+       ORDER BY s.position LIMIT 1`, [pid || 0]));
+  }
+  if (!row) throw { status: 400, message: allowed.length ? 'That pipeline or stage no longer exists' : 'You have no pipeline yet. Ask the owner to set one up for you.' };
+  if (!allowed.includes(row.pipeline_id)) throw { status: 403, message: "You don't have access to that pipeline" };
+  return row;
+}
+
+const PIPELINE_SELECT = `
+  SELECT p.id, p.name, p.user_id, p.position, u.name AS user_name,
+    (SELECT count(*)::int FROM leads l WHERE l.pipeline_id = p.id AND l.status = 'active') AS active_count,
+    (SELECT count(*)::int FROM leads l WHERE l.pipeline_id = p.id) AS lead_count,
+    COALESCE((SELECT json_agg(json_build_object('id', s.id, 'name', s.name, 'kind', s.kind, 'position', s.position,
+        'lead_count', (SELECT count(*) FROM leads l WHERE l.stage_id = s.id)) ORDER BY s.position)
+      FROM pipeline_stages s WHERE s.pipeline_id = p.id), '[]'::json) AS stages
+  FROM pipelines p LEFT JOIN users u ON u.id = p.user_id`;
+
+async function listPipelines(req) {
+  const { rows } = await db.query(
+    `${PIPELINE_SELECT} WHERE $1::boolean OR p.user_id = $2 ORDER BY p.position, p.id`, [isOwner(req), req.user.id],
+  );
+  return rows;
+}
+
+app.get('/api/pipelines', wrap(async (req, res) => {
+  res.json(await listPipelines(req));
 }));
 
-app.put('/api/stages', wrap(async (req, res) => {
-  const stages = Array.isArray(req.body.stages) ? req.body.stages.map((s) => cleanText(s, 40)) : [];
-  if (stages.length !== 5 || stages.some((s) => !s)) return bad(res, 'Provide five stage names');
-  await db.query(
-    `INSERT INTO settings (key, value) VALUES ('stages', $1)
-     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
-    [JSON.stringify(stages)],
-  );
-  res.json(stages);
+app.post('/api/pipelines', requireOwner, wrap(async (req, res) => {
+  const name = cleanText(req.body.name, 60);
+  if (!name) return bad(res, 'Give the pipeline a name');
+  const userId = req.body.user_id ? Number(req.body.user_id) : null;
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    if (userId) {
+      const { rows } = await client.query('SELECT 1 FROM users WHERE id = $1', [userId]);
+      if (!rows[0]) { await client.query('ROLLBACK'); return bad(res, 'That teammate no longer exists'); }
+    }
+    const id = await db.createPipeline(client, name, userId);
+    await client.query('COMMIT');
+    res.json({ id, pipelines: await listPipelines(req) });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}));
+
+app.patch('/api/pipelines/:id', requireOwner, wrap(async (req, res) => {
+  const sets = [];
+  const vals = [req.params.id];
+  if ('name' in req.body) {
+    const name = cleanText(req.body.name, 60);
+    if (!name) return bad(res, 'Give the pipeline a name');
+    vals.push(name); sets.push(`name = $${vals.length}`);
+  }
+  if ('user_id' in req.body) {
+    vals.push(req.body.user_id ? Number(req.body.user_id) : null); sets.push(`user_id = $${vals.length}`);
+  }
+  if (!sets.length) return bad(res, 'Nothing to update');
+  const { rowCount } = await db.query(`UPDATE pipelines SET ${sets.join(', ')} WHERE id = $1`, vals);
+  if (!rowCount) return bad(res, 'Pipeline not found', 404);
+  res.json(await listPipelines(req));
+}));
+
+// Replace a pipeline's stages in order. Stages left out are deleted; their leads move to the
+// closest earlier stage that remains (or the first stage).
+app.put('/api/pipelines/:id/stages', requireOwner, wrap(async (req, res) => {
+  const input = Array.isArray(req.body.stages) ? req.body.stages : [];
+  const stages = input.map((st) => ({
+    id: st && st.id ? Number(st.id) : null,
+    name: cleanText(st && st.name, 40),
+    kind: STAGE_KINDS.includes(st && st.kind) ? st.kind : 'open',
+  }));
+  if (!stages.length) return bad(res, 'A pipeline needs at least one stage');
+  if (stages.length > 15) return bad(res, 'A pipeline can have up to 15 stages');
+  if (stages.some((st) => !st.name)) return bad(res, 'Every stage needs a name');
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows: pipe } = await client.query('SELECT id FROM pipelines WHERE id = $1 FOR UPDATE', [req.params.id]);
+    if (!pipe[0]) { await client.query('ROLLBACK'); return bad(res, 'Pipeline not found', 404); }
+    const { rows: existing } = await client.query('SELECT id, position FROM pipeline_stages WHERE pipeline_id = $1', [req.params.id]);
+    const existingIds = new Set(existing.map((r) => r.id));
+    if (stages.some((st) => st.id && !existingIds.has(st.id))) { await client.query('ROLLBACK'); return bad(res, 'A stage in that list belongs to another pipeline'); }
+    // Park current positions out of the way, then write the new order.
+    await client.query('UPDATE pipeline_stages SET position = position + 1000 WHERE pipeline_id = $1', [req.params.id]);
+    const kept = [];
+    for (let i = 0; i < stages.length; i++) {
+      const st = stages[i];
+      if (st.id) {
+        await client.query('UPDATE pipeline_stages SET name = $2, kind = $3, position = $4 WHERE id = $1', [st.id, st.name, st.kind, i + 1]);
+        kept.push({ id: st.id, oldPos: existing.find((r) => r.id === st.id).position });
+      } else {
+        const { rows } = await client.query(
+          'INSERT INTO pipeline_stages (pipeline_id, name, kind, position) VALUES ($1,$2,$3,$4) RETURNING id',
+          [req.params.id, st.name, st.kind, i + 1],
+        );
+        st.id = rows[0].id;
+      }
+    }
+    const firstId = stages[0].id;
+    for (const old of existing.filter((r) => !stages.some((st) => st.id === r.id))) {
+      const target = kept.filter((k) => k.oldPos < old.position).sort((a, b) => b.oldPos - a.oldPos)[0];
+      await client.query('UPDATE leads SET stage_id = $2 WHERE stage_id = $1', [old.id, target ? target.id : firstId]);
+      await client.query('DELETE FROM pipeline_stages WHERE id = $1', [old.id]);
+    }
+    await client.query('COMMIT');
+    res.json(await listPipelines(req));
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}));
+
+app.delete('/api/pipelines/:id', requireOwner, wrap(async (req, res) => {
+  const moveTo = req.query.move_to ? Number(req.query.move_to) : null;
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows: all } = await client.query('SELECT id FROM pipelines FOR UPDATE');
+    if (!all.some((r) => r.id === Number(req.params.id))) { await client.query('ROLLBACK'); return bad(res, 'Pipeline not found', 404); }
+    if (all.length === 1) { await client.query('ROLLBACK'); return bad(res, "You can't delete the only pipeline"); }
+    const { rows: [{ n }] } = await client.query('SELECT count(*)::int AS n FROM leads WHERE pipeline_id = $1', [req.params.id]);
+    if (n) {
+      if (!moveTo || moveTo === Number(req.params.id)) { await client.query('ROLLBACK'); return bad(res, `This pipeline has ${n} leads. Choose where to move them first.`); }
+      const { rows: first } = await client.query('SELECT id FROM pipeline_stages WHERE pipeline_id = $1 ORDER BY position LIMIT 1', [moveTo]);
+      if (!first[0]) { await client.query('ROLLBACK'); return bad(res, 'Choose a pipeline to move the leads to'); }
+      await client.query('UPDATE leads SET pipeline_id = $2, stage_id = $3 WHERE pipeline_id = $1', [req.params.id, moveTo, first[0].id]);
+    }
+    await client.query('DELETE FROM pipelines WHERE id = $1', [req.params.id]);
+    await client.query('COMMIT');
+    res.json(await listPipelines(req));
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
 }));
 
 /* ---------------------------------------------------------------- talk track */
@@ -296,24 +473,26 @@ app.put('/api/talk-track', requireOwner, wrap(async (req, res) => {
 /* ---------------------------------------------------------------- leads */
 
 const LIST_COLUMNS = `id, first_name, last_name, company, title, phone, email, city, state, source, value,
-  stage, position, status, dq_reason, call_count, last_contacted_at, next_follow_up, created_at, updated_at`;
+  pipeline_id, stage_id, position, status, dq_reason, call_count, last_contacted_at, next_follow_up, created_at, updated_at`;
 
 app.get('/api/leads', wrap(async (req, res) => {
   const status = ['active', 'disqualified', 'all'].includes(req.query.status) ? req.query.status : 'active';
-  const where = [];
-  const params = [];
+  let ids = await accessiblePipelineIds(req);
+  if (req.query.pipeline && req.query.pipeline !== 'all') ids = ids.filter((id) => id === Number(req.query.pipeline));
+  const params = [ids];
+  const where = ['pipeline_id = ANY($1)'];
   if (status !== 'all') { params.push(status); where.push(`status = $${params.length}`); }
   const { rows } = await db.query(
-    `SELECT ${LIST_COLUMNS} FROM leads ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
-     ORDER BY stage, position, id`,
+    `SELECT ${LIST_COLUMNS} FROM leads WHERE ${where.join(' AND ')} ORDER BY position, id`,
     params,
   );
   res.json(rows);
 }));
 
 app.get('/api/leads/:id', wrap(async (req, res) => {
-  const { rows } = await db.query('SELECT * FROM leads WHERE id = $1', [req.params.id]);
-  if (!rows[0]) return bad(res, 'Lead not found', 404);
+  const lead = await leadForUser(req, req.params.id);
+  if (!lead) return bad(res, 'Lead not found', 404);
+  const rows = [lead];
   const { rows: activities } = await db.query(
     `SELECT a.*, u.name AS user_name FROM activities a LEFT JOIN users u ON u.id = a.user_id
      WHERE a.lead_id = $1 ORDER BY a.created_at DESC, a.id DESC LIMIT 300`,
@@ -322,9 +501,15 @@ app.get('/api/leads/:id', wrap(async (req, res) => {
   res.json({ lead: rows[0], activities });
 }));
 
-async function nextPosition(client, stage) {
-  const { rows } = await client.query('SELECT COALESCE(MAX(position), 0) + 1 AS p FROM leads WHERE stage = $1', [stage]);
+async function nextPosition(client, stageId) {
+  const { rows } = await client.query('SELECT COALESCE(MAX(position), 0) + 1 AS p FROM leads WHERE stage_id = $1', [stageId]);
   return Number(rows[0].p);
+}
+
+// Sends a {status, message} thrown by resolveStage as an API error; rethrows anything else.
+function sendResolveError(res, e) {
+  if (e && e.status && e.message) return bad(res, e.message, e.status);
+  throw e;
 }
 
 app.post('/api/leads', wrap(async (req, res) => {
@@ -332,14 +517,15 @@ app.post('/api/leads', wrap(async (req, res) => {
   if (!data.first_name && !data.last_name && !data.company && !data.phone) {
     return bad(res, 'Add at least a name, company or phone number');
   }
-  const stage = Math.min(5, Math.max(1, Number(req.body.stage) || 1));
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
+    let target;
+    try { target = await resolveStage(req, client, req.body); } catch (e) { await client.query('ROLLBACK'); return sendResolveError(res, e); }
     const cols = Object.keys(data);
     const vals = Object.values(data);
-    cols.push('stage', 'position', 'phone_digits');
-    vals.push(stage, await nextPosition(client, stage), phoneDigits(data.phone));
+    cols.push('pipeline_id', 'stage_id', 'position', 'phone_digits');
+    vals.push(target.pipeline_id, target.stage_id, await nextPosition(client, target.stage_id), phoneDigits(data.phone));
     const { rows } = await client.query(
       `INSERT INTO leads (${cols.join(',')}) VALUES (${cols.map((_, i) => `$${i + 1}`).join(',')}) RETURNING *`,
       vals,
@@ -356,6 +542,7 @@ app.post('/api/leads', wrap(async (req, res) => {
 }));
 
 app.patch('/api/leads/:id', wrap(async (req, res) => {
+  if (!(await leadForUser(req, req.params.id))) return bad(res, 'Lead not found', 404);
   const data = cleanLeadInput(req.body);
   const cols = Object.keys(data);
   if (!cols.length) return bad(res, 'Nothing to update');
@@ -370,44 +557,53 @@ app.patch('/api/leads/:id', wrap(async (req, res) => {
 }));
 
 app.delete('/api/leads/:id', wrap(async (req, res) => {
+  if (!(await leadForUser(req, req.params.id))) return bad(res, 'Lead not found', 404);
   await db.query('DELETE FROM leads WHERE id = $1', [req.params.id]);
   res.json({ ok: true });
 }));
 
 app.post('/api/leads/:id/move', wrap(async (req, res) => {
-  const stage = Number(req.body.stage);
-  if (!(stage >= 1 && stage <= 5)) return bad(res, 'Invalid stage');
   const beforeId = req.body.beforeId ? Number(req.body.beforeId) : null;
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
-    const { rows: cur } = await client.query('SELECT * FROM leads WHERE id = $1 FOR UPDATE', [req.params.id]);
-    const lead = cur[0];
+    const lead = await leadForUser(req, req.params.id, client, true);
     if (!lead) { await client.query('ROLLBACK'); return bad(res, 'Lead not found', 404); }
+    let target;
+    try {
+      target = await resolveStage(req, client, { stage_id: req.body.stage_id, pipeline_id: req.body.pipeline_id });
+    } catch (e) { await client.query('ROLLBACK'); return sendResolveError(res, e); }
 
     let position;
     if (beforeId) {
-      const { rows: b } = await client.query('SELECT position FROM leads WHERE id = $1 AND stage = $2', [beforeId, stage]);
+      const { rows: b } = await client.query('SELECT position FROM leads WHERE id = $1 AND stage_id = $2', [beforeId, target.stage_id]);
       if (b[0]) {
         const { rows: prev } = await client.query(
-          `SELECT position FROM leads WHERE stage = $1 AND position < $2 AND id <> $3 AND status = 'active'
+          `SELECT position FROM leads WHERE stage_id = $1 AND position < $2 AND id <> $3 AND status = 'active'
            ORDER BY position DESC LIMIT 1`,
-          [stage, b[0].position, lead.id],
+          [target.stage_id, b[0].position, lead.id],
         );
         const lo = prev[0] ? Number(prev[0].position) : Number(b[0].position) - 1;
         position = (lo + Number(b[0].position)) / 2;
       }
     }
-    if (position === undefined) position = await nextPosition(client, stage);
+    if (position === undefined) position = await nextPosition(client, target.stage_id);
 
     const { rows } = await client.query(
-      'UPDATE leads SET stage = $2, position = $3, updated_at = now() WHERE id = $1 RETURNING *',
-      [lead.id, stage, position],
+      'UPDATE leads SET pipeline_id = $2, stage_id = $3, position = $4, updated_at = now() WHERE id = $1 RETURNING *',
+      [lead.id, target.pipeline_id, target.stage_id, position],
     );
-    if (lead.stage !== stage) {
-      const stages = await db.getStages();
+    if (lead.stage_id !== target.stage_id) {
+      const { rows: [from] } = await client.query('SELECT name, position FROM pipeline_stages WHERE id = $1', [lead.stage_id]);
+      const samePipeline = lead.pipeline_id === target.pipeline_id;
       await logActivity(client, lead.id, req.user.id, 'stage',
-        `Moved from ${stages[lead.stage - 1]} to ${stages[stage - 1]}`, { from: lead.stage, to: stage });
+        samePipeline
+          ? `Moved from ${from ? from.name : 'a removed stage'} to ${target.stage_name}`
+          : `Moved to ${target.pipeline_name} · ${target.stage_name}`,
+        {
+          from_stage: lead.stage_id, to_stage: target.stage_id, from_pipeline: lead.pipeline_id, to_pipeline: target.pipeline_id,
+          from_pos: samePipeline && from ? from.position : null, to_pos: target.position, to_kind: target.kind,
+        });
     }
     await client.query('COMMIT');
     res.json(rows[0]);
@@ -422,6 +618,7 @@ app.post('/api/leads/:id/move', wrap(async (req, res) => {
 app.post('/api/leads/:id/disqualify', wrap(async (req, res) => {
   const reason = cleanText(req.body.reason, 100) || 'Other';
   const note = cleanText(req.body.note, 2000);
+  if (!(await leadForUser(req, req.params.id))) return bad(res, 'Lead not found', 404);
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
@@ -446,12 +643,12 @@ app.post('/api/leads/:id/requalify', wrap(async (req, res) => {
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
-    const { rows: cur } = await client.query('SELECT stage FROM leads WHERE id = $1', [req.params.id]);
+    const cur = [await leadForUser(req, req.params.id, client, true)];
     if (!cur[0]) { await client.query('ROLLBACK'); return bad(res, 'Lead not found', 404); }
     const { rows } = await client.query(
       `UPDATE leads SET status = 'active', dq_reason = NULL, dq_at = NULL, position = $2, updated_at = now()
        WHERE id = $1 RETURNING *`,
-      [req.params.id, await nextPosition(client, cur[0].stage)],
+      [req.params.id, await nextPosition(client, cur[0].stage_id)],
     );
     await logActivity(client, rows[0].id, req.user.id, 'requalified', 'Lead restored to the pipeline');
     await client.query('COMMIT');
@@ -476,7 +673,7 @@ app.post('/api/leads/:id/activities', wrap(async (req, res) => {
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
-    const { rows } = await client.query('SELECT id FROM leads WHERE id = $1', [req.params.id]);
+    const rows = [await leadForUser(req, req.params.id, client)];
     if (!rows[0]) { await client.query('ROLLBACK'); return bad(res, 'Lead not found', 404); }
     const act = await logActivity(client, rows[0].id, req.user.id, type, body, {}, outcome);
     if (type === 'call') {
@@ -495,7 +692,17 @@ app.post('/api/leads/:id/activities', wrap(async (req, res) => {
   }
 }));
 
+// Activities are reachable only through a lead the user can work.
+async function activityAccessible(req, id) {
+  const { rows } = await db.query(
+    `SELECT 1 FROM activities a JOIN leads l ON l.id = a.lead_id JOIN pipelines p ON p.id = l.pipeline_id
+     WHERE a.id = $1 AND ($2::boolean OR p.user_id = $3)`, [id, isOwner(req), req.user.id],
+  );
+  return !!rows[0];
+}
+
 app.patch('/api/activities/:id', wrap(async (req, res) => {
+  if (!(await activityAccessible(req, req.params.id))) return bad(res, 'Activity not found', 404);
   const outcome = CALL_OUTCOMES.includes(req.body.outcome) ? req.body.outcome : undefined;
   const body = req.body.body !== undefined ? cleanText(req.body.body, 20000) : undefined;
   const { rows } = await db.query(
@@ -510,6 +717,7 @@ app.patch('/api/activities/:id', wrap(async (req, res) => {
 }));
 
 app.delete('/api/activities/:id', wrap(async (req, res) => {
+  if (!(await activityAccessible(req, req.params.id))) return bad(res, 'Activity not found', 404);
   const { rows } = await db.query(`DELETE FROM activities WHERE id = $1 AND type IN ('note','call') RETURNING *`, [req.params.id]);
   if (rows[0] && rows[0].type === 'call') {
     await db.query('UPDATE leads SET call_count = GREATEST(call_count - 1, 0) WHERE id = $1', [rows[0].lead_id]);
@@ -607,13 +815,14 @@ app.post('/api/import/parse', express.raw({ type: '*/*', limit: '30mb' }), wrap(
 app.post('/api/import', wrap(async (req, res) => {
   const leads = Array.isArray(req.body.leads) ? req.body.leads.slice(0, 20000) : [];
   if (!leads.length) return bad(res, 'No leads to import');
-  const stage = Math.min(5, Math.max(1, Number(req.body.stage) || 1));
   const skipDuplicates = req.body.skipDuplicates !== false;
   const filename = cleanText(req.body.filename, 200) || 'Spreadsheet';
 
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
+    let target;
+    try { target = await resolveStage(req, client, req.body); } catch (e) { await client.query('ROLLBACK'); return sendResolveError(res, e); }
     const existing = new Set();
     if (skipDuplicates) {
       const { rows } = await client.query(`SELECT phone_digits, lower(email) AS email FROM leads`);
@@ -625,7 +834,7 @@ app.post('/api/import', wrap(async (req, res) => {
     const { rows: imp } = await client.query(
       'INSERT INTO imports (filename, user_id) VALUES ($1,$2) RETURNING id', [filename, req.user.id],
     );
-    let position = await nextPosition(client, stage);
+    let position = await nextPosition(client, target.stage_id);
     let inserted = 0;
     let skipped = 0;
     let empty = 0;
@@ -638,9 +847,12 @@ app.post('/api/import', wrap(async (req, res) => {
       if (skipDuplicates && ((pd && existing.has('p:' + pd)) || (em && existing.has('e:' + em)))) { skipped++; continue; }
       if (pd) existing.add('p:' + pd);
       if (em) existing.add('e:' + em);
-      toInsert.push({ ...d, phone_digits: pd, stage, position: position++, import_id: imp[0].id, extra: d.extra || {} });
+      toInsert.push({
+        ...d, phone_digits: pd, pipeline_id: target.pipeline_id, stage_id: target.stage_id,
+        position: position++, import_id: imp[0].id, extra: d.extra || {},
+      });
     }
-    const cols = [...LEAD_FIELDS, 'extra', 'phone_digits', 'stage', 'position', 'import_id'];
+    const cols = [...LEAD_FIELDS, 'extra', 'phone_digits', 'pipeline_id', 'stage_id', 'position', 'import_id'];
     for (let i = 0; i < toInsert.length; i += 500) {
       const chunk = toInsert.slice(i, i + 500);
       const params = [];
@@ -661,7 +873,7 @@ app.post('/api/import', wrap(async (req, res) => {
     }
     await client.query('UPDATE imports SET lead_count = $2 WHERE id = $1', [imp[0].id, inserted]);
     await client.query('COMMIT');
-    res.json({ inserted, skipped, empty });
+    res.json({ inserted, skipped, empty, pipeline_id: target.pipeline_id, stage_id: target.stage_id });
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
     throw e;
@@ -680,11 +892,15 @@ app.get('/api/imports', wrap(async (_req, res) => {
 
 /* ---------------------------------------------------------------- export */
 
-app.get('/api/export.csv', wrap(async (_req, res) => {
-  const stages = await db.getStages();
-  const { rows } = await db.query('SELECT * FROM leads ORDER BY stage, position, id');
+app.get('/api/export.csv', wrap(async (req, res) => {
+  const { rows } = await db.query(
+    `SELECT l.*, p.name AS pipeline_name, s.name AS stage_name FROM leads l
+     JOIN pipelines p ON p.id = l.pipeline_id LEFT JOIN pipeline_stages s ON s.id = l.stage_id
+     WHERE l.pipeline_id = ANY($1) ORDER BY p.position, p.id, s.position, l.position, l.id`,
+    [await accessiblePipelineIds(req)],
+  );
   const head = ['First name', 'Last name', 'Company', 'Title', 'Phone', 'Alt phone', 'Email', 'Website', 'Address',
-    'City', 'State', 'Zip', 'Source', 'Value', 'Stage', 'Status', 'Disqualify reason', 'Calls', 'Last contacted',
+    'City', 'State', 'Zip', 'Source', 'Value', 'Pipeline', 'Stage', 'Status', 'Disqualify reason', 'Calls', 'Last contacted',
     'Next follow-up', 'Notes', 'Created'];
   const esc = (v) => {
     const s = v === null || v === undefined ? '' : (v instanceof Date ? v.toISOString() : String(v));
@@ -693,7 +909,7 @@ app.get('/api/export.csv', wrap(async (_req, res) => {
   const lines = [head.map(esc).join(',')];
   for (const l of rows) {
     lines.push([l.first_name, l.last_name, l.company, l.title, l.phone, l.phone_alt, l.email, l.website, l.address,
-      l.city, l.state, l.zip, l.source, l.value, stages[l.stage - 1], l.status, l.dq_reason, l.call_count,
+      l.city, l.state, l.zip, l.source, l.value, l.pipeline_name, l.stage_name, l.status, l.dq_reason, l.call_count,
       l.last_contacted_at, l.next_follow_up, l.notes, l.created_at].map(esc).join(','));
   }
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -705,52 +921,66 @@ app.get('/api/export.csv', wrap(async (_req, res) => {
 
 app.get('/api/analytics', wrap(async (req, res) => {
   const tz = /^[A-Za-z_]+\/[A-Za-z_\/-]+$|^UTC$/.test(String(req.query.tz || '')) ? req.query.tz : 'UTC';
+  let ids = await accessiblePipelineIds(req);
+  if (req.query.pipeline && req.query.pipeline !== 'all') ids = ids.filter((id) => id === Number(req.query.pipeline));
   const q = (sql, p = []) => db.query(sql, p).then((r) => r.rows);
+  // $1 is always the pipeline id list; activities are scoped through their lead's pipeline.
+  const LEADS = 'leads l WHERE l.pipeline_id = ANY($1)';
+  const ACTS = 'activities a JOIN leads l ON l.id = a.lead_id WHERE l.pipeline_id = ANY($1)';
   const [
-    totals, byStage, calls, outcomes, callsDaily, leadsDaily, dqReasons, recent, followUps,
+    totals, byStage, byPipeline, calls, outcomes, callsDaily, leadsDaily, dqReasons, recent, followUps,
   ] = await Promise.all([
     q(`SELECT
-         count(*) FILTER (WHERE status = 'active')::int AS active,
-         count(*) FILTER (WHERE status = 'disqualified')::int AS disqualified,
+         count(*) FILTER (WHERE l.status = 'active')::int AS active,
+         count(*) FILTER (WHERE l.status = 'disqualified')::int AS disqualified,
          count(*)::int AS total,
-         count(*) FILTER (WHERE created_at >= now() - interval '7 days')::int AS new_7d,
-         COALESCE(sum(value) FILTER (WHERE status = 'active' AND stage < 5), 0)::float AS open_value,
-         COALESCE(sum(value) FILTER (WHERE status = 'active' AND stage = 5), 0)::float AS won_value,
-         count(*) FILTER (WHERE status = 'active' AND call_count = 0)::int AS never_called
-       FROM leads`),
-    q(`SELECT stage, count(*)::int AS n, COALESCE(sum(value),0)::float AS value
-       FROM leads WHERE status = 'active' GROUP BY stage ORDER BY stage`),
+         count(*) FILTER (WHERE l.created_at >= now() - interval '7 days')::int AS new_7d,
+         count(*) FILTER (WHERE l.status = 'active' AND s.kind = 'appointment')::int AS appointments,
+         count(*) FILTER (WHERE l.status = 'active' AND s.kind = 'won')::int AS won,
+         COALESCE(sum(l.value) FILTER (WHERE l.status = 'active' AND s.kind <> 'won'), 0)::float AS open_value,
+         COALESCE(sum(l.value) FILTER (WHERE l.status = 'active' AND s.kind = 'won'), 0)::float AS won_value,
+         count(*) FILTER (WHERE l.status = 'active' AND l.call_count = 0)::int AS never_called
+       FROM leads l LEFT JOIN pipeline_stages s ON s.id = l.stage_id WHERE l.pipeline_id = ANY($1)`, [ids]),
+    q(`SELECT l.stage_id, count(*)::int AS n, COALESCE(sum(l.value),0)::float AS value
+       FROM ${LEADS} AND l.status = 'active' GROUP BY l.stage_id`, [ids]),
+    q(`SELECT p.id, p.name, u.name AS user_name,
+         count(l.id) FILTER (WHERE l.status = 'active')::int AS active,
+         count(l.id) FILTER (WHERE l.status = 'active' AND s.kind = 'appointment')::int AS appointments,
+         count(l.id) FILTER (WHERE l.status = 'active' AND s.kind = 'won')::int AS won
+       FROM pipelines p LEFT JOIN users u ON u.id = p.user_id
+       LEFT JOIN leads l ON l.pipeline_id = p.id LEFT JOIN pipeline_stages s ON s.id = l.stage_id
+       WHERE p.id = ANY($1) GROUP BY p.id, u.name ORDER BY p.position, p.id`, [ids]),
     q(`SELECT
-         count(*) FILTER (WHERE (created_at AT TIME ZONE $1)::date = (now() AT TIME ZONE $1)::date)::int AS today,
-         count(*) FILTER (WHERE created_at >= now() - interval '7 days')::int AS week,
-         count(*) FILTER (WHERE created_at >= now() - interval '30 days')::int AS month,
-         count(*) FILTER (WHERE created_at >= now() - interval '30 days' AND outcome = 'connected')::int AS connected_month,
-         count(*) FILTER (WHERE created_at >= now() - interval '30 days' AND outcome IS NOT NULL)::int AS logged_month
-       FROM activities WHERE type = 'call'`, [tz]),
-    q(`SELECT COALESCE(outcome, 'not_logged') AS outcome, count(*)::int AS n FROM activities
-       WHERE type = 'call' AND created_at >= now() - interval '30 days' GROUP BY 1 ORDER BY n DESC`),
-    q(`SELECT d::date AS day, count(a.id)::int AS n
-       FROM generate_series((now() AT TIME ZONE $1)::date - 13, (now() AT TIME ZONE $1)::date, interval '1 day') d
-       LEFT JOIN activities a ON a.type = 'call' AND (a.created_at AT TIME ZONE $1)::date = d::date
-       GROUP BY d ORDER BY d`, [tz]),
-    q(`SELECT d::date AS day, count(l.id)::int AS n
-       FROM generate_series((now() AT TIME ZONE $1)::date - 29, (now() AT TIME ZONE $1)::date, interval '1 day') d
-       LEFT JOIN leads l ON (l.created_at AT TIME ZONE $1)::date = d::date
-       GROUP BY d ORDER BY d`, [tz]),
-    q(`SELECT COALESCE(dq_reason, 'Other') AS reason, count(*)::int AS n FROM leads
-       WHERE status = 'disqualified' GROUP BY 1 ORDER BY n DESC`),
-    q(`SELECT a.id, a.type, a.outcome, a.body, a.created_at, a.lead_id, u.name AS user_name,
+         count(*) FILTER (WHERE (a.created_at AT TIME ZONE $2)::date = (now() AT TIME ZONE $2)::date)::int AS today,
+         count(*) FILTER (WHERE a.created_at >= now() - interval '7 days')::int AS week,
+         count(*) FILTER (WHERE a.created_at >= now() - interval '30 days')::int AS month,
+         count(*) FILTER (WHERE a.created_at >= now() - interval '30 days' AND a.outcome = 'connected')::int AS connected_month,
+         count(*) FILTER (WHERE a.created_at >= now() - interval '30 days' AND a.outcome IS NOT NULL)::int AS logged_month
+       FROM ${ACTS} AND a.type = 'call'`, [ids, tz]),
+    q(`SELECT COALESCE(a.outcome, 'not_logged') AS outcome, count(*)::int AS n FROM ${ACTS}
+       AND a.type = 'call' AND a.created_at >= now() - interval '30 days' GROUP BY 1 ORDER BY n DESC`, [ids]),
+    q(`SELECT d::date AS day, count(x.id)::int AS n
+       FROM generate_series((now() AT TIME ZONE $2)::date - 13, (now() AT TIME ZONE $2)::date, interval '1 day') d
+       LEFT JOIN (SELECT a.id, a.created_at FROM ${ACTS} AND a.type = 'call') x ON (x.created_at AT TIME ZONE $2)::date = d::date
+       GROUP BY d ORDER BY d`, [ids, tz]),
+    q(`SELECT d::date AS day, count(x.id)::int AS n
+       FROM generate_series((now() AT TIME ZONE $2)::date - 29, (now() AT TIME ZONE $2)::date, interval '1 day') d
+       LEFT JOIN (SELECT l.id, l.created_at FROM ${LEADS}) x ON (x.created_at AT TIME ZONE $2)::date = d::date
+       GROUP BY d ORDER BY d`, [ids, tz]),
+    q(`SELECT COALESCE(l.dq_reason, 'Other') AS reason, count(*)::int AS n FROM ${LEADS}
+       AND l.status = 'disqualified' GROUP BY 1 ORDER BY n DESC`, [ids]),
+    q(`SELECT a.id, a.type, a.outcome, a.body, a.meta, a.created_at, a.lead_id, u.name AS user_name,
          l.first_name, l.last_name, l.company
        FROM activities a JOIN leads l ON l.id = a.lead_id LEFT JOIN users u ON u.id = a.user_id
-       WHERE a.type <> 'created'
-       ORDER BY a.created_at DESC, a.id DESC LIMIT 12`),
-    q(`SELECT id, first_name, last_name, company, phone, next_follow_up, stage FROM leads
-       WHERE status = 'active' AND next_follow_up IS NOT NULL AND next_follow_up <= (now() AT TIME ZONE $1)::date + 7
-       ORDER BY next_follow_up, id LIMIT 10`, [tz]),
+       WHERE l.pipeline_id = ANY($1) AND a.type <> 'created'
+       ORDER BY a.created_at DESC, a.id DESC LIMIT 12`, [ids]),
+    q(`SELECT l.id, l.first_name, l.last_name, l.company, l.phone, l.next_follow_up, l.stage_id, l.pipeline_id FROM ${LEADS}
+       AND l.status = 'active' AND l.next_follow_up IS NOT NULL AND l.next_follow_up <= (now() AT TIME ZONE $2)::date + 7
+       ORDER BY l.next_follow_up, l.id LIMIT 10`, [ids, tz]),
   ]);
   res.json({
-    stages: await db.getStages(),
-    totals: totals[0], byStage, calls: calls[0], outcomes, callsDaily, leadsDaily, dqReasons, recent, followUps,
+    pipelineIds: ids, totals: totals[0], byStage, byPipeline, calls: calls[0], outcomes, callsDaily, leadsDaily,
+    dqReasons, recent, followUps,
   });
 }));
 
@@ -774,9 +1004,9 @@ app.get('/api/team-stats', requireOwner, wrap(async (req, res) => {
          count(a.id) FILTER (WHERE a.type = 'call' AND a.outcome = 'voicemail')::int AS voicemails,
          count(a.id) FILTER (WHERE a.type = 'note')::int AS notes,
          count(DISTINCT a.lead_id) FILTER (WHERE a.type IN ('call','note','stage','disqualified'))::int AS leads_worked,
-         count(a.id) FILTER (WHERE a.type = 'stage' AND (a.meta->>'to')::int > (a.meta->>'from')::int)::int AS advanced,
-         count(a.id) FILTER (WHERE a.type = 'stage' AND (a.meta->>'to')::int = 4)::int AS appointments,
-         count(a.id) FILTER (WHERE a.type = 'stage' AND (a.meta->>'to')::int = 5)::int AS won,
+         count(a.id) FILTER (WHERE a.type = 'stage' AND (a.meta->>'to_pos')::int > (a.meta->>'from_pos')::int)::int AS advanced,
+         count(a.id) FILTER (WHERE a.type = 'stage' AND a.meta->>'to_kind' = 'appointment')::int AS appointments,
+         count(a.id) FILTER (WHERE a.type = 'stage' AND a.meta->>'to_kind' = 'won')::int AS won,
          count(a.id) FILTER (WHERE a.type = 'disqualified')::int AS disqualified,
          (SELECT max(created_at) FROM activities x WHERE x.user_id = u.id AND x.type <> 'created') AS last_active
        FROM users u

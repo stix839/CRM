@@ -2,7 +2,7 @@
 
 A black-and-white, single-workspace CRM for working a phone pipeline.
 
-- **5-stage pipeline board** with drag-and-drop (mouse and touch), renameable stages
+- **A pipeline per teammate**, each with its own stages (add, rename, reorder, remove); drag-and-drop board (mouse and touch)
 - **Excel / CSV import** with automatic column matching; unmatched columns are kept on the lead
 - **Lead detail drawer**: one-tap call button, call-outcome logging, notes, follow-up dates, full activity timeline
 - **Disqualify** leads with a reason (drag onto the drop zone or use the button); restore any time
