@@ -42,6 +42,7 @@
     upright: '<path d="M7 7h10v10"/><path d="M7 17 17 7"/>',
     move: '<path d="M5 9l-3 3 3 3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/>',
     up: '<path d="m18 15-6-6-6 6"/>',
+    split: '<path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/>',
     down: '<path d="m6 9 6 6 6-6"/>',
     script: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/>',
     eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
@@ -827,6 +828,7 @@
         ${multiPipeline() ? `<select class="select pipe-switch" id="pipe-switch" aria-label="Pipeline">${pipelineOptions(pipe.id, false)}</select>` : `<b class="pipe-name">${esc(pipe.name)}</b>`}
         <div class="filter-input">${icon('search')}<input class="input" id="board-filter" placeholder="Filter cards…" value="${esc(state.pipelineFilter)}"></div>
         <label class="check" style="font-size:13px;font-weight:500"><input type="checkbox" id="follow-only" ${state.pipelineFollowOnly ? 'checked' : ''}> Follow-ups due</label>
+        ${isOwner() && multiPipeline() ? `<button class="btn sm" id="board-split">${icon('split')} Split leads</button>` : ''}
         <span class="stat" style="margin-left:auto"><b>${visible.length.toLocaleString()}</b>${visible.length !== total ? ` of ${total.toLocaleString()}` : ''} active leads · drag cards between stages</span>
       </div>
       <div class="board" id="board">
@@ -858,6 +860,7 @@
     });
     $('#follow-only').onchange = (e) => { state.pipelineFollowOnly = e.target.checked; rerenderIfOn('pipeline'); };
     if ($('#pipe-switch')) $('#pipe-switch').onchange = (e) => { setPipeline(e.target.value); rerenderIfOn('pipeline'); };
+    if ($('#board-split')) $('#board-split').onclick = () => openSplit();
     $$('[data-more]', view).forEach((b) => b.addEventListener('click', () => {
       const s = Number(b.dataset.more);
       state.colLimit[s] = (state.colLimit[s] || COL_PAGE) + COL_PAGE;
@@ -1147,6 +1150,11 @@
     v.page = Math.min(v.page, pages - 1);
     const pageRows = list.slice(v.page * PER, v.page * PER + PER);
     const th = (k, label, nosort) => `<th ${nosort ? 'class="nosort"' : `data-sort="${k}"`}>${label}${v.sort === k ? `<span class="arrow">${v.dir === 'asc' ? '▲' : '▼'}</span>` : ''}</th>`;
+    const canBulk = isOwner() && multiPipeline();
+    const sel = state.selected = state.selected || new Set();
+    const listIds = new Set(list.map((l) => l.id));
+    [...sel].forEach((id) => { if (!listIds.has(id)) sel.delete(id); });
+    const pageAll = pageRows.length > 0 && pageRows.every((l) => sel.has(l.id));
 
     view.innerHTML = `
       <div style="max-width:1400px;margin:0 auto">
@@ -1161,13 +1169,25 @@
             ${stageOptions(scopePipe, v.stage)}
           </select>` : ''}
           <span class="spacer"></span>
+          ${canBulk ? `<button class="btn sm" id="split-btn">${icon('split')} Split leads</button>` : ''}
           <a class="btn sm" href="/api/export.csv">${icon('download')} Export CSV</a>
         </div>
+        ${canBulk && sel.size ? `
+        <div class="bulk-bar">
+          <b>${sel.size.toLocaleString()} selected</b>
+          ${pageAll && list.length > sel.size ? `<button class="btn sm ghost" id="sel-all">Select all ${list.length.toLocaleString()} matching</button>` : ''}
+          <span class="spacer"></span>
+          <span class="muted">Move to</span>
+          <select class="select" id="bulk-pipe">${pipelineOptions(v.pipeline !== 'all' ? (state.pipelines.find((p) => p.id !== Number(v.pipeline)) || {}).id : '', false)}</select>
+          <button class="btn sm primary" id="bulk-move">${icon('arrow')} Move</button>
+          <button class="btn sm ghost" id="sel-clear">Clear</button>
+        </div>` : ''}
         <div class="card">
           ${list.length ? `
           <div class="table-wrap">
             <table class="tbl">
               <thead><tr>
+                ${canBulk ? `<th class="nosort cb-col"><input type="checkbox" id="sel-page" ${pageAll ? 'checked' : ''} aria-label="Select all on this page"></th>` : ''}
                 ${th('name', 'Name')}${th('company', 'Company')}${th('phone', 'Phone', true)}${showPipeCol ? th('stage', 'Pipeline · Stage') : th('stage', 'Stage')}
                 ${v.status !== 'active' ? th('dq', 'Status', true) : ''}
                 ${th('call_count', 'Calls')}${th('last_contacted_at', 'Last contacted')}${th('next_follow_up', 'Follow-up')}${th('created_at', 'Added')}
@@ -1175,7 +1195,8 @@
               <tbody>
                 ${pageRows.map((l) => {
                   const tel = telHref(l.phone);
-                  return `<tr data-id="${l.id}">
+                  return `<tr data-id="${l.id}" class="${sel.has(l.id) ? 'selected' : ''}">
+                    ${canBulk ? `<td class="cb-col"><input type="checkbox" data-sel="${l.id}" ${sel.has(l.id) ? 'checked' : ''} aria-label="Select lead"></td>` : ''}
                     <td><div class="name-cell"><div class="avatar ${l.status === 'disqualified' ? 'light' : ''}">${esc(initials(l))}</div><span style="overflow:hidden;text-overflow:ellipsis">${esc(leadName(l))}</span></div></td>
                     <td>${esc(l.first_name || l.last_name ? l.company || '' : '')}</td>
                     <td>${tel ? `<a class="tel tnum" href="${esc(tel)}" data-call="${l.id}">${icon('phone')}${esc(fmtPhone(l.phone))}</a>` : '<span class="muted">—</span>'}</td>
@@ -1229,11 +1250,133 @@
       $('#pg-prev').onclick = () => { v.page--; rerenderIfOn('leads'); $('#view').scrollTop = 0; };
       $('#pg-next').onclick = () => { v.page++; rerenderIfOn('leads'); $('#view').scrollTop = 0; };
     }
+    if (canBulk) {
+      $$('[data-sel]', view).forEach((c) => c.addEventListener('change', () => {
+        const id = Number(c.dataset.sel);
+        if (c.checked) sel.add(id); else sel.delete(id);
+        rerenderIfOn('leads');
+      }));
+      if ($('#sel-page')) $('#sel-page').onchange = (e) => {
+        pageRows.forEach((l) => { if (e.target.checked) sel.add(l.id); else sel.delete(l.id); });
+        rerenderIfOn('leads');
+      };
+      if ($('#sel-all')) $('#sel-all').onclick = () => { list.forEach((l) => sel.add(l.id)); rerenderIfOn('leads'); };
+      if ($('#sel-clear')) $('#sel-clear').onclick = () => { sel.clear(); rerenderIfOn('leads'); };
+      if ($('#bulk-move')) $('#bulk-move').onclick = async () => {
+        const target = pipelineById($('#bulk-pipe').value);
+        if (!target) return;
+        await bulkMove([...sel], target);
+        sel.clear();
+        rerenderIfOn('leads');
+      };
+      $('#split-btn').onclick = () => openSplit();
+    }
     $$('tbody tr', view).forEach((tr) => tr.addEventListener('click', (e) => {
+      if (e.target.closest('.cb-col')) return;
       const call = e.target.closest('[data-call]');
       if (call) { recordDial(Number(call.dataset.call)); return; }
       openLead(Number(tr.dataset.id));
     }));
+  }
+
+  /* ---------------------------------------------------------------- moving leads between pipelines (owner) */
+
+  async function bulkMove(ids, target, stageId) {
+    if (!ids.length) return null;
+    try {
+      const r = await api('/api/leads/bulk-move', { method: 'POST', body: { lead_ids: ids, pipeline_id: target.id, stage_id: stageId || undefined } });
+      await Promise.all([loadLeads(), loadPipelines()]);
+      toast(`${r.moved.toLocaleString()} lead${r.moved === 1 ? '' : 's'} moved to ${target.name}${r.skipped ? ` (${r.skipped} already there)` : ''}`);
+      return r;
+    } catch (e) { fail(e); return null; }
+  }
+
+  function openSplit() {
+    const from0 = currentPipeline() || state.pipelines[0];
+    const to0 = state.pipelines.find((p) => p.id !== from0.id) || from0;
+    const m = openModal(`
+      <div class="modal-h"><div><h3>Split leads between pipelines</h3><p>Move a share of one pipeline's leads into another, for example half of yours into Zakry's.</p></div>
+        <button class="btn ghost icon close" aria-label="Close">${icon('x')}</button></div>
+      <div class="modal-b">
+        <div class="grid-2">
+          <label class="field"><span>Take leads from</span><select class="select" id="sp-from">${pipelineOptions(from0.id, false)}</select></label>
+          <label class="field"><span>Only this stage</span><select class="select" id="sp-stage"></select></label>
+          <label class="field"><span>Move them to</span><select class="select" id="sp-to">${pipelineOptions(to0.id, false)}</select></label>
+          <label class="field"><span>Into stage</span><select class="select" id="sp-tostage"></select></label>
+        </div>
+        <div class="field"><span>How many</span>
+          <div class="seg" id="sp-amount"><button type="button" data-a="half" class="on">Half</button><button type="button" data-a="custom">Set a number</button><button type="button" data-a="all">All</button></div>
+          <input class="input hidden" id="sp-count" type="number" min="1" placeholder="Number of leads" style="margin-top:8px">
+        </div>
+        <div class="field"><span>Which leads</span>
+          <div class="seg" id="sp-mode"><button type="button" data-m="alternate" class="on">Every other one</button><button type="button" data-m="random">Random</button><button type="button" data-m="first">Top of the list</button></div>
+          <small class="muted" id="sp-mode-help"></small>
+        </div>
+        <label class="check"><input type="checkbox" id="sp-new" checked> Only leads nobody has called yet</label>
+        <div class="split-preview" id="sp-preview"></div>
+      </div>
+      <div class="modal-f"><button class="btn" data-close>Cancel</button><button class="btn primary" id="sp-go">${icon('arrow')} Move leads</button></div>`, { wide: true });
+    let amount = 'half';
+    let mode = 'alternate';
+    const help = {
+      alternate: 'Takes every second lead in board order, so both pipelines get a fair mix of the list.',
+      random: 'Picks leads at random.',
+      first: 'Takes leads from the top of the board, in order.',
+    };
+    const fillStages = () => {
+      const from = pipelineById($('#sp-from').value);
+      $('#sp-stage').innerHTML = `<option value="">All stages</option>${stageOptions(from, '')}`;
+      $('#sp-tostage').innerHTML = stageOptions(pipelineById($('#sp-to').value), '');
+    };
+    const pick = () => {
+      const fromId = Number($('#sp-from').value);
+      const stageId = Number($('#sp-stage').value) || null;
+      const pool = state.leads
+        .filter((l) => l.pipeline_id === fromId && (!stageId || l.stage_id === stageId) && (!$('#sp-new').checked || !l.call_count))
+        .sort((a, b) => stageSortKey(a) - stageSortKey(b) || a.position - b.position || a.id - b.id);
+      let n = amount === 'all' ? pool.length : amount === 'half' ? Math.floor(pool.length / 2) : Math.min(pool.length, Math.max(0, Number($('#sp-count').value) || 0));
+      let chosen;
+      if (mode === 'first') chosen = pool.slice(0, n);
+      else if (mode === 'random') chosen = pool.slice().sort(() => Math.random() - 0.5).slice(0, n);
+      else {
+        chosen = pool.filter((_, i) => i % 2 === 1).slice(0, n);
+        if (chosen.length < n) chosen = chosen.concat(pool.filter((_, i) => i % 2 === 0).slice(0, n - chosen.length));
+      }
+      return { pool, chosen };
+    };
+    const preview = () => {
+      const { pool, chosen } = pick();
+      const same = $('#sp-from').value === $('#sp-to').value;
+      $('#sp-mode-help').textContent = help[mode];
+      $('#sp-preview').innerHTML = same
+        ? 'Choose two different pipelines.'
+        : `<b>${chosen.length.toLocaleString()}</b> of ${pool.length.toLocaleString()} matching lead${pool.length === 1 ? '' : 's'} will move from <b>${esc(pipelineById($('#sp-from').value).name)}</b> to <b>${esc(pipelineById($('#sp-to').value).name)}</b>.`;
+      $('#sp-go').disabled = same || !chosen.length;
+    };
+    fillStages(); preview();
+    $('#sp-from').onchange = () => { fillStages(); preview(); };
+    $('#sp-to').onchange = () => { fillStages(); preview(); };
+    $('#sp-stage').onchange = preview;
+    $('#sp-new').onchange = preview;
+    $('#sp-count').oninput = preview;
+    $$('#sp-amount button', m).forEach((b) => b.onclick = () => {
+      amount = b.dataset.a;
+      $$('#sp-amount button', m).forEach((x) => x.classList.toggle('on', x === b));
+      $('#sp-count').classList.toggle('hidden', amount !== 'custom');
+      if (amount === 'custom') $('#sp-count').focus();
+      preview();
+    });
+    $$('#sp-mode button', m).forEach((b) => b.onclick = () => {
+      mode = b.dataset.m;
+      $$('#sp-mode button', m).forEach((x) => x.classList.toggle('on', x === b));
+      preview();
+    });
+    $('#sp-go').onclick = async () => {
+      const { chosen } = pick();
+      $('#sp-go').disabled = true;
+      const r = await bulkMove(chosen.map((l) => l.id), pipelineById($('#sp-to').value), Number($('#sp-tostage').value));
+      if (r) { closeModal(); rerenderIfOn('pipeline', 'leads', 'dashboard'); } else $('#sp-go').disabled = false;
+    };
   }
 
   /* ================================================================ lead drawer */

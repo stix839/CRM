@@ -615,6 +615,52 @@ app.post('/api/leads/:id/move', wrap(async (req, res) => {
   }
 }));
 
+// Owner only: move many leads into another pipeline at once (they land in the chosen or first stage).
+app.post('/api/leads/bulk-move', requireOwner, wrap(async (req, res) => {
+  const ids = Array.isArray(req.body.lead_ids)
+    ? [...new Set(req.body.lead_ids.map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 10000)
+    : [];
+  if (!ids.length) return bad(res, 'Choose at least one lead to move');
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    let target;
+    try {
+      target = await resolveStage(req, client, { pipeline_id: req.body.pipeline_id, stage_id: req.body.stage_id });
+    } catch (e) { await client.query('ROLLBACK'); return sendResolveError(res, e); }
+    const { rows: from } = await client.query(
+      `SELECT id, pipeline_id, stage_id FROM leads WHERE id = ANY($1) AND stage_id IS DISTINCT FROM $2
+       ORDER BY position, id FOR UPDATE`,
+      [ids, target.stage_id],
+    );
+    if (from.length) {
+      const start = await nextPosition(client, target.stage_id);
+      const movedIds = from.map((r) => r.id);
+      await client.query(
+        `UPDATE leads l SET pipeline_id = $2, stage_id = $3, position = $4 + x.ord, updated_at = now()
+         FROM unnest($1::int[]) WITH ORDINALITY AS x(id, ord) WHERE l.id = x.id`,
+        [movedIds, target.pipeline_id, target.stage_id, start],
+      );
+      await client.query(
+        `INSERT INTO activities (lead_id, user_id, type, body, meta)
+         SELECT x.id, $4, 'stage', $5,
+           jsonb_build_object('from_stage', x.stage_id, 'from_pipeline', x.pipeline_id, 'to_stage', $6::int,
+             'to_pipeline', $7::int, 'from_pos', NULL, 'to_pos', $8::int, 'to_kind', $9::text, 'bulk', true)
+         FROM unnest($1::int[], $2::int[], $3::int[]) AS x(id, pipeline_id, stage_id)`,
+        [movedIds, from.map((r) => r.pipeline_id), from.map((r) => r.stage_id), req.user.id,
+          `Moved to ${target.pipeline_name} · ${target.stage_name}`, target.stage_id, target.pipeline_id, target.position, target.kind],
+      );
+    }
+    await client.query('COMMIT');
+    res.json({ moved: from.length, skipped: ids.length - from.length, pipeline_id: target.pipeline_id, stage_id: target.stage_id });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}));
+
 app.post('/api/leads/:id/disqualify', wrap(async (req, res) => {
   const reason = cleanText(req.body.reason, 100) || 'Other';
   const note = cleanText(req.body.note, 2000);
