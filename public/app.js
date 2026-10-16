@@ -207,7 +207,7 @@
     pipelineFilter: '',
     pipelineFollowOnly: false,
     colLimit: {},
-    leadsView: { status: 'active', pipeline: 'all', stage: '', q: '', sort: 'created_at', dir: 'desc', page: 0 },
+    leadsView: { status: 'active', pipeline: 'all', stage: '', contact: '', q: '', sort: 'created_at', dir: 'desc', page: 0 },
     otherLeads: { disqualified: null, all: null },
   };
 
@@ -1164,7 +1164,8 @@
     const showPipeCol = multiPipeline() && v.pipeline === 'all';
     let list = rows.filter((l) => matches(l, q, qd)
       && (v.pipeline === 'all' || l.pipeline_id === Number(v.pipeline))
-      && (!v.stage || String(l.stage_id) === String(v.stage)));
+      && (!v.stage || String(l.stage_id) === String(v.stage))
+      && (!v.contact || (v.contact === 'email_only' ? !hasPhone(l) && !!splitFirstEmail(l.email) : hasPhone(l))));
     const key = v.sort;
     const dir = v.dir === 'asc' ? 1 : -1;
     const val = (l) => {
@@ -1204,6 +1205,11 @@
             <option value="">All stages</option>
             ${stageOptions(scopePipe, v.stage)}
           </select>` : ''}
+          <select class="select" id="leads-contact" style="width:auto;height:34px">
+            <option value="">Any contact info</option>
+            <option value="phone" ${v.contact === 'phone' ? 'selected' : ''}>Has phone</option>
+            <option value="email_only" ${v.contact === 'email_only' ? 'selected' : ''}>No phone · has email</option>
+          </select>
           <span class="spacer"></span>
           ${canMove ? `<button class="btn sm" id="split-btn">${icon('split')} Split leads</button>` : ''}
           <a class="btn sm" href="/api/export.csv">${icon('download')} Export CSV</a>
@@ -1237,7 +1243,7 @@
                     ${canBulk ? `<td class="cb-col"><input type="checkbox" data-sel="${l.id}" ${sel.has(l.id) ? 'checked' : ''} aria-label="Select lead"></td>` : ''}
                     <td><div class="name-cell"><div class="avatar ${l.status === 'disqualified' ? 'light' : ''}">${esc(initials(l))}</div><span style="overflow:hidden;text-overflow:ellipsis">${esc(leadName(l))}</span></div></td>
                     <td>${esc(l.first_name || l.last_name ? l.company || '' : '')}</td>
-                    <td>${tel ? `<a class="tel tnum" href="${esc(tel)}" data-call="${l.id}">${icon('phone')}${esc(fmtPhone(l.phone))}</a>` : '<span class="muted">—</span>'}</td>
+                    <td>${tel ? `<a class="tel tnum" href="${esc(tel)}" data-call="${l.id}">${icon('phone')}${esc(fmtPhone(l.phone))}</a>` : splitFirstEmail(l.email) ? `<button type="button" class="tel mail-link" data-mail="${l.id}" title="Send a cold outreach email">${icon('mail')}Email</button>` : '<span class="muted">—</span>'}</td>
                     <td>${showPipeCol && pipelineById(l.pipeline_id) ? `<span class="muted" style="font-size:12px">${esc(pipelineById(l.pipeline_id).name)} · </span>` : ''}<span class="chip">${esc(stageName(l.stage_id))}</span></td>
                     ${v.status !== 'active' ? `<td>${l.status === 'disqualified' ? `<span class="chip dark">${icon('ban')}${esc(l.dq_reason || 'Disqualified')}</span>` : '<span class="chip outline">Active</span>'}</td>` : ''}
                     <td class="tnum">${l.call_count || 0}</td>
@@ -1275,6 +1281,11 @@
         rerenderIfOn('leads');
         const f = $('#leads-q'); f.focus(); f.setSelectionRange(f.value.length, f.value.length);
       }, 150);
+    });
+    $('#leads-contact').onchange = (e) => { v.contact = e.target.value; v.page = 0; rerenderIfOn('leads'); };
+    $$('[data-mail]', view).forEach((b) => b.onclick = (e) => {
+      e.stopPropagation();
+      api(`/api/leads/${b.dataset.mail}`).then((r) => openEmail(r.lead, 'cold')).catch(fail);
     });
     if ($('#leads-stage')) $('#leads-stage').onchange = (e) => { v.stage = e.target.value; v.page = 0; rerenderIfOn('leads'); };
     if ($('#leads-pipe')) $('#leads-pipe').onchange = (e) => { v.pipeline = e.target.value === 'all' ? 'all' : Number(e.target.value); v.stage = ''; v.page = 0; rerenderIfOn('leads'); };
@@ -1806,6 +1817,7 @@
     };
   }
 
+  const hasPhone = (l) => !!(digits(l.phone || '') || digits(l.phone_alt || ''));
   function splitFirstEmail(v) {
     return String(v || '').split(/[;,\s]+/).find((x) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)) || null;
   }
@@ -1898,9 +1910,16 @@
     const next = (lead.appointments || []).filter((a) => a.status === 'scheduled' && new Date(a.starts_at) > new Date()).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))[0];
     const when = next ? new Date(next.starts_at).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '[day and time]';
     const where = next && next.location ? ` at ${next.location}` : '';
+    const me = (state.user.name || '').split(' ')[0];
+    const obs = (lead.social_note || '').trim();
     // No names at the bottom: the M2 signature adds the sender's name, title and contact details.
     return {
       blank: { label: 'Blank', subject: '', body: '' },
+      cold: {
+        label: 'Cold outreach (no phone)',
+        subject: `Quick idea for ${co}`,
+        body: `Hi ${first},\n\nMy name is ${me} and I'm with M2. I came across ${co}${lead.city ? ` in ${lead.city}` : ''} and wanted to reach out, since I couldn't find a good number to call.\n\n${obs ? `One thing I noticed on your page: ${obs.replace(/[.\s]+$/, '')}.\n\n` : ''}We help local businesses turn their Facebook and Instagram into a steady source of new customers. We handle the posting and turn that attention into calls and new business, so you can stay focused on running ${co}. No ads and no paying for leads.\n\nWould you be open to a quick 15-minute call this week? I'd show you what we'd post for ${co} and what it would cost. Just reply with a good number and time to reach you.\n\nThanks,`,
+      },
       thanks: {
         label: 'Thanks for the call + appointment',
         subject: `Thanks for taking my call, ${first}`,
@@ -1990,6 +2009,7 @@
       $$('[data-tpl]', m).forEach((x) => x.classList.toggle('primary', x.dataset.tpl === key));
     };
     $$('[data-tpl]', m).forEach((b) => b.onclick = () => pick(b.dataset.tpl));
+    if (!tplKey && !lead.phone && !lead.phone_alt) tplKey = 'cold';
     if (tplKey && tpls[tplKey]) pick(tplKey);
     (tplKey ? f.body : to ? f.subject : f.to).focus();
 

@@ -292,8 +292,9 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 .tbl tbody tr:hover td { background: #fafafa; }
 .tbl .name-cell { display: flex; align-items: center; gap: 10px; font-weight: 600; }
 .tbl .name-cell .avatar { width: 28px; height: 28px; font-size: 11px; }
-.tbl a.tel { text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 6px; margin: -4px -8px; }
-.tbl a.tel:hover { background: var(--black); color: #fff; }
+.tbl a.tel, .tbl .mail-link { text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 6px; margin: -4px -8px; }
+.tbl a.tel:hover, .tbl .mail-link:hover { background: var(--black); color: #fff; }
+.tbl .mail-link { background: none; border: 0; font: inherit; font-weight: 600; color: inherit; cursor: pointer; }
 .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
 .toolbar .spacer { flex: 1; }
 .pager { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; font-size: 13px; color: var(--muted); }
