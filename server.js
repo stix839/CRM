@@ -8,6 +8,7 @@ const ExcelJS = require('exceljs');
 const db = require('./db');
 const DEFAULT_TALK_TRACK = require('./talktrack');
 const outlook = require('./outlook');
+const email = require('./email');
 
 const PORT = process.env.PORT || 3000;
 const SESSION_DAYS = 30;
@@ -974,6 +975,52 @@ app.get('/api/export.csv', wrap(async (req, res) => {
   res.send('﻿' + lines.join('\r\n'));
 }));
 
+/* ---------------------------------------------------------------- email signature */
+
+async function websiteSetting() {
+  const { rows } = await db.query(`SELECT value FROM settings WHERE key = 'website'`);
+  return rows[0] && typeof rows[0].value === 'string' && rows[0].value ? rows[0].value : email.DEFAULT_WEBSITE;
+}
+
+// The M2 footer for the signed-in user; the reply-to address is their connected Outlook if they have one.
+async function signatureFor(req) {
+  const { rows } = await db.query(
+    `SELECT u.name, u.email, u.role, u.title, u.phone, o.email AS outlook_email
+     FROM users u LEFT JOIN oauth_accounts o ON o.user_id = u.id WHERE u.id = $1`, [req.user.id],
+  );
+  const u = rows[0];
+  const fields = {
+    name: u.name,
+    title: u.title || (u.role === 'owner' ? 'Owner' : ''),
+    phone: u.phone || '',
+    email: u.outlook_email || u.email,
+    website: await websiteSetting(),
+    logoUrl: `${appBase(req)}/email/m2-logo.png`,
+  };
+  return { ...email.signature(fields), fields: { ...fields, title: u.title || '', defaultTitle: fields.title } };
+}
+
+app.get('/api/signature', wrap(async (req, res) => {
+  res.json(await signatureFor(req));
+}));
+
+app.put('/api/signature', wrap(async (req, res) => {
+  const phone = cleanText(req.body.phone, 40);
+  if (phone && phone.replace(/\D/g, '').length < 7) return bad(res, 'That phone number looks too short');
+  await db.query('UPDATE users SET title = $2, phone = $3 WHERE id = $1', [req.user.id, cleanText(req.body.title, 80), phone]);
+  if (req.body.website !== undefined && req.user.role === 'owner') {
+    let site = cleanText(req.body.website, 300);
+    if (site && !/^https?:\/\//i.test(site)) site = `https://${site}`;
+    if (site && !/^https?:\/\/[^\s/]+\.[^\s]+$/i.test(site)) return bad(res, 'That website address looks wrong');
+    if (site) {
+      await db.query(`INSERT INTO settings (key, value) VALUES ('website', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, [JSON.stringify(site)]);
+    } else {
+      await db.query(`DELETE FROM settings WHERE key = 'website'`);
+    }
+  }
+  res.json(await signatureFor(req));
+}));
+
 /* ---------------------------------------------------------------- outlook */
 
 function appBase(req) {
@@ -1035,7 +1082,7 @@ app.post('/api/leads/:id/email', wrap(async (req, res) => {
     await outlook.graph(req.user.id, 'POST', '/me/sendMail', {
       message: {
         subject,
-        body: { contentType: 'HTML', content: textToHtml(body) },
+        body: { contentType: 'HTML', content: textToHtml(body) + (req.body.signature === false ? '' : (await signatureFor(req)).html) },
         toRecipients: to.map((address) => ({ emailAddress: { address } })),
         ccRecipients: cc.map((address) => ({ emailAddress: { address } })),
       },
@@ -1083,11 +1130,11 @@ function parseTime(v) {
 
 const graphTime = (d) => ({ dateTime: d.toISOString().replace('Z', ''), timeZone: 'UTC' });
 
-function eventBody(notes, lead) {
+function eventBody(notes, lead, footer = '') {
   const lines = [];
   if (notes) lines.push(notes);
   if (lead) lines.push(`${[lead.first_name, lead.last_name].filter(Boolean).join(' ') || lead.company || 'Lead'}${lead.company && (lead.first_name || lead.last_name) ? ` · ${lead.company}` : ''}${lead.phone ? ` · ${lead.phone}` : ''}`);
-  return { contentType: 'HTML', content: textToHtml(lines.join('\n\n')) };
+  return { contentType: 'HTML', content: textToHtml(lines.join('\n\n')) + footer };
 }
 
 app.get('/api/appointments', wrap(async (req, res) => {
@@ -1156,7 +1203,7 @@ app.post('/api/appointments', wrap(async (req, res) => {
     }
     try {
       const ev = await outlook.graph(req.user.id, 'POST', '/me/events', {
-        subject: title, body: eventBody(notes, lead), start: graphTime(start), end: graphTime(end),
+        subject: title, body: eventBody(notes, lead, attendees.length ? (await signatureFor(req)).html : ''), start: graphTime(start), end: graphTime(end),
         location: location ? { displayName: location } : undefined, attendees,
       });
       eventId = ev.id || null;

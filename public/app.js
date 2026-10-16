@@ -18,6 +18,7 @@
     settings: '<line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/>',
     phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
     search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
     plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
     x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
     logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
@@ -1792,7 +1793,10 @@
             });
             if (tab) tab.location.href = link; else window.open(link, '_blank');
           }
-          toast(`Booked ${fmtRange(r.appointment.starts_at, r.appointment.ends_at)}${body.invite_lead ? ' · invite sent' : body.add_to_outlook ? ' · added to Outlook' : openOutlook ? ' · click Send in Outlook to finish' : ''}${r.movedTo ? ` · moved to ${r.movedTo}` : ''}`, { duration: 7000 });
+          const booked = chosen;
+          const canEmail = booked && splitFirstEmail(booked.email);
+          toast(`Booked ${fmtRange(r.appointment.starts_at, r.appointment.ends_at)}${body.invite_lead ? ' · invite sent' : body.add_to_outlook ? ' · added to Outlook' : openOutlook ? ' · click Send in Outlook to finish' : ''}${r.movedTo ? ` · moved to ${r.movedTo}` : ''}`,
+            canEmail ? { duration: 12000, action: 'Send thank-you email', onAction: () => openEmail({ ...booked, appointments: undefined }, 'thanks').catch(fail) } : { duration: 7000 });
           if (r.movedTo) await loadLeads();
         }
         closeModal();
@@ -1891,83 +1895,139 @@
   function emailTemplates(lead) {
     const first = lead.first_name || 'there';
     const co = spokenCompany(lead.company) || 'your business';
-    const me = (state.user.name || '').split(' ')[0];
     const next = (lead.appointments || []).filter((a) => a.status === 'scheduled' && new Date(a.starts_at) > new Date()).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))[0];
     const when = next ? new Date(next.starts_at).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '[day and time]';
+    const where = next && next.location ? ` at ${next.location}` : '';
+    // No names at the bottom: the M2 signature adds the sender's name, title and contact details.
     return {
       blank: { label: 'Blank', subject: '', body: '' },
+      thanks: {
+        label: 'Thanks for the call + appointment',
+        subject: `Thanks for taking my call, ${first}`,
+        body: `Hi ${first},\n\nThank you for taking the time to talk with me today. As we discussed, we're set to meet on ${when}${where} to go over how M2 can turn ${co}'s Facebook and Instagram into a steady source of new customers.\n\nHere's what we'll cover:\n• What we'd post for ${co} and how often\n• How we turn followers into calls and new business\n• What it would cost\n\nIf you get a chance beforehand, feel free to send over a few pictures of your recent work. It helps me put together examples made for you.\n\nIf anything comes up and you need to move the time, just reply to this email or give me a call.\n\nThanks again, and talk soon,`,
+      },
+      confirm: {
+        label: 'Appointment reminder',
+        subject: `Reminder: our meeting${next ? ' on ' + new Date(next.starts_at).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : ''}`,
+        body: `Hi ${first},\n\nJust a quick reminder that we're meeting on ${when}${where}. I'll walk you through what we'd post for ${co} and what it would cost.\n\nIf the time no longer works, reply here and we'll find a better one.\n\nSee you then,`,
+      },
       followup: {
         label: 'Follow-up after a call',
         subject: `Great talking with you, ${first}`,
-        body: `Hi ${first},\n\nThanks for taking the time to talk today. Like I mentioned, we help businesses like ${co} turn their Facebook and Instagram into something that brings in work, without ads or paying for leads.\n\nI'd love to grab 20 minutes to show you what we'd post for ${co} and what it would cost. What day works best for you this week?\n\nThanks,\n${me}\nM2`,
-      },
-      confirm: {
-        label: 'Appointment confirmation',
-        subject: `Confirmed: M2 meeting${next ? ' on ' + new Date(next.starts_at).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : ''}`,
-        body: `Hi ${first},\n\nLooking forward to meeting on ${when}${next && next.location ? ` at ${next.location}` : ''}. I'll walk you through what we'd post for ${co} and what it would cost.\n\nIf you get a chance beforehand, feel free to text me a few pictures from recent jobs.\n\nSee you then,\n${me}\nM2`,
+        body: `Hi ${first},\n\nThanks for taking the time to talk today. Like I mentioned, we help businesses like ${co} turn their Facebook and Instagram into something that brings in customers, without ads or paying for leads.\n\nI'd love to grab 20 minutes to show you what we'd post for ${co} and what it would cost. What day works best for you this week?\n\nThanks,`,
       },
       missed: {
         label: "Couldn't reach you",
         subject: `Quick question for ${co}`,
-        body: `Hi ${first},\n\nI tried giving you a call but couldn't catch you. I'm with M2. We help businesses like ${co} get more customers from their own Facebook and Instagram, without ads.\n\nWould you be open to a quick 20-minute chat this week?\n\nThanks,\n${me}\nM2`,
+        body: `Hi ${first},\n\nI tried giving you a call but couldn't catch you. I'm with M2. We help businesses like ${co} get more customers from their own Facebook and Instagram, without ads.\n\nWould you be open to a quick 20-minute chat this week?\n\nThanks,`,
       },
     };
   }
 
   // Records an email the user finished in Outlook on the web or their mail app.
-  async function logDraft(lead, f, via) {
+  async function logDraft(lead, f, via, msg) {
     closeModal();
     try {
       await api(`/api/leads/${lead.id}/email-log`, { method: 'POST', body: { to: f.to.value, subject: f.subject.value, body: f.body.value, via } });
-      toast(via === 'outlook_web' ? 'Email opened in Outlook. Click Send there.' : 'Email opened in your mail app');
+      toast(msg || (via === 'outlook_web' ? 'Email opened in Outlook. Click Send there.' : 'Email opened in your mail app'), { duration: msg ? 9000 : 3800 });
       refreshDrawerIf(lead.id);
     } catch (e) { fail(e); }
   }
 
-  function openEmail(lead) {
+  const loadSignature = () => api('/api/signature').then((r) => { state.signature = r; return r; });
+
+  // Message + signature as rich HTML (for pasting into Outlook) and plain text.
+  function emailParts(bodyText, sig) {
+    const html = `<div style="font-family:Segoe UI,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#0a0a0a">${esc(bodyText).replace(/\r?\n/g, '<br>')}</div>${sig ? sig.html : ''}`;
+    const text = sig ? `${bodyText.replace(/\s+$/, '')}\n\n${sig.text}` : bodyText;
+    return { html, text };
+  }
+
+  // Must run inside the click so the browser allows it. Returns false if rich copy isn't supported.
+  function copyRich({ html, text }) {
+    try {
+      if (!navigator.clipboard || typeof ClipboardItem === 'undefined') return false;
+      navigator.clipboard.write([new ClipboardItem({
+        'text/html': new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([text], { type: 'text/plain' }),
+      })]).catch(() => {});
+      return true;
+    } catch { return false; }
+  }
+
+  async function openEmail(lead, tplKey) {
     const ol = state.outlook;
+    if (tplKey && !lead.appointments) {
+      lead = { ...lead, appointments: await api(`/api/appointments?lead_id=${lead.id}`).then((r) => r.appointments).catch(() => []) };
+    }
     const tpls = emailTemplates(lead);
     const to = (lead.email || '').split(/[;,\s]+/).filter(Boolean).join(', ');
     const m = openModal(`
-      <div class="modal-h"><div><h3>Email ${esc(leadName(lead))}</h3><p>${ol.connected ? `Sends from your Outlook (${esc(ol.email || '')}) and is saved to your Sent folder.` : 'Opens Outlook in a new tab with this email ready to go. Just click Send there.'}</p></div>
+      <div class="modal-h"><div><h3>Email ${esc(leadName(lead))}</h3><p>${ol.connected ? `Sends from your Outlook (${esc(ol.email || '')}) and is saved to your Sent folder.` : 'Copies the email with your M2 signature and opens a new Outlook message. Paste it in and click Send.'}</p></div>
         <button class="btn ghost icon close" aria-label="Close">${icon('x')}</button></div>
       <form id="email-form">
         <div class="modal-b">
-          <div class="email-tpls">${Object.entries(tpls).map(([k, t]) => `<button type="button" class="btn sm ${k === 'blank' ? '' : ''}" data-tpl="${k}">${esc(t.label)}</button>`).join('')}</div>
+          <div class="email-tpls">${Object.entries(tpls).map(([k, t]) => `<button type="button" class="btn sm" data-tpl="${k}">${esc(t.label)}</button>`).join('')}</div>
           <label class="field"><span>To</span><input class="input" name="to" value="${esc(to)}" placeholder="name@example.com" required></label>
           <label class="field"><span>Subject</span><input class="input" name="subject" maxlength="300" required></label>
           <label class="field"><span>Message</span><textarea class="textarea email-body" name="body" required></textarea></label>
+          <div class="sig-wrap">
+            <label class="check"><input type="checkbox" name="sig" checked> Add my M2 signature <a href="#/settings" class="muted sig-edit">Edit</a></label>
+            <div class="sig-preview" id="sig-preview"><span class="muted">Loading signature…</span></div>
+          </div>
         </div>
         <div class="modal-f">
           <button type="button" class="btn" data-close>Cancel</button>
           ${ol.connected ? `<button type="submit" class="btn primary" id="email-send">${icon('mail')} Send email</button>` : `
             <button type="button" class="btn ghost" id="email-app" title="Use the email app on this device instead">Use my email app</button>
-            <button type="submit" class="btn primary">${icon('external')} Open in Outlook</button>`}
+            <button type="submit" class="btn primary" id="email-outlook">${icon('external')} Copy &amp; open Outlook</button>`}
         </div>
       </form>`, { wide: true });
     const f = $('#email-form');
-    $$('[data-tpl]', m).forEach((b) => b.onclick = () => {
-      const t = tpls[b.dataset.tpl];
+    const pick = (key) => {
+      const t = tpls[key];
       f.subject.value = t.subject; f.body.value = t.body;
-      $$('[data-tpl]', m).forEach((x) => x.classList.toggle('primary', x === b));
-    });
-    (to ? f.subject : f.to).focus();
+      $$('[data-tpl]', m).forEach((x) => x.classList.toggle('primary', x.dataset.tpl === key));
+    };
+    $$('[data-tpl]', m).forEach((b) => b.onclick = () => pick(b.dataset.tpl));
+    if (tplKey && tpls[tplKey]) pick(tplKey);
+    (tplKey ? f.body : to ? f.subject : f.to).focus();
+
+    let sig = state.signature || null;
+    const showSig = () => {
+      const p = $('#sig-preview', m);
+      if (!p) return;
+      p.hidden = !f.sig.checked;
+      if (sig) p.innerHTML = sig.html;
+    };
+    f.sig.onchange = showSig;
+    $('.sig-edit', m).onclick = () => closeModal();
+    showSig();
+    loadSignature().then((r) => { sig = r; showSig(); }).catch(() => { const p = $('#sig-preview', m); if (p) p.textContent = 'Signature unavailable'; });
+    const parts = () => emailParts(f.body.value, f.sig.checked ? sig : null);
+
     if ($('#email-app')) $('#email-app').onclick = () => {
       if (!f.reportValidity()) return;
-      location.href = `mailto:${encodeURIComponent(f.to.value)}?subject=${encodeURIComponent(f.subject.value)}&body=${encodeURIComponent(f.body.value)}`;
+      location.href = `mailto:${encodeURIComponent(f.to.value)}?subject=${encodeURIComponent(f.subject.value)}&body=${encodeURIComponent(parts().text)}`;
       logDraft(lead, f, 'mail_app');
     };
     f.onsubmit = async (e) => {
       e.preventDefault();
       if (!ol.connected) {
-        window.open(outlookMailLink({ to: f.to.value, subject: f.subject.value, body: f.body.value }), '_blank');
-        logDraft(lead, f, 'outlook_web');
+        const p = parts();
+        if (copyRich(p)) {
+          window.open(outlookMailLink({ to: f.to.value, subject: f.subject.value }), '_blank');
+          logDraft(lead, f, 'outlook_web', 'Email copied. Click into the message in Outlook, paste (Ctrl+V or ⌘V), then click Send.');
+        } else {
+          window.open(outlookMailLink({ to: f.to.value, subject: f.subject.value, body: p.text }), '_blank');
+          logDraft(lead, f, 'outlook_web');
+        }
         return;
       }
       const btn = $('#email-send');
       btn.disabled = true;
       try {
-        await api(`/api/leads/${lead.id}/email`, { method: 'POST', body: { to: f.to.value, subject: f.subject.value, body: f.body.value } });
+        await api(`/api/leads/${lead.id}/email`, { method: 'POST', body: { to: f.to.value, subject: f.subject.value, body: f.body.value, signature: f.sig.checked } });
         closeModal();
         toast(`Email sent to ${f.to.value}`);
         refreshDrawerIf(lead.id);
@@ -2201,7 +2261,7 @@
       } catch (e) { fail(e); }
     });
 
-    $('#lead-email').onclick = () => openEmail(lead);
+    $('#lead-email').onclick = () => openEmail(lead).catch(fail);
     $('#lead-book').onclick = () => openAppointmentForm({ lead });
     $$('[data-appt]', drawer).forEach((el) => el.addEventListener('click', () => {
       const ap = lead.appointments.find((x) => String(x.id) === el.dataset.appt);
@@ -2875,9 +2935,10 @@
   /* ================================================================ settings */
 
   async function renderSettings(view, alive) {
-    const [users] = await Promise.all([api('/api/users'), loadPipelines(), loadOutlook()]);
+    const [users, sig] = await Promise.all([api('/api/users'), loadSignature(), loadPipelines(), loadOutlook()]);
     if (!alive()) return;
     const ol = state.outlook;
+    const sf = sig.fields;
     view.innerHTML = `
       <div class="settings">
         <div class="card" id="outlook-card">
@@ -2908,6 +2969,26 @@
               </div>` : `<div class="ol-row"><div class="dot-ic" style="background:var(--black);color:#fff">${icon('check')}</div>
                 <div class="li-main"><div class="li-title">Working with Outlook on the web</div><div class="li-sub">Emails and appointment invites open in Outlook, already filled in. You click Send there.</div></div></div>`}
           </div>
+        </div>
+
+        <div class="card" id="sig-card">
+          <div class="card-h"><h3>Email signature</h3><span class="sub">The M2 footer added to emails and invites you send</span></div>
+          <form class="card-b sig-settings" id="sig-form">
+            <div class="sig-fields">
+              <label class="field"><span>Title</span><input class="input" name="title" maxlength="80" value="${esc(sf.title)}" placeholder="${esc(sf.defaultTitle || 'e.g. Growth Specialist')}"></label>
+              <label class="field"><span>Phone</span><input class="input" name="phone" type="tel" maxlength="40" value="${esc(sf.phone)}" placeholder="(325) 555-0123"></label>
+              ${isOwner() ? `<label class="field"><span>Website <span class="muted">· everyone's footer</span></span><input class="input" name="website" maxlength="300" value="${esc(sf.website)}"></label>` : ''}
+              <div class="muted" style="font-size:12.5px">Name and email come from your account${ol.connected ? ' and connected Outlook' : ''}: <b>${esc(sf.name)}</b> · ${esc(sf.email)}</div>
+            </div>
+            <div class="sig-side">
+              <div class="sig-preview" id="sig-settings-preview">${sig.html}</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px">
+                <button class="btn" type="button" id="sig-copy" title="Copy the signature to paste into Outlook's signature settings">${icon('copy')} Copy for Outlook</button>
+                <button class="btn primary" type="submit">Save signature</button>
+              </div>
+              <p class="muted sig-howto">To use it in Outlook too: Outlook → Settings → Mail → <b>Compose and reply</b> → Email signature → paste.</p>
+            </div>
+          </form>
         </div>
 
         ${isOwner() ? `
@@ -2993,6 +3074,22 @@
         } catch (err) { fail(err); }
       };
     }
+    $('#sig-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const body = Object.fromEntries(new FormData(e.target));
+      try {
+        const r = await api('/api/signature', { method: 'PUT', body });
+        state.signature = r;
+        $('#sig-settings-preview').innerHTML = r.html;
+        if (r.fields.website && e.target.website) e.target.website.value = r.fields.website;
+        toast('Signature saved');
+      } catch (err) { fail(err); }
+    };
+    $('#sig-copy').onclick = () => {
+      const s = state.signature;
+      if (s && copyRich({ html: s.html, text: s.text })) toast('Signature copied. Paste it into Outlook\'s signature box.', { duration: 6000 });
+      else fail(new Error('Copy is not supported in this browser'));
+    };
     if ($('#pipe-list')) renderPipelineEditors(users);
     if ($('#ol-disconnect')) $('#ol-disconnect').onclick = async () => {
       if (!(await confirmDialog('Disconnect Outlook?', 'The CRM will stop sending email and adding events from your account. Existing Outlook events stay where they are.', 'Disconnect'))) return;

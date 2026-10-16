@@ -99,6 +99,8 @@ async function migrate() {
 
     ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'member';
     ALTER TABLE leads ADD COLUMN IF NOT EXISTS social_note TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS title TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;
   `);
   // The first account created is the owner.
   await pool.query(`
