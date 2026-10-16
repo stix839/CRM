@@ -1047,6 +1047,19 @@ app.post('/api/leads/:id/email', wrap(async (req, res) => {
   res.json(act);
 }));
 
+// Logs an email the user wrote here and sent from Outlook on the web or their own mail app.
+app.post('/api/leads/:id/email-log', wrap(async (req, res) => {
+  const lead = await leadForUser(req, req.params.id);
+  if (!lead) return bad(res, 'Lead not found', 404);
+  const subject = cleanText(req.body.subject, 300) || '(no subject)';
+  const body = cleanText(req.body.body, 50000) || '';
+  const via = ['outlook_web', 'mail_app'].includes(req.body.via) ? req.body.via : 'mail_app';
+  const act = await logActivity(db, lead.id, req.user.id, 'email', `${subject}\n\n${body}`,
+    { to: splitEmails(req.body.to), subject, via });
+  await db.query('UPDATE leads SET last_contacted_at = now(), updated_at = now() WHERE id = $1', [lead.id]);
+  res.json(act);
+}));
+
 /* ---------------------------------------------------------------- appointments */
 
 const APPT_STATUSES = ['scheduled', 'completed', 'no_show', 'canceled'];

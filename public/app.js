@@ -1524,7 +1524,7 @@
       ? `<span class="chip outline" title="Your Outlook events show as outlined blocks">${icon('check')}Outlook · ${esc(state.outlook.email || 'connected')}</span>`
       : state.outlook.configured
         ? `<a class="btn sm" href="/api/outlook/connect">${icon('mail')} Connect Outlook</a>`
-        : `<span class="chip outline" title="Outlook isn't set up yet">${icon('mail')}Outlook not set up</span>`;
+        : `<span class="chip outline" title="Bookings and emails open in Outlook on the web for you to send">${icon('mail')}Outlook on the web</span>`;
 
     const chip = (ev) => ev.kind === 'crm'
       ? `<button class="cal-ev crm ${ev.status}" data-appt="${ev.id}" title="${esc(ev.title)}"><b>${esc(fmtTime(ev.s))}</b> ${esc(apptLeadName(ev) || ev.title)}</button>`
@@ -1717,10 +1717,12 @@
       const apptStage = pipe && pipe.stages.find((st) => st.kind === 'appointment');
       const cur = chosen && stageInfo(chosen.stage_id);
       const canMove = apptStage && cur && cur.stage.kind !== 'won' && cur.stage.position < apptStage.position;
-      $('#appt-opts').innerHTML = `
-        <label class="check ${ol.connected ? '' : 'disabled'}"><input type="checkbox" name="add_to_outlook" ${ol.connected ? 'checked' : 'disabled'}> Add to my Outlook calendar
-          ${ol.connected ? `<span class="muted">· ${esc(ol.email || '')}</span>` : ol.configured ? '<a href="/api/outlook/connect" class="muted">· connect Outlook</a>' : '<span class="muted">· Outlook not set up</span>'}</label>
-        ${chosen ? `<label class="check ${ol.connected && email ? '' : 'disabled'}"><input type="checkbox" name="invite_lead" ${ol.connected && email ? 'checked' : 'disabled'}> Email an Outlook invite to ${email ? `<b>${esc(email)}</b>` : 'the lead <span class="muted">· no email on file</span>'}</label>` : ''}
+      const outlookPart = ol.connected ? `
+        <label class="check"><input type="checkbox" name="add_to_outlook" checked> Add to my Outlook calendar <span class="muted">· ${esc(ol.email || '')}</span></label>
+        ${chosen ? `<label class="check ${email ? '' : 'disabled'}"><input type="checkbox" name="invite_lead" ${email ? 'checked' : 'disabled'}> Email an Outlook invite to ${email ? `<b>${esc(email)}</b>` : 'the lead <span class="muted">· no email on file</span>'}</label>` : ''}` : `
+        <label class="check"><input type="checkbox" name="open_outlook" checked> Open Outlook to put it on my calendar${email ? ` and invite <b>${esc(email)}</b>` : ''}</label>
+        <div class="muted appt-opts-hint">Outlook opens in a new tab with everything filled in. Just click <b>Send</b>${email ? ' and the lead gets the invite' : ''}.${chosen && !email ? ' No email on file for this lead, so no invite will go out.' : ''}</div>`;
+      $('#appt-opts').innerHTML = `${outlookPart}
         ${canMove ? `<label class="check"><input type="checkbox" name="move_stage" checked> Move lead to <b>${esc(apptStage.name)}</b></label>` : ''}`;
       const add = $('#appt-form').add_to_outlook;
       const inv = $('#appt-form').invite_lead;
@@ -1768,6 +1770,8 @@
       const body = { title: f.title.value, starts_at: s.toISOString(), ends_at: en.toISOString(), location: f.location.value, notes: f.notes.value };
       const btn = $('#appt-save');
       btn.disabled = true;
+      const openOutlook = !editing && f.open_outlook && f.open_outlook.checked;
+      const tab = openOutlook ? window.open('about:blank', '_blank') : null;
       try {
         if (editing) {
           const r = await api(`/api/appointments/${appt.id}`, { method: 'PATCH', body });
@@ -1780,18 +1784,50 @@
             move_stage: !!(f.move_stage && f.move_stage.checked),
           });
           const r = await api('/api/appointments', { method: 'POST', body });
-          toast(`Booked ${fmtRange(r.appointment.starts_at, r.appointment.ends_at)}${body.invite_lead ? ' · invite sent' : body.add_to_outlook ? ' · added to Outlook' : ''}${r.movedTo ? ` · moved to ${r.movedTo}` : ''}`, { duration: 6000 });
+          if (openOutlook) {
+            const link = outlookEventLink({
+              subject: body.title, start: s, end: en, location: body.location,
+              body: [body.notes, chosen ? `${leadName(chosen)}${chosen.phone ? ' · ' + fmtPhone(chosen.phone) : ''}` : ''].filter(Boolean).join('\n\n'),
+              to: chosen ? splitFirstEmail(chosen.email) : null,
+            });
+            if (tab) tab.location.href = link; else window.open(link, '_blank');
+          }
+          toast(`Booked ${fmtRange(r.appointment.starts_at, r.appointment.ends_at)}${body.invite_lead ? ' · invite sent' : body.add_to_outlook ? ' · added to Outlook' : openOutlook ? ' · click Send in Outlook to finish' : ''}${r.movedTo ? ` · moved to ${r.movedTo}` : ''}`, { duration: 7000 });
           if (r.movedTo) await loadLeads();
         }
         closeModal();
         state.cal.selected = dayStart(s);
         rerenderAfterAppt(chosen && chosen.id);
-      } catch (err) { fail(err); btn.disabled = false; }
+      } catch (err) { if (tab) tab.close(); fail(err); btn.disabled = false; }
     };
   }
 
   function splitFirstEmail(v) {
     return String(v || '').split(/[;,\s]+/).find((x) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)) || null;
+  }
+
+  // Outlook on the web "compose" links: no Microsoft setup needed, the user just clicks Send in Outlook.
+  function outlookWebBase() {
+    const em = String(state.outlook.email || (state.user && state.user.email) || '').toLowerCase();
+    return /@(outlook|hotmail|live|msn)\./.test(em) ? 'https://outlook.live.com' : 'https://outlook.office.com';
+  }
+  function qs(params) {
+    return Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+  }
+  function isoWithOffset(d) {
+    const off = -d.getTimezoneOffset();
+    const sign = off >= 0 ? '+' : '-';
+    const abs = Math.abs(off);
+    return `${ymd(d)}T${hm(d)}:00${sign}${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
+  }
+  function outlookEventLink({ subject, start, end, location, body, to }) {
+    return `${outlookWebBase()}/calendar/0/deeplink/compose?${qs({
+      path: '/calendar/action/compose', rru: 'addevent', subject, startdt: isoWithOffset(start), enddt: isoWithOffset(end), location, body, to,
+    })}`;
+  }
+  function outlookMailLink({ to, subject, body }) {
+    return `${outlookWebBase()}/mail/0/deeplink/compose?${qs({ to, subject, body })}`;
   }
 
   function rerenderAfterAppt(leadId) {
@@ -1878,12 +1914,22 @@
     };
   }
 
+  // Records an email the user finished in Outlook on the web or their mail app.
+  async function logDraft(lead, f, via) {
+    closeModal();
+    try {
+      await api(`/api/leads/${lead.id}/email-log`, { method: 'POST', body: { to: f.to.value, subject: f.subject.value, body: f.body.value, via } });
+      toast(via === 'outlook_web' ? 'Email opened in Outlook. Click Send there.' : 'Email opened in your mail app');
+      refreshDrawerIf(lead.id);
+    } catch (e) { fail(e); }
+  }
+
   function openEmail(lead) {
     const ol = state.outlook;
     const tpls = emailTemplates(lead);
     const to = (lead.email || '').split(/[;,\s]+/).filter(Boolean).join(', ');
     const m = openModal(`
-      <div class="modal-h"><div><h3>Email ${esc(leadName(lead))}</h3><p>${ol.connected ? `Sends from your Outlook (${esc(ol.email || '')}) and is saved to your Sent folder.` : 'Connect Outlook in Settings to send from the CRM. Until then this opens your email app.'}</p></div>
+      <div class="modal-h"><div><h3>Email ${esc(leadName(lead))}</h3><p>${ol.connected ? `Sends from your Outlook (${esc(ol.email || '')}) and is saved to your Sent folder.` : 'Opens Outlook in a new tab with this email ready to go. Just click Send there.'}</p></div>
         <button class="btn ghost icon close" aria-label="Close">${icon('x')}</button></div>
       <form id="email-form">
         <div class="modal-b">
@@ -1894,7 +1940,9 @@
         </div>
         <div class="modal-f">
           <button type="button" class="btn" data-close>Cancel</button>
-          ${ol.connected ? `<button type="submit" class="btn primary" id="email-send">${icon('mail')} Send email</button>` : `<button type="submit" class="btn primary">${icon('external')} Open in email app</button>`}
+          ${ol.connected ? `<button type="submit" class="btn primary" id="email-send">${icon('mail')} Send email</button>` : `
+            <button type="button" class="btn ghost" id="email-app" title="Use the email app on this device instead">Use my email app</button>
+            <button type="submit" class="btn primary">${icon('external')} Open in Outlook</button>`}
         </div>
       </form>`, { wide: true });
     const f = $('#email-form');
@@ -1904,11 +1952,16 @@
       $$('[data-tpl]', m).forEach((x) => x.classList.toggle('primary', x === b));
     });
     (to ? f.subject : f.to).focus();
+    if ($('#email-app')) $('#email-app').onclick = () => {
+      if (!f.reportValidity()) return;
+      location.href = `mailto:${encodeURIComponent(f.to.value)}?subject=${encodeURIComponent(f.subject.value)}&body=${encodeURIComponent(f.body.value)}`;
+      logDraft(lead, f, 'mail_app');
+    };
     f.onsubmit = async (e) => {
       e.preventDefault();
       if (!ol.connected) {
-        location.href = `mailto:${encodeURIComponent(f.to.value)}?subject=${encodeURIComponent(f.subject.value)}&body=${encodeURIComponent(f.body.value)}`;
-        closeModal();
+        window.open(outlookMailLink({ to: f.to.value, subject: f.subject.value, body: f.body.value }), '_blank');
+        logDraft(lead, f, 'outlook_web');
         return;
       }
       const btn = $('#email-send');
@@ -2410,7 +2463,7 @@
     if (a.type === 'disqualified') return `Disqualified · ${(a.meta && a.meta.reason) || 'Other'}`;
     if (a.type === 'requalified') return 'Restored to pipeline';
     if (a.type === 'created') return 'Lead added';
-    if (a.type === 'email') return `Email sent · ${(a.meta && a.meta.subject) || ''}`;
+    if (a.type === 'email') return `${a.meta && a.meta.via ? 'Email written' : 'Email sent'} · ${(a.meta && a.meta.subject) || ''}`;
     if (a.type === 'appointment') {
       if (a.meta && a.meta.event === 'booked') return `Appointment booked${a.meta.starts_at ? ' · ' + fmtDateTime(a.meta.starts_at) : ''}`;
       return a.body || 'Appointment updated';
@@ -2838,17 +2891,22 @@
                 <div class="li-main"><div class="li-title">Connect your Outlook account</div><div class="li-sub">You'll sign in with Microsoft and approve access to send mail and manage your calendar. Each teammate connects their own account.</div></div>
                 <a class="btn primary sm" href="/api/outlook/connect">${icon('mail')} Connect Outlook</a></div>` : isOwner() ? `
               <div class="ol-setup">
-                <p><b>One-time setup.</b> Microsoft needs this CRM registered before anyone can connect Outlook. It's free and takes about 10 minutes:</p>
-                <ol>
-                  <li>Go to <a href="https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener">Microsoft Entra → App registrations</a> (sign in with your Outlook account) and click <b>New registration</b>.</li>
-                  <li>Name it <b>M2 CRM</b>. Under <b>Supported account types</b> choose <b>Accounts in any organizational directory and personal Microsoft accounts</b>.</li>
-                  <li>Under <b>Redirect URI</b> pick <b>Web</b> and paste: <code class="copy" id="ol-redirect">${esc(location.origin)}/api/outlook/callback</code></li>
-                  <li>Click <b>Register</b>, then copy the <b>Application (client) ID</b>.</li>
-                  <li>Open <b>Certificates &amp; secrets → New client secret</b>, create one, and copy its <b>Value</b>.</li>
-                  <li>In Railway, open the <b>m2-crm</b> service → <b>Variables</b> and add <code>MS_CLIENT_ID</code> and <code>MS_CLIENT_SECRET</code> with those two values.</li>
-                </ol>
-                <p class="muted">Railway restarts the CRM on its own, and a <b>Connect Outlook</b> button appears here.</p>
-              </div>` : `<div class="muted">Outlook isn't set up for this CRM yet. Ask the account owner to finish the setup in Settings.</div>`}
+                <div class="ol-row" style="margin-bottom:14px"><div class="dot-ic" style="background:var(--black);color:#fff">${icon('check')}</div>
+                  <div class="li-main"><div class="li-title">Working now with Outlook on the web</div><div class="li-sub">Emails and appointment invites open in Outlook in a new tab, already filled in. You click Send there, and the CRM logs it on the lead. Nothing to set up.</div></div></div>
+                <details>
+                  <summary><b>Optional: send straight from the CRM</b> <span class="muted">(no extra Outlook tab, and your Outlook events show on the CRM calendar)</span></summary>
+                  <p style="margin-top:10px">Microsoft only allows this through a free Azure account. Personal Outlook.com accounts can't use the Entra site without one.</p>
+                  <ol>
+                    <li>Create a free Azure account at <a href="https://azure.microsoft.com/free" target="_blank" rel="noopener">azure.microsoft.com/free</a>, signing in with your Outlook email. Microsoft asks for a card to verify you; app registrations themselves are free.</li>
+                    <li>Open <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener">portal.azure.com → App registrations</a> and click <b>New registration</b>.</li>
+                    <li>Name it <b>M2 CRM</b> and choose <b>Accounts in any organizational directory and personal Microsoft accounts</b>.</li>
+                    <li>Redirect URI: pick <b>Web</b> and paste <code class="copy" id="ol-redirect">${esc(location.origin)}/api/outlook/callback</code></li>
+                    <li>Copy the <b>Application (client) ID</b>, then make a secret under <b>Certificates &amp; secrets</b> and copy its <b>Value</b>.</li>
+                    <li>In Railway → <b>m2-crm</b> → <b>Variables</b>, add <code>MS_CLIENT_ID</code> and <code>MS_CLIENT_SECRET</code>. A <b>Connect Outlook</b> button then appears here.</li>
+                  </ol>
+                </details>
+              </div>` : `<div class="ol-row"><div class="dot-ic" style="background:var(--black);color:#fff">${icon('check')}</div>
+                <div class="li-main"><div class="li-title">Working with Outlook on the web</div><div class="li-sub">Emails and appointment invites open in Outlook, already filled in. You click Send there.</div></div></div>`}
           </div>
         </div>
 

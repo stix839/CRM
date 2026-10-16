@@ -780,3 +780,6 @@ body.talk-hidden .talk-panel { display: none; }
 .wk-ev { right: auto; }
 .wk-ev.short { flex-direction: row; align-items: center; gap: 5px; white-space: nowrap; }
 .wk-ev.short span { min-width: 0; }
+.appt-opts-hint { font-size: 12.5px; margin-top: -4px; }
+.ol-setup details { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.ol-setup summary { cursor: pointer; }
