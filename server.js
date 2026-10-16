@@ -995,14 +995,18 @@ app.get('/api/analytics', wrap(async (req, res) => {
          count(*) FILTER (WHERE l.status = 'active' AND s.kind = 'won')::int AS won,
          COALESCE(sum(l.value) FILTER (WHERE l.status = 'active' AND s.kind <> 'won'), 0)::float AS open_value,
          COALESCE(sum(l.value) FILTER (WHERE l.status = 'active' AND s.kind = 'won'), 0)::float AS won_value,
-         count(*) FILTER (WHERE l.status = 'active' AND l.call_count = 0)::int AS never_called
+         count(*) FILTER (WHERE l.status = 'active' AND l.call_count = 0)::int AS never_called,
+         count(*) FILTER (WHERE l.status = 'active' AND l.value > 0)::int AS valued,
+         count(*) FILTER (WHERE l.status = 'active' AND l.value > 0 AND s.kind <> 'won')::int AS open_valued
        FROM leads l LEFT JOIN pipeline_stages s ON s.id = l.stage_id WHERE l.pipeline_id = ANY($1)`, [ids]),
     q(`SELECT l.stage_id, count(*)::int AS n, COALESCE(sum(l.value),0)::float AS value
        FROM ${LEADS} AND l.status = 'active' GROUP BY l.stage_id`, [ids]),
     q(`SELECT p.id, p.name, u.name AS user_name,
          count(l.id) FILTER (WHERE l.status = 'active')::int AS active,
          count(l.id) FILTER (WHERE l.status = 'active' AND s.kind = 'appointment')::int AS appointments,
-         count(l.id) FILTER (WHERE l.status = 'active' AND s.kind = 'won')::int AS won
+         count(l.id) FILTER (WHERE l.status = 'active' AND s.kind = 'won')::int AS won,
+         COALESCE(sum(l.value) FILTER (WHERE l.status = 'active' AND s.kind <> 'won'), 0)::float AS open_value,
+         COALESCE(sum(l.value) FILTER (WHERE l.status = 'active' AND s.kind = 'won'), 0)::float AS won_value
        FROM pipelines p LEFT JOIN users u ON u.id = p.user_id
        LEFT JOIN leads l ON l.pipeline_id = p.id LEFT JOIN pipeline_stages s ON s.id = l.stage_id
        WHERE p.id = ANY($1) GROUP BY p.id, u.name ORDER BY p.position, p.id`, [ids]),

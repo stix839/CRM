@@ -659,3 +659,15 @@ body.talk-hidden .talk-panel { display: none; }
 .bulk-bar .bulk-del:hover { background: #3f1d1d; border-color: #b91c1c; color: #fff; }
 .btn.danger-solid { background: var(--danger); border-color: var(--danger); color: #fff; }
 .btn.danger-solid:hover { background: #991b1b; }
+
+/* ---------------------------------------------------------------- pipeline value card */
+.pv-big { font-size: 34px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
+.pv-sub { font-size: 13px; margin-top: 4px; }
+.pv-sub b { color: var(--ink); }
+.pv-bars { margin-top: 18px; }
+.pv-bars .hbar { grid-template-columns: 120px minmax(0, 1fr) 56px; }
+.pv-won .bar-fill { background: repeating-linear-gradient(135deg, var(--black) 0 4px, #52525b 4px 7px); }
+.pv-note { font-size: 12px; margin-top: 14px; }
+.pv-empty { margin-top: 16px; padding: 14px; border: 1.5px dashed var(--line); border-radius: 10px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.pv-empty b { color: var(--ink); }
+@media (max-width: 820px) { .pv-bars .hbar { grid-template-columns: 96px minmax(0, 1fr) 48px; } }

@@ -603,8 +603,8 @@
             <div class="card-b">${colChart(a.callsDaily, 'calls')}</div>
           </div>
           <div class="card">
-            <div class="card-h"><h3>New leads</h3><span class="sub">Last 30 days</span></div>
-            <div class="card-b">${colChart(a.leadsDaily, 'leads')}</div>
+            <div class="card-h"><h3>Pipeline value</h3><span class="sub">Deal value in active leads</span></div>
+            <div class="card-b">${pipelineValueHtml(a, t, scopePipeline)}</div>
           </div>
         </div>
 
@@ -748,6 +748,37 @@
       const h = d.n ? Math.max(2, (d.n / max) * (H - 2)) : 1;
       return `<rect x="${i * step + 1}" y="${H - h}" width="${bw}" height="${h}" rx="1" class="${d.n ? '' : 'zero'}"/>`;
     }).join('')}</svg>`;
+  }
+
+  // Money sitting in the pipeline: open deal value, split by stage (one pipeline) or by pipeline (all).
+  function pipelineValueHtml(a, t, scopePipeline) {
+    const rows = scopePipeline
+      ? scopePipeline.stages.map((st) => ({
+        label: st.name, won: st.kind === 'won', id: st.id,
+        value: (a.byStage.find((x) => x.stage_id === st.id) || {}).value || 0,
+        n: (a.byStage.find((x) => x.stage_id === st.id) || {}).n || 0,
+      }))
+      : a.byPipeline.map((pp) => ({ label: pp.name, value: pp.open_value, won: false, n: pp.active, extra: pp.won_value }));
+    const max = Math.max(1, ...rows.map((r) => r.value));
+    const hasValues = t.valued > 0;
+    return `
+      <div class="pv-head">
+        <div>
+          <div class="pv-big tnum">${money(t.open_value) || '$0'}</div>
+          <div class="muted pv-sub">open in the pipeline · <b>${money(t.won_value) || '$0'}</b> won</div>
+        </div>
+      </div>
+      ${hasValues ? `
+      <div class="hbars pv-bars">
+        ${rows.map((r) => `
+          <div class="hbar ${r.won ? 'pv-won' : ''}" data-tip="<b>${esc(r.label)}</b><br>${esc(money(r.value) || '$0')}${r.won ? ' won' : ''} · ${r.n.toLocaleString()} active lead${r.n === 1 ? '' : 's'}${r.extra ? ' · ' + esc(money(r.extra)) + ' won' : ''}">
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.label)}</span>
+            <div class="bar-track"><div class="bar-fill" style="width:${(r.value / max) * 100}%"></div></div>
+            <span class="v tnum">${esc(money(r.value, true) || '$0')}</span>
+          </div>`).join('')}
+      </div>
+      <div class="muted pv-note">${t.valued.toLocaleString()} of ${t.active.toLocaleString()} active leads have a deal value</div>` : `
+      <div class="pv-empty">No deal values yet. Open a lead, click <b>Edit</b> and fill in <b>Deal value</b>, or map a value column when you import, and it will add up here.</div>`}`;
   }
 
   function bindTips(root) {
