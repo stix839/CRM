@@ -1150,7 +1150,8 @@
     v.page = Math.min(v.page, pages - 1);
     const pageRows = list.slice(v.page * PER, v.page * PER + PER);
     const th = (k, label, nosort) => `<th ${nosort ? 'class="nosort"' : `data-sort="${k}"`}>${label}${v.sort === k ? `<span class="arrow">${v.dir === 'asc' ? '▲' : '▼'}</span>` : ''}</th>`;
-    const canBulk = isOwner() && multiPipeline();
+    const canBulk = isOwner();                       // select leads for bulk delete
+    const canMove = isOwner() && multiPipeline();    // and move them between pipelines
     const sel = state.selected = state.selected || new Set();
     const listIds = new Set(list.map((l) => l.id));
     [...sel].forEach((id) => { if (!listIds.has(id)) sel.delete(id); });
@@ -1169,7 +1170,7 @@
             ${stageOptions(scopePipe, v.stage)}
           </select>` : ''}
           <span class="spacer"></span>
-          ${canBulk ? `<button class="btn sm" id="split-btn">${icon('split')} Split leads</button>` : ''}
+          ${canMove ? `<button class="btn sm" id="split-btn">${icon('split')} Split leads</button>` : ''}
           <a class="btn sm" href="/api/export.csv">${icon('download')} Export CSV</a>
         </div>
         ${canBulk && sel.size ? `
@@ -1177,9 +1178,11 @@
           <b>${sel.size.toLocaleString()} selected</b>
           ${pageAll && list.length > sel.size ? `<button class="btn sm ghost" id="sel-all">Select all ${list.length.toLocaleString()} matching</button>` : ''}
           <span class="spacer"></span>
-          <span class="muted">Move to</span>
+          ${canMove ? `<span class="muted">Move to</span>
           <select class="select" id="bulk-pipe">${pipelineOptions(v.pipeline !== 'all' ? (state.pipelines.find((p) => p.id !== Number(v.pipeline)) || {}).id : '', false)}</select>
           <button class="btn sm primary" id="bulk-move">${icon('arrow')} Move</button>
+          <span class="bulk-sep"></span>` : ''}
+          <button class="btn sm bulk-del" id="bulk-delete">${icon('trash')} Delete</button>
           <button class="btn sm ghost" id="sel-clear">Clear</button>
         </div>` : ''}
         <div class="card">
@@ -1269,7 +1272,10 @@
         sel.clear();
         rerenderIfOn('leads');
       };
-      $('#split-btn').onclick = () => openSplit();
+      if ($('#bulk-delete')) $('#bulk-delete').onclick = async () => {
+        if (await bulkDelete([...sel])) { sel.clear(); rerenderIfOn('leads'); }
+      };
+      if ($('#split-btn')) $('#split-btn').onclick = () => openSplit();
     }
     $$('tbody tr', view).forEach((tr) => tr.addEventListener('click', (e) => {
       if (e.target.closest('.cb-col')) return;
@@ -1289,6 +1295,36 @@
       toast(`${r.moved.toLocaleString()} lead${r.moved === 1 ? '' : 's'} moved to ${target.name}${r.skipped ? ` (${r.skipped} already there)` : ''}`);
       return r;
     } catch (e) { fail(e); return null; }
+  }
+
+  // Permanently deletes leads after a confirmation; larger batches need the count typed in.
+  async function bulkDelete(ids) {
+    const n = ids.length;
+    if (!n) return false;
+    const typed = n >= 10;
+    const ok = await new Promise((resolve) => {
+      const m = openModal(`
+        <div class="modal-h"><div><h3>Delete ${n.toLocaleString()} lead${n === 1 ? '' : 's'}?</h3>
+          <p>This permanently removes ${n === 1 ? 'the lead' : 'these leads'} and all of their notes and call history. It can't be undone. To keep a record instead, disqualify them, or export a CSV first.</p></div></div>
+        ${typed ? `<div class="modal-b"><label class="field"><span>Type <b>${n}</b> to confirm</span><input class="input" id="del-confirm" inputmode="numeric" autocomplete="off"></label></div>` : ''}
+        <div class="modal-f"><button class="btn" data-close>Cancel</button><button class="btn danger-solid" id="del-go" ${typed ? 'disabled' : ''}>${icon('trash')} Delete ${n.toLocaleString()} lead${n === 1 ? '' : 's'}</button></div>`);
+      m._onClose = () => resolve(false);
+      if (typed) {
+        const inp = $('#del-confirm');
+        inp.focus();
+        inp.oninput = () => { $('#del-go').disabled = inp.value.trim() !== String(n); };
+      } else $('#del-go').focus();
+      $('#del-go').onclick = () => { m._onClose = null; closeModal(); resolve(true); };
+    });
+    if (!ok) return false;
+    try {
+      const r = await api('/api/leads/bulk-delete', { method: 'POST', body: { lead_ids: ids } });
+      if (ids.includes(state.openLeadId)) closeDrawer();
+      await Promise.all([loadLeads(), loadPipelines()]);
+      state.otherLeads = { disqualified: null, all: null };
+      toast(`${r.deleted.toLocaleString()} lead${r.deleted === 1 ? '' : 's'} deleted`);
+      return true;
+    } catch (e) { fail(e); return false; }
   }
 
   function openSplit() {

@@ -652,3 +652,10 @@ body.talk-hidden .talk-panel { display: none; }
 .tbl tbody tr.selected td { background: #f4f4f5; }
 .split-preview { border: 1.5px solid var(--black); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
 .modal .seg { flex-wrap: wrap; }
+
+/* ---------------------------------------------------------------- bulk delete */
+.bulk-bar .bulk-sep { width: 1px; height: 22px; background: #3f3f46; }
+.bulk-bar .bulk-del { background: transparent; color: #fca5a5; border-color: #52525b; }
+.bulk-bar .bulk-del:hover { background: #3f1d1d; border-color: #b91c1c; color: #fff; }
+.btn.danger-solid { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn.danger-solid:hover { background: #991b1b; }

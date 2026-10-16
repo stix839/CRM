@@ -615,6 +615,16 @@ app.post('/api/leads/:id/move', wrap(async (req, res) => {
   }
 }));
 
+// Owner only: permanently delete many leads (their notes and call history go with them).
+app.post('/api/leads/bulk-delete', requireOwner, wrap(async (req, res) => {
+  const ids = Array.isArray(req.body.lead_ids)
+    ? [...new Set(req.body.lead_ids.map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 20000)
+    : [];
+  if (!ids.length) return bad(res, 'Choose at least one lead to delete');
+  const { rowCount } = await db.query('DELETE FROM leads WHERE id = ANY($1)', [ids]);
+  res.json({ deleted: rowCount });
+}));
+
 // Owner only: move many leads into another pipeline at once (they land in the chosen or first stage).
 app.post('/api/leads/bulk-move', requireOwner, wrap(async (req, res) => {
   const ids = Array.isArray(req.body.lead_ids)
