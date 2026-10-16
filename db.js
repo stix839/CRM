@@ -128,6 +128,35 @@ async function migrate() {
     ALTER TABLE leads DROP CONSTRAINT IF EXISTS leads_stage_check;
     ALTER TABLE leads ALTER COLUMN stage DROP NOT NULL;
     CREATE INDEX IF NOT EXISTS leads_pipeline_stage_pos ON leads (pipeline_id, stage_id, position);
+
+    CREATE TABLE IF NOT EXISTS oauth_accounts (
+      user_id INT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      provider TEXT NOT NULL DEFAULT 'microsoft',
+      email TEXT,
+      name TEXT,
+      access_token TEXT,
+      refresh_token TEXT,
+      expires_at TIMESTAMPTZ,
+      connected_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS appointments (
+      id SERIAL PRIMARY KEY,
+      lead_id INT REFERENCES leads(id) ON DELETE SET NULL,
+      user_id INT REFERENCES users(id) ON DELETE SET NULL,
+      title TEXT NOT NULL,
+      starts_at TIMESTAMPTZ NOT NULL,
+      ends_at TIMESTAMPTZ NOT NULL,
+      location TEXT,
+      notes TEXT,
+      status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled','completed','no_show','canceled')),
+      outlook_event_id TEXT,
+      outlook_link TEXT,
+      invite_sent BOOLEAN NOT NULL DEFAULT false,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS appointments_time ON appointments (starts_at);
+    CREATE INDEX IF NOT EXISTS appointments_lead ON appointments (lead_id);
   `);
 
   const client = await pool.connect();

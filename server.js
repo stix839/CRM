@@ -7,6 +7,7 @@ const express = require('express');
 const ExcelJS = require('exceljs');
 const db = require('./db');
 const DEFAULT_TALK_TRACK = require('./talktrack');
+const outlook = require('./outlook');
 
 const PORT = process.env.PORT || 3000;
 const SESSION_DAYS = 30;
@@ -971,6 +972,287 @@ app.get('/api/export.csv', wrap(async (req, res) => {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="m2-leads-${new Date().toISOString().slice(0, 10)}.csv"`);
   res.send('﻿' + lines.join('\r\n'));
+}));
+
+/* ---------------------------------------------------------------- outlook */
+
+function appBase(req) {
+  return (process.env.APP_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+}
+const outlookRedirect = (req) => `${appBase(req)}/api/outlook/callback`;
+
+// Turns an Outlook/Graph failure into a readable API error.
+function sendOutlookError(res, e) {
+  if (e && e.status) return bad(res, e.message, e.status === 401 ? 502 : e.status);
+  throw e;
+}
+
+function htmlEscape(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+const textToHtml = (text) => `<div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;line-height:1.5">${htmlEscape(text).replace(/\r?\n/g, '<br>')}</div>`;
+const EMAIL_RE = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
+const splitEmails = (v) => String(v || '').split(/[;,\s]+/).map((x) => x.trim()).filter(Boolean);
+
+app.get('/api/outlook/status', wrap(async (req, res) => {
+  res.json(await outlook.status(req.user.id));
+}));
+
+app.get('/api/outlook/connect', (req, res) => {
+  if (!outlook.configured()) return res.redirect('/#/settings?outlook=not_configured');
+  res.redirect(outlook.authorizeUrl(outlookRedirect(req), req.user.id));
+});
+
+app.get('/api/outlook/callback', wrap(async (req, res) => {
+  if (req.query.error) return res.redirect(`/#/settings?outlook=denied`);
+  if (!outlook.verifyState(req.query.state, req.user.id)) return res.redirect('/#/settings?outlook=error');
+  try {
+    await outlook.completeSignIn(req.user.id, String(req.query.code || ''), outlookRedirect(req));
+  } catch (e) {
+    console.error('Outlook sign-in failed:', e.message);
+    return res.redirect(`/#/settings?outlook=error&msg=${encodeURIComponent(e.message)}`);
+  }
+  res.redirect('/#/calendar?outlook=connected');
+}));
+
+app.post('/api/outlook/disconnect', wrap(async (req, res) => {
+  await outlook.disconnect(req.user.id);
+  res.json(await outlook.status(req.user.id));
+}));
+
+app.post('/api/leads/:id/email', wrap(async (req, res) => {
+  const lead = await leadForUser(req, req.params.id);
+  if (!lead) return bad(res, 'Lead not found', 404);
+  const to = splitEmails(req.body.to || lead.email);
+  const cc = splitEmails(req.body.cc);
+  const subject = cleanText(req.body.subject, 300);
+  const body = cleanText(req.body.body, 50000);
+  if (!to.length) return bad(res, 'Add an email address to send to');
+  if ([...to, ...cc].some((e) => !EMAIL_RE.test(e))) return bad(res, 'One of the email addresses looks wrong');
+  if (!subject) return bad(res, 'Add a subject');
+  if (!body) return bad(res, 'Write a message');
+  try {
+    await outlook.graph(req.user.id, 'POST', '/me/sendMail', {
+      message: {
+        subject,
+        body: { contentType: 'HTML', content: textToHtml(body) },
+        toRecipients: to.map((address) => ({ emailAddress: { address } })),
+        ccRecipients: cc.map((address) => ({ emailAddress: { address } })),
+      },
+      saveToSentItems: true,
+    });
+  } catch (e) { return sendOutlookError(res, e); }
+  const act = await logActivity(db, lead.id, req.user.id, 'email', `${subject}\n\n${body}`, { to, cc, subject });
+  await db.query('UPDATE leads SET last_contacted_at = now(), updated_at = now() WHERE id = $1', [lead.id]);
+  res.json(act);
+}));
+
+/* ---------------------------------------------------------------- appointments */
+
+const APPT_STATUSES = ['scheduled', 'completed', 'no_show', 'canceled'];
+const APPT_SELECT = `
+  SELECT a.*, u.name AS user_name, l.first_name, l.last_name, l.company, l.email AS lead_email, l.phone AS lead_phone,
+    l.pipeline_id, l.stage_id
+  FROM appointments a LEFT JOIN users u ON u.id = a.user_id LEFT JOIN leads l ON l.id = a.lead_id
+  LEFT JOIN pipelines p ON p.id = l.pipeline_id`;
+// Owner sees everything; a teammate sees their own appointments and ones on leads in their pipelines.
+const APPT_ACCESS = '($1::boolean OR a.user_id = $2 OR p.user_id = $2)';
+
+async function appointmentForUser(req, id) {
+  const { rows } = await db.query(`${APPT_SELECT} WHERE a.id = $3 AND ${APPT_ACCESS}`, [isOwner(req), req.user.id, id]);
+  return rows[0] || null;
+}
+
+function parseTime(v) {
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+const graphTime = (d) => ({ dateTime: d.toISOString().replace('Z', ''), timeZone: 'UTC' });
+
+function eventBody(notes, lead) {
+  const lines = [];
+  if (notes) lines.push(notes);
+  if (lead) lines.push(`${[lead.first_name, lead.last_name].filter(Boolean).join(' ') || lead.company || 'Lead'}${lead.company && (lead.first_name || lead.last_name) ? ` · ${lead.company}` : ''}${lead.phone ? ` · ${lead.phone}` : ''}`);
+  return { contentType: 'HTML', content: textToHtml(lines.join('\n\n')) };
+}
+
+app.get('/api/appointments', wrap(async (req, res) => {
+  const params = [isOwner(req), req.user.id];
+  const where = [APPT_ACCESS];
+  const from = parseTime(req.query.from);
+  const to = parseTime(req.query.to);
+  if (from) { params.push(from); where.push(`a.ends_at > $${params.length}`); }
+  if (to) { params.push(to); where.push(`a.starts_at < $${params.length}`); }
+  if (req.query.lead_id) { params.push(Number(req.query.lead_id)); where.push(`a.lead_id = $${params.length}`); }
+  if (req.query.user && req.query.user !== 'all') {
+    params.push(req.query.user === 'me' ? req.user.id : Number(req.query.user)); where.push(`a.user_id = $${params.length}`);
+  }
+  if (req.query.upcoming) where.push(`a.ends_at > now() AND a.status = 'scheduled'`);
+  const { rows } = await db.query(`${APPT_SELECT} WHERE ${where.join(' AND ')} ORDER BY a.starts_at LIMIT 1000`, params);
+
+  let outlookEvents = [];
+  let outlookError = null;
+  if (req.query.outlook === '1' && from && to) {
+    const st = await outlook.status(req.user.id);
+    if (st.connected) {
+      try {
+        const q = new URLSearchParams({
+          startDateTime: from.toISOString(), endDateTime: to.toISOString(), $top: '250',
+          $select: 'subject,start,end,location,webLink,isAllDay,showAs,isCancelled', $orderby: 'start/dateTime',
+        });
+        const data = await outlook.graph(req.user.id, 'GET', `/me/calendarView?${q}`, null, { Prefer: 'outlook.timezone="UTC"' });
+        const linked = new Set(rows.map((r) => r.outlook_event_id).filter(Boolean));
+        outlookEvents = (data.value || [])
+          .filter((e) => !e.isCancelled && !linked.has(e.id))
+          .map((e) => ({
+            id: e.id, title: e.subject || '(No title)', all_day: !!e.isAllDay, link: e.webLink,
+            location: e.location && e.location.displayName, show_as: e.showAs,
+            starts_at: `${String(e.start.dateTime).replace(/\.\d+$/, '')}Z`, ends_at: `${String(e.end.dateTime).replace(/\.\d+$/, '')}Z`,
+          }));
+      } catch (e) { outlookError = e.message; }
+    }
+  }
+  res.json({ appointments: rows, outlookEvents, outlookError });
+}));
+
+app.post('/api/appointments', wrap(async (req, res) => {
+  const title = cleanText(req.body.title, 200);
+  const start = parseTime(req.body.starts_at);
+  const end = parseTime(req.body.ends_at);
+  const location = cleanText(req.body.location, 300);
+  const notes = cleanText(req.body.notes, 5000);
+  if (!title) return bad(res, 'Give the appointment a title');
+  if (!start || !end || end <= start) return bad(res, 'Pick a start and end time');
+  let lead = null;
+  if (req.body.lead_id) {
+    lead = await leadForUser(req, req.body.lead_id);
+    if (!lead) return bad(res, 'Lead not found', 404);
+  }
+
+  // Outlook first: if it fails, nothing is saved and the user can retry or untick it.
+  let eventId = null;
+  let eventLink = null;
+  let invited = false;
+  if (req.body.add_to_outlook) {
+    const attendees = [];
+    if (req.body.invite_lead && lead) {
+      const email = splitEmails(lead.email).find((e) => EMAIL_RE.test(e));
+      if (!email) return bad(res, "This lead has no email address to send the invite to");
+      attendees.push({ emailAddress: { address: email, name: [lead.first_name, lead.last_name].filter(Boolean).join(' ') || lead.company || email }, type: 'required' });
+    }
+    try {
+      const ev = await outlook.graph(req.user.id, 'POST', '/me/events', {
+        subject: title, body: eventBody(notes, lead), start: graphTime(start), end: graphTime(end),
+        location: location ? { displayName: location } : undefined, attendees,
+      });
+      eventId = ev.id || null;
+      eventLink = ev.webLink || null;
+      invited = attendees.length > 0;
+    } catch (e) { return sendOutlookError(res, e); }
+  }
+
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query(
+      `INSERT INTO appointments (lead_id, user_id, title, starts_at, ends_at, location, notes, outlook_event_id, outlook_link, invite_sent)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+      [lead ? lead.id : null, req.user.id, title, start, end, location, notes, eventId, eventLink, invited],
+    );
+    let movedTo = null;
+    if (lead) {
+      await logActivity(client, lead.id, req.user.id, 'appointment', title,
+        { appointment_id: rows[0].id, starts_at: start.toISOString(), event: 'booked', invited });
+      if (req.body.move_stage) {
+        const { rows: target } = await client.query(
+          `SELECT s.id, s.name, s.position, s.kind FROM pipeline_stages s WHERE s.pipeline_id = $1 AND s.kind = 'appointment'
+           ORDER BY s.position LIMIT 1`, [lead.pipeline_id],
+        );
+        const { rows: cur } = await client.query('SELECT name, position, kind FROM pipeline_stages WHERE id = $1', [lead.stage_id]);
+        if (target[0] && target[0].id !== lead.stage_id && (!cur[0] || (cur[0].kind !== 'won' && cur[0].position < target[0].position))) {
+          await client.query('UPDATE leads SET stage_id = $2, position = $3, updated_at = now() WHERE id = $1',
+            [lead.id, target[0].id, await nextPosition(client, target[0].id)]);
+          await logActivity(client, lead.id, req.user.id, 'stage', `Moved from ${cur[0] ? cur[0].name : 'a removed stage'} to ${target[0].name}`, {
+            from_stage: lead.stage_id, to_stage: target[0].id, from_pipeline: lead.pipeline_id, to_pipeline: lead.pipeline_id,
+            from_pos: cur[0] ? cur[0].position : null, to_pos: target[0].position, to_kind: target[0].kind,
+          });
+          movedTo = target[0].name;
+        }
+      }
+    }
+    await client.query('COMMIT');
+    res.json({ appointment: await appointmentForUser(req, rows[0].id), movedTo });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}));
+
+app.patch('/api/appointments/:id', wrap(async (req, res) => {
+  const appt = await appointmentForUser(req, req.params.id);
+  if (!appt) return bad(res, 'Appointment not found', 404);
+  const next = {
+    title: 'title' in req.body ? cleanText(req.body.title, 200) : appt.title,
+    starts_at: 'starts_at' in req.body ? parseTime(req.body.starts_at) : new Date(appt.starts_at),
+    ends_at: 'ends_at' in req.body ? parseTime(req.body.ends_at) : new Date(appt.ends_at),
+    location: 'location' in req.body ? cleanText(req.body.location, 300) : appt.location,
+    notes: 'notes' in req.body ? cleanText(req.body.notes, 5000) : appt.notes,
+    status: APPT_STATUSES.includes(req.body.status) ? req.body.status : appt.status,
+  };
+  if (!next.title) return bad(res, 'Give the appointment a title');
+  if (!next.starts_at || !next.ends_at || next.ends_at <= next.starts_at) return bad(res, 'Pick a start and end time');
+
+  // Keep the Outlook event in step when the person who booked it makes the change.
+  let warning = null;
+  if (appt.outlook_event_id) {
+    if (appt.user_id !== req.user.id) {
+      warning = `Only ${appt.user_name || 'the person who booked it'} can update the Outlook event.`;
+    } else {
+      try {
+        if (next.status === 'canceled' && appt.status !== 'canceled') {
+          await outlook.graph(req.user.id, 'POST', `/me/events/${encodeURIComponent(appt.outlook_event_id)}/cancel`, { comment: 'This meeting has been canceled.' })
+            .catch(() => outlook.graph(req.user.id, 'DELETE', `/me/events/${encodeURIComponent(appt.outlook_event_id)}`));
+        } else if (next.status !== 'canceled') {
+          await outlook.graph(req.user.id, 'PATCH', `/me/events/${encodeURIComponent(appt.outlook_event_id)}`, {
+            subject: next.title, start: graphTime(next.starts_at), end: graphTime(next.ends_at),
+            location: { displayName: next.location || '' }, body: eventBody(next.notes, appt.lead_id ? { ...appt, phone: appt.lead_phone } : null),
+          });
+        }
+      } catch (e) {
+        if (e.graphStatus !== 404) return sendOutlookError(res, e);
+        warning = 'The Outlook event no longer exists, so only the CRM was updated.';
+      }
+    }
+  }
+  await db.query(
+    `UPDATE appointments SET title = $2, starts_at = $3, ends_at = $4, location = $5, notes = $6, status = $7 WHERE id = $1`,
+    [appt.id, next.title, next.starts_at, next.ends_at, next.location, next.notes, next.status],
+  );
+  if (appt.lead_id && next.status !== appt.status) {
+    const label = { completed: 'Appointment completed', no_show: 'No-show', canceled: 'Appointment canceled', scheduled: 'Appointment rescheduled' }[next.status];
+    await logActivity(db, appt.lead_id, req.user.id, 'appointment', `${label} · ${next.title}`, { appointment_id: appt.id, event: next.status });
+  } else if (appt.lead_id && next.starts_at.getTime() !== new Date(appt.starts_at).getTime()) {
+    await logActivity(db, appt.lead_id, req.user.id, 'appointment', `Rescheduled · ${next.title}`,
+      { appointment_id: appt.id, event: 'rescheduled', starts_at: next.starts_at.toISOString() });
+  }
+  res.json({ appointment: await appointmentForUser(req, appt.id), warning });
+}));
+
+app.delete('/api/appointments/:id', wrap(async (req, res) => {
+  const appt = await appointmentForUser(req, req.params.id);
+  if (!appt) return bad(res, 'Appointment not found', 404);
+  if (appt.outlook_event_id && appt.user_id === req.user.id) {
+    try {
+      await outlook.graph(req.user.id, 'DELETE', `/me/events/${encodeURIComponent(appt.outlook_event_id)}`);
+    } catch (e) {
+      if (e.graphStatus !== 404) return sendOutlookError(res, e);
+    }
+  }
+  await db.query('DELETE FROM appointments WHERE id = $1', [appt.id]);
+  res.json({ ok: true });
 }));
 
 /* ---------------------------------------------------------------- analytics */

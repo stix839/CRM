@@ -327,6 +327,7 @@
   const ROUTES = {
     dashboard: { title: 'Dashboard', icon: 'dashboard', render: renderDashboard },
     pipeline: { title: 'Pipeline', icon: 'pipeline', render: renderPipeline },
+    calendar: { title: 'Calendar', icon: 'calendar', render: renderCalendar },
     leads: { title: 'Leads', icon: 'users', render: renderLeads },
     import: { title: 'Import', icon: 'upload', render: renderImport },
     settings: { title: 'Settings', icon: 'settings', render: renderSettings },
@@ -823,7 +824,7 @@
   }
 
   function activityIcon(type) {
-    return { call: 'phone', note: 'note', stage: 'move', disqualified: 'ban', requalified: 'undo', created: 'spark' }[type] || 'spark';
+    return { call: 'phone', note: 'note', stage: 'move', disqualified: 'ban', requalified: 'undo', created: 'spark', email: 'mail', appointment: 'calendar' }[type] || 'spark';
   }
   function activityLabel(a) {
     if (a.type === 'call') return a.outcome ? `Call · ${OUTCOMES[a.outcome]}` : 'Called';
@@ -831,6 +832,8 @@
     if (a.type === 'stage') return a.body || 'Stage changed';
     if (a.type === 'disqualified') return `Disqualified · ${(a.meta && a.meta.reason) || ''}`.replace(/ · $/, '');
     if (a.type === 'requalified') return 'Restored to pipeline';
+    if (a.type === 'email') return `Email · ${(a.meta && a.meta.subject) || ''}`;
+    if (a.type === 'appointment') return a.meta && a.meta.event === 'booked' ? `Booked · ${a.body}` : a.body;
     return a.body || 'Created';
   }
 
@@ -1446,6 +1449,479 @@
     };
   }
 
+  /* ================================================================ outlook, calendar, appointments, email */
+
+  state.outlook = { configured: false, connected: false, email: null };
+  async function loadOutlook() {
+    state.outlook = await api('/api/outlook/status').catch(() => ({ configured: false, connected: false, email: null }));
+  }
+
+  const APPT_STATUS = {
+    scheduled: { label: 'Scheduled', icon: 'calendar' },
+    completed: { label: 'Completed', icon: 'check' },
+    no_show: { label: 'No-show', icon: 'ban' },
+    canceled: { label: 'Canceled', icon: 'x' },
+  };
+  const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  function dayStart(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+  function plusDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+  function ymd(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+  function hm(d) { return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
+  function fmtTime(d) { return new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).replace(':00', '').replace(' ', '').toLowerCase(); }
+  function fmtRange(a, b) {
+    const s = new Date(a); const e = new Date(b);
+    const day = s.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    return `${day} · ${fmtTime(s)} – ${fmtTime(e)}`;
+  }
+  function apptLeadName(ap) { return ap.lead_id ? leadName(ap) : null; }
+
+  function apptRowHtml(ap) {
+    const st = APPT_STATUS[ap.status] || APPT_STATUS.scheduled;
+    const past = new Date(ap.ends_at) < new Date();
+    return `<button class="appt-row ${ap.status}" data-appt="${ap.id}">
+      <span class="appt-date"><b>${new Date(ap.starts_at).getDate()}</b>${new Date(ap.starts_at).toLocaleDateString('en-US', { month: 'short' })}</span>
+      <span class="li-main"><span class="li-title">${esc(ap.title)}</span><span class="li-sub">${esc(fmtRange(ap.starts_at, ap.ends_at))}${ap.location ? ' · ' + esc(ap.location) : ''}</span></span>
+      <span class="chip ${ap.status === 'scheduled' && !past ? 'dark' : 'outline'}">${icon(st.icon)}${ap.status === 'scheduled' && past ? 'Needs update' : st.label}</span>
+    </button>`;
+  }
+
+  state.cal = { view: 'month', anchor: dayStart(new Date()), selected: dayStart(new Date()), user: 'all' };
+
+  function calRange() {
+    const c = state.cal;
+    if (c.view === 'week') {
+      const start = plusDays(dayStart(c.anchor), -c.anchor.getDay());
+      return { start, end: plusDays(start, 7) };
+    }
+    const first = new Date(c.anchor.getFullYear(), c.anchor.getMonth(), 1);
+    const start = plusDays(first, -first.getDay());
+    return { start, end: plusDays(start, 42) };
+  }
+
+  async function renderCalendar(view, alive) {
+    const c = state.cal;
+    const { start, end } = calRange();
+    const q = new URLSearchParams({ from: start.toISOString(), to: end.toISOString(), outlook: '1', user: c.user });
+    const [data, users] = await Promise.all([
+      api(`/api/appointments?${q}`),
+      isOwner() ? api('/api/users').catch(() => []) : Promise.resolve([]),
+      state.leadsLoaded ? null : loadLeads(),
+    ]);
+    if (!alive()) return;
+    const appts = data.appointments.map((a) => ({ ...a, kind: 'crm', s: new Date(a.starts_at), e: new Date(a.ends_at) }));
+    const outs = data.outlookEvents.map((o) => ({ ...o, kind: 'outlook', s: new Date(o.starts_at), e: new Date(o.ends_at) }));
+    const all = appts.concat(outs).sort((a, b) => a.s - b.s);
+    const onDay = (d) => all.filter((ev) => (ev.all_day ? ev.s <= plusDays(dayStart(d), 1) && ev.e > dayStart(d) && !(ev.e.getTime() === dayStart(d).getTime()) : sameDay(ev.s, d)));
+    const title = c.view === 'week'
+      ? `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${plusDays(start, 6).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+      : c.anchor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const today = dayStart(new Date());
+    const upcoming = appts.filter((a) => a.status === 'scheduled' && a.e >= new Date()).length;
+
+    const outlookBar = state.outlook.connected
+      ? `<span class="chip outline" title="Your Outlook events show as outlined blocks">${icon('check')}Outlook · ${esc(state.outlook.email || 'connected')}</span>`
+      : state.outlook.configured
+        ? `<a class="btn sm" href="/api/outlook/connect">${icon('mail')} Connect Outlook</a>`
+        : `<span class="chip outline" title="Outlook isn't set up yet">${icon('mail')}Outlook not set up</span>`;
+
+    const chip = (ev) => ev.kind === 'crm'
+      ? `<button class="cal-ev crm ${ev.status}" data-appt="${ev.id}" title="${esc(ev.title)}"><b>${esc(fmtTime(ev.s))}</b> ${esc(apptLeadName(ev) || ev.title)}</button>`
+      : `<a class="cal-ev out" href="${esc(ev.link || '#')}" target="_blank" rel="noopener" title="Outlook: ${esc(ev.title)}">${ev.all_day ? '' : `<b>${esc(fmtTime(ev.s))}</b> `}${esc(ev.title)}</a>`;
+
+    let body;
+    if (c.view === 'month') {
+      const cells = [];
+      for (let i = 0; i < 42; i++) {
+        const d = plusDays(start, i);
+        const evs = onDay(d);
+        const other = d.getMonth() !== c.anchor.getMonth();
+        cells.push(`<div class="cal-cell ${other ? 'other' : ''} ${sameDay(d, c.selected) ? 'sel' : ''}" data-day="${ymd(d)}">
+          <div class="cal-num ${sameDay(d, today) ? 'today' : ''}">${d.getDate()}</div>
+          <div class="cal-evs">${evs.slice(0, 3).map(chip).join('')}${evs.length > 3 ? `<span class="cal-more">+${evs.length - 3} more</span>` : ''}</div>
+          ${evs.length ? `<span class="cal-dots">${evs.slice(0, 4).map((ev) => `<i class="${ev.kind}"></i>`).join('')}</span>` : ''}
+        </div>`);
+      }
+      const selEvs = onDay(c.selected);
+      body = `
+        <div class="cal-month-wrap">
+          <div class="cal-month card">
+            <div class="cal-head">${WEEKDAYS.map((w) => `<div>${w}</div>`).join('')}</div>
+            <div class="cal-grid">${cells.join('')}</div>
+          </div>
+          <aside class="cal-side card">
+            <div class="card-h"><h3>${esc(c.selected.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }))}</h3></div>
+            <div class="card-b">
+              ${selEvs.length ? `<div class="day-list">${selEvs.map((ev) => ev.kind === 'crm' ? apptRowHtml(ev) : `
+                <a class="appt-row out" href="${esc(ev.link || '#')}" target="_blank" rel="noopener">
+                  <span class="appt-date out">${icon('mail')}</span>
+                  <span class="li-main"><span class="li-title">${esc(ev.title)}</span><span class="li-sub">${ev.all_day ? 'All day' : esc(`${fmtTime(ev.s)} – ${fmtTime(ev.e)}`)} · Outlook</span></span>
+                </a>`).join('')}</div>` : '<div class="muted" style="padding:6px 0 12px">Nothing booked this day.</div>'}
+              <button class="btn block" id="cal-add-day" style="margin-top:12px">${icon('plus')} Book on this day</button>
+            </div>
+          </aside>
+        </div>`;
+    } else {
+      const H0 = 7; const H1 = 21; const PX = 52;
+      const days = [...Array(7)].map((_, i) => plusDays(start, i));
+      const allDayRow = days.map((d) => onDay(d).filter((ev) => ev.all_day).map(chip).join('')).map((h) => `<div class="wk-allday">${h}</div>`).join('');
+      const cols = days.map((d) => {
+        const evs = onDay(d).filter((ev) => !ev.all_day);
+        // Side-by-side lanes for overlapping events.
+        const lanes = [];
+        const placed = evs.map((ev) => {
+          let lane = lanes.findIndex((endAt) => endAt <= ev.s);
+          if (lane === -1) { lane = lanes.length; lanes.push(ev.e); } else lanes[lane] = ev.e;
+          return { ev, lane };
+        });
+        const groupWidth = (ev) => Math.max(1, ...placed.filter((p) => p.ev.s < ev.e && p.ev.e > ev.s).map((p) => p.lane + 1));
+        const blocks = placed.map(({ ev, lane }) => {
+          const top = Math.max(0, ((ev.s.getHours() + ev.s.getMinutes() / 60) - H0) * PX);
+          const h = Math.max(22, ((ev.e - ev.s) / 3600000) * PX);
+          const n = groupWidth(ev);
+          const pos = `top:${top}px;height:${h}px;left:calc(${(lane / n) * 100}% + 2px);width:calc(${100 / n}% - 4px)`;
+          const inner = `<b>${esc(fmtTime(ev.s))}</b><span>${esc(ev.kind === 'crm' ? (apptLeadName(ev) || ev.title) : ev.title)}</span>`;
+          const short = h < 38 ? 'short' : '';
+          return ev.kind === 'crm'
+            ? `<button class="wk-ev crm ${ev.status} ${short}" data-appt="${ev.id}" style="${pos}" title="${esc(ev.title)}">${inner}</button>`
+            : `<a class="wk-ev out ${short}" href="${esc(ev.link || '#')}" target="_blank" rel="noopener" style="${pos}" title="${esc(ev.title)}">${inner}</a>`;
+        }).join('');
+        return `<div class="wk-col ${sameDay(d, today) ? 'today' : ''}" data-day="${ymd(d)}" style="height:${(H1 - H0) * PX}px">${blocks}</div>`;
+      }).join('');
+      body = `
+        <div class="card wk">
+          <div class="wk-scroll">
+            <div class="wk-inner">
+              <div class="wk-head"><div></div>${days.map((d) => `<div class="${sameDay(d, today) ? 'today' : ''}"><span>${WEEKDAYS[d.getDay()]}</span><b>${d.getDate()}</b></div>`).join('')}</div>
+              ${outs.some((o) => o.all_day) ? `<div class="wk-allrow"><div class="wk-gutter muted">all day</div>${allDayRow}</div>` : ''}
+              <div class="wk-body">
+                <div class="wk-hours">${[...Array(H1 - H0)].map((_, i) => `<div style="height:${PX}px">${fmtTime(new Date(2000, 0, 1, H0 + i))}</div>`).join('')}</div>
+                <div class="wk-cols" style="--px:${PX}px">${cols}</div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    view.innerHTML = `
+      <div class="cal-wrap">
+        <div class="cal-toolbar">
+          <div class="cal-nav">
+            <button class="btn sm icon" id="cal-prev" aria-label="Previous">${icon('left')}</button>
+            <button class="btn sm" id="cal-today">Today</button>
+            <button class="btn sm icon" id="cal-next" aria-label="Next">${icon('right')}</button>
+            <h2 class="cal-title">${esc(title)}</h2>
+          </div>
+          <span class="muted cal-count">${upcoming ? `${upcoming} upcoming` : ''}</span>
+          <span class="spacer"></span>
+          ${isOwner() && users.length > 1 ? `<select class="select" id="cal-user" style="width:auto;height:34px">
+            <option value="all" ${c.user === 'all' ? 'selected' : ''}>Everyone</option>
+            ${users.map((u) => `<option value="${u.id === state.user.id ? 'me' : u.id}" ${String(c.user) === String(u.id === state.user.id ? 'me' : u.id) ? 'selected' : ''}>${esc(u.id === state.user.id ? 'Just me' : u.name)}</option>`).join('')}
+          </select>` : ''}
+          <div class="seg" id="cal-view">
+            <button data-v="month" class="${c.view === 'month' ? 'on' : ''}">Month</button>
+            <button data-v="week" class="${c.view === 'week' ? 'on' : ''}">Week</button>
+          </div>
+          ${outlookBar}
+          <button class="btn sm primary" id="cal-new">${icon('plus')} New appointment</button>
+        </div>
+        ${data.outlookError ? `<div class="cal-warn">${icon('ban')} Couldn't load your Outlook calendar: ${esc(data.outlookError)}</div>` : ''}
+        ${body}
+        <div class="cal-legend muted"><span><i class="crm"></i>Booked in M2</span>${state.outlook.connected ? '<span><i class="outlook"></i>Your other Outlook events</span>' : ''}</div>
+      </div>`;
+
+    const shift = (dir) => {
+      if (c.view === 'week') c.anchor = plusDays(c.anchor, 7 * dir);
+      else c.anchor = new Date(c.anchor.getFullYear(), c.anchor.getMonth() + dir, 1);
+      route();
+    };
+    $('#cal-prev').onclick = () => shift(-1);
+    $('#cal-next').onclick = () => shift(1);
+    $('#cal-today').onclick = () => { c.anchor = dayStart(new Date()); c.selected = dayStart(new Date()); route(); };
+    $$('#cal-view button').forEach((b) => b.onclick = () => { c.view = b.dataset.v; c.anchor = new Date(c.selected); route(); });
+    if ($('#cal-user')) $('#cal-user').onchange = (e) => { c.user = e.target.value; route(); };
+    $('#cal-new').onclick = () => openAppointmentForm({ date: c.selected });
+    if ($('#cal-add-day')) $('#cal-add-day').onclick = () => openAppointmentForm({ date: c.selected });
+    view.querySelectorAll('[data-appt]').forEach((el) => el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const ap = appts.find((x) => String(x.id) === el.dataset.appt);
+      if (ap) openAppointmentDetail(ap);
+    }));
+    view.querySelectorAll('.cal-ev.out, .wk-ev.out').forEach((el) => el.addEventListener('click', (e) => e.stopPropagation()));
+    view.querySelectorAll('.cal-cell').forEach((cell) => cell.addEventListener('click', () => {
+      const [y, m, d] = cell.dataset.day.split('-').map(Number);
+      c.selected = new Date(y, m - 1, d);
+      if (c.selected.getMonth() !== c.anchor.getMonth()) c.anchor = new Date(y, m - 1, 1);
+      rerenderIfOn('calendar');
+    }));
+    view.querySelectorAll('.wk-col').forEach((col) => col.addEventListener('click', (e) => {
+      if (e.target !== col) return;
+      const [y, m, d] = col.dataset.day.split('-').map(Number);
+      const mins = Math.round(((e.offsetY / 52) * 60) / 30) * 30;
+      openAppointmentForm({ date: new Date(y, m - 1, d, 7, mins) });
+    }));
+  }
+
+  // Lead picker used in the appointment form.
+  function leadPickerHtml(lead) {
+    return lead
+      ? `<div class="lead-pick-chosen"><div class="avatar" style="width:30px;height:30px;font-size:11px">${esc(initials(lead))}</div>
+          <div class="li-main"><div class="li-title">${esc(leadName(lead))}</div><div class="li-sub">${esc([leadSub(lead), lead.email].filter(Boolean).join(' · ') || 'No email on file')}</div></div>
+          <button type="button" class="btn sm ghost" id="lp-change">Change</button></div>`
+      : `<div class="lead-pick"><input class="input" id="lp-q" placeholder="Search for a lead (optional)…" autocomplete="off"><div class="search-results hidden" id="lp-results"></div></div>`;
+  }
+
+  function openAppointmentForm({ lead = null, date = null, appt = null } = {}) {
+    const editing = !!appt;
+    let chosen = lead || (appt && appt.lead_id ? { ...appt, id: appt.lead_id, email: appt.lead_email } : null);
+    if (chosen && !editing) {
+      const full = state.leads.find((l) => l.id === chosen.id);
+      if (full) chosen = { ...full, ...chosen };
+    }
+    const start = appt ? new Date(appt.starts_at) : (() => {
+      const d = date ? new Date(date) : new Date();
+      if (!date || (date.getHours() === 0 && date.getMinutes() === 0)) {
+        const now = new Date();
+        if (sameDay(d, now)) { d.setHours(now.getHours() + 1, 0, 0, 0); } else d.setHours(10, 0, 0, 0);
+      }
+      return d;
+    })();
+    const dur = appt ? Math.round((new Date(appt.ends_at) - new Date(appt.starts_at)) / 60000) : 20;
+    const durations = [15, 20, 30, 45, 60, 90, 120];
+    if (!durations.includes(dur)) durations.push(dur);
+    const m = openModal(`
+      <div class="modal-h"><div><h3>${editing ? 'Edit appointment' : 'Book an appointment'}</h3><p>${editing ? (appt.outlook_event_id ? 'Changes also update the Outlook event.' : 'Changes are saved in the CRM.') : 'Saved to the CRM calendar, and to Outlook if you choose.'}</p></div>
+        <button class="btn ghost icon close" aria-label="Close">${icon('x')}</button></div>
+      <form id="appt-form">
+        <div class="modal-b">
+          <div class="field"><span>Lead</span><div id="lp-wrap">${leadPickerHtml(chosen)}</div></div>
+          <label class="field"><span>Title</span><input class="input" name="title" maxlength="200" required value="${esc(appt ? appt.title : chosen ? `M2 · ${spokenCompany(chosen.company) || leadName(chosen)}` : '')}"></label>
+          <div class="appt-when">
+            <label class="field"><span>Date</span><input class="input" type="date" name="date" required value="${ymd(start)}"></label>
+            <label class="field"><span>Start time</span><input class="input" type="time" name="time" step="300" required value="${hm(start)}"></label>
+            <label class="field"><span>Length</span><select class="select" name="duration">${durations.sort((a, b) => a - b).map((n) => `<option value="${n}" ${n === dur ? 'selected' : ''}>${n < 60 ? `${n} min` : `${n / 60} hr`.replace('.5 hr', '½ hr')}</option>`).join('')}</select></label>
+          </div>
+          <label class="field"><span>Location</span><input class="input" name="location" maxlength="300" placeholder="Their shop, a Zoom link, a phone call…" value="${esc(appt ? appt.location || '' : chosen ? [chosen.address, chosen.city].filter(Boolean).join(', ') : '')}"></label>
+          <label class="field"><span>Notes</span><textarea class="textarea" name="notes" style="min-height:70px" placeholder="What to prepare, who'll be there…">${esc(appt ? appt.notes || '' : '')}</textarea></label>
+          ${editing ? '' : `<div class="appt-opts" id="appt-opts"></div>`}
+        </div>
+        <div class="modal-f"><button type="button" class="btn" data-close>Cancel</button><button type="submit" class="btn primary" id="appt-save">${icon('check')} ${editing ? 'Save changes' : 'Book appointment'}</button></div>
+      </form>`, { wide: true });
+
+    const renderOpts = () => {
+      if (editing) return;
+      const ol = state.outlook;
+      const email = chosen && splitFirstEmail(chosen.email);
+      const pipe = chosen && pipelineById(chosen.pipeline_id);
+      const apptStage = pipe && pipe.stages.find((st) => st.kind === 'appointment');
+      const cur = chosen && stageInfo(chosen.stage_id);
+      const canMove = apptStage && cur && cur.stage.kind !== 'won' && cur.stage.position < apptStage.position;
+      $('#appt-opts').innerHTML = `
+        <label class="check ${ol.connected ? '' : 'disabled'}"><input type="checkbox" name="add_to_outlook" ${ol.connected ? 'checked' : 'disabled'}> Add to my Outlook calendar
+          ${ol.connected ? `<span class="muted">· ${esc(ol.email || '')}</span>` : ol.configured ? '<a href="/api/outlook/connect" class="muted">· connect Outlook</a>' : '<span class="muted">· Outlook not set up</span>'}</label>
+        ${chosen ? `<label class="check ${ol.connected && email ? '' : 'disabled'}"><input type="checkbox" name="invite_lead" ${ol.connected && email ? 'checked' : 'disabled'}> Email an Outlook invite to ${email ? `<b>${esc(email)}</b>` : 'the lead <span class="muted">· no email on file</span>'}</label>` : ''}
+        ${canMove ? `<label class="check"><input type="checkbox" name="move_stage" checked> Move lead to <b>${esc(apptStage.name)}</b></label>` : ''}`;
+      const add = $('#appt-form').add_to_outlook;
+      const inv = $('#appt-form').invite_lead;
+      if (add && inv) add.onchange = () => { inv.disabled = !add.checked || !(ol.connected && email); if (!add.checked) inv.checked = false; };
+    };
+
+    const bindPicker = () => {
+      if ($('#lp-change')) $('#lp-change').onclick = () => { chosen = null; $('#lp-wrap').innerHTML = leadPickerHtml(null); bindPicker(); renderOpts(); $('#lp-q').focus(); };
+      const inp = $('#lp-q');
+      if (!inp) return;
+      const box = $('#lp-results');
+      inp.oninput = () => {
+        const q = inp.value.trim().toLowerCase();
+        if (!q) { box.classList.add('hidden'); return; }
+        const res = state.leads.filter((l) => matches(l, q, digits(q))).slice(0, 8);
+        box.innerHTML = res.length ? res.map((l) => `<div class="sr" data-id="${l.id}"><div class="li-main"><div class="li-title">${esc(leadName(l))}</div><div class="li-sub">${esc([leadSub(l), l.email].filter(Boolean).join(' · '))}</div></div></div>`).join('') : '<div class="sr-empty">No matching leads</div>';
+        box.classList.remove('hidden');
+      };
+      box.onmousedown = async (e) => {
+        const r = e.target.closest('[data-id]');
+        if (!r) return;
+        e.preventDefault();
+        const l = state.leads.find((x) => x.id === Number(r.dataset.id));
+        try { chosen = (await api(`/api/leads/${l.id}`)).lead; } catch { chosen = l; }
+        $('#lp-wrap').innerHTML = leadPickerHtml(chosen);
+        const f = $('#appt-form');
+        if (!f.title.value) f.title.value = `M2 · ${spokenCompany(chosen.company) || leadName(chosen)}`;
+        if (!f.location.value) f.location.value = [chosen.address, chosen.city].filter(Boolean).join(', ');
+        bindPicker(); renderOpts();
+      };
+    };
+    bindPicker(); renderOpts();
+    // The quick lead list lacks emails/addresses; fetch the full lead when booking from the calendar search.
+    if (chosen && !editing && chosen.email === undefined) {
+      api(`/api/leads/${chosen.id}`).then((r) => { chosen = { ...chosen, ...r.lead }; renderOpts(); }).catch(() => {});
+    }
+
+    $('#appt-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const [y, mo, d] = f.date.value.split('-').map(Number);
+      const [hh, mi] = f.time.value.split(':').map(Number);
+      const s = new Date(y, mo - 1, d, hh, mi);
+      const en = new Date(s.getTime() + Number(f.duration.value) * 60000);
+      const body = { title: f.title.value, starts_at: s.toISOString(), ends_at: en.toISOString(), location: f.location.value, notes: f.notes.value };
+      const btn = $('#appt-save');
+      btn.disabled = true;
+      try {
+        if (editing) {
+          const r = await api(`/api/appointments/${appt.id}`, { method: 'PATCH', body });
+          toast(r.warning || 'Appointment updated', { duration: r.warning ? 6000 : 3800 });
+        } else {
+          Object.assign(body, {
+            lead_id: chosen ? chosen.id : null,
+            add_to_outlook: !!(f.add_to_outlook && f.add_to_outlook.checked),
+            invite_lead: !!(f.invite_lead && f.invite_lead.checked),
+            move_stage: !!(f.move_stage && f.move_stage.checked),
+          });
+          const r = await api('/api/appointments', { method: 'POST', body });
+          toast(`Booked ${fmtRange(r.appointment.starts_at, r.appointment.ends_at)}${body.invite_lead ? ' · invite sent' : body.add_to_outlook ? ' · added to Outlook' : ''}${r.movedTo ? ` · moved to ${r.movedTo}` : ''}`, { duration: 6000 });
+          if (r.movedTo) await loadLeads();
+        }
+        closeModal();
+        state.cal.selected = dayStart(s);
+        rerenderAfterAppt(chosen && chosen.id);
+      } catch (err) { fail(err); btn.disabled = false; }
+    };
+  }
+
+  function splitFirstEmail(v) {
+    return String(v || '').split(/[;,\s]+/).find((x) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)) || null;
+  }
+
+  function rerenderAfterAppt(leadId) {
+    if (currentRoute() === 'calendar') route();
+    else rerenderIfOn('pipeline', 'leads', 'dashboard');
+    if (leadId) refreshDrawerIf(leadId);
+  }
+
+  function openAppointmentDetail(ap) {
+    const st = APPT_STATUS[ap.status] || APPT_STATUS.scheduled;
+    const mine = ap.user_id === state.user.id;
+    const m = openModal(`
+      <div class="modal-h"><div><h3>${esc(ap.title)}</h3><p>${esc(fmtRange(ap.starts_at, ap.ends_at))}</p></div>
+        <button class="btn ghost icon close" aria-label="Close">${icon('x')}</button></div>
+      <div class="modal-b">
+        <div class="appt-meta">
+          <span class="chip ${ap.status === 'scheduled' ? 'dark' : 'outline'}">${icon(st.icon)}${st.label}</span>
+          ${ap.outlook_event_id ? `<span class="chip outline">${icon('mail')}${ap.invite_sent ? 'Outlook invite sent' : 'On Outlook calendar'}</span>` : ''}
+          ${ap.user_name ? `<span class="muted">Booked by ${esc(mine ? 'you' : ap.user_name)}</span>` : ''}
+        </div>
+        ${ap.lead_id ? `<button class="lead-pick-chosen as-link" id="ad-lead"><div class="avatar" style="width:30px;height:30px;font-size:11px">${esc(initials(ap))}</div>
+          <div class="li-main"><div class="li-title">${esc(leadName(ap))}</div><div class="li-sub">${esc([ap.company && (ap.first_name || ap.last_name) ? ap.company : '', ap.lead_phone ? fmtPhone(ap.lead_phone) : '', ap.lead_email].filter(Boolean).join(' · '))}</div></div>${icon('right')}</button>` : ''}
+        ${ap.location ? `<div class="info"><div class="k">Location</div><div class="v">${linkify(ap.location)}</div></div>` : ''}
+        ${ap.notes ? `<div class="info"><div class="k">Notes</div><div class="v">${esc(ap.notes)}</div></div>` : ''}
+        ${ap.outlook_link ? `<a class="btn sm" style="align-self:flex-start" href="${esc(ap.outlook_link)}" target="_blank" rel="noopener">${icon('external')} Open in Outlook</a>` : ''}
+        <div class="appt-status-row">
+          <span class="muted">Mark as</span>
+          ${['completed', 'no_show', 'scheduled'].filter((k) => k !== ap.status).map((k) => `<button class="btn sm" data-status="${k}">${icon(APPT_STATUS[k].icon)} ${k === 'scheduled' ? 'Scheduled' : APPT_STATUS[k].label}</button>`).join('')}
+        </div>
+      </div>
+      <div class="modal-f">
+        <button class="btn ghost danger" id="ad-delete" style="margin-right:auto">${icon('trash')} Delete</button>
+        ${ap.status !== 'canceled' ? `<button class="btn" id="ad-cancel">${icon('x')} Cancel appointment</button>` : ''}
+        <button class="btn primary" id="ad-edit">${icon('edit')} Edit</button>
+      </div>`, { wide: true });
+    const update = async (body, msg) => {
+      try {
+        const r = await api(`/api/appointments/${ap.id}`, { method: 'PATCH', body });
+        closeModal();
+        toast(r.warning || msg, { duration: r.warning ? 6000 : 3800 });
+        rerenderAfterAppt(ap.lead_id);
+      } catch (e) { fail(e); }
+    };
+    if ($('#ad-lead')) $('#ad-lead').onclick = () => { closeModal(); openLead(ap.lead_id); };
+    $$('[data-status]', m).forEach((b) => b.onclick = () => update({ status: b.dataset.status }, `Marked ${APPT_STATUS[b.dataset.status].label.toLowerCase()}`));
+    if ($('#ad-cancel')) $('#ad-cancel').onclick = async () => {
+      closeModal();
+      if (!(await confirmDialog('Cancel this appointment?', ap.outlook_event_id && mine ? 'It will be canceled in Outlook too, and anyone invited will get a cancellation email.' : 'It stays on the calendar marked as canceled.', 'Cancel appointment'))) return;
+      update({ status: 'canceled' }, 'Appointment canceled');
+    };
+    $('#ad-edit').onclick = () => { closeModal(); openAppointmentForm({ appt: ap }); };
+    $('#ad-delete').onclick = async () => {
+      closeModal();
+      if (!(await confirmDialog('Delete this appointment?', ap.outlook_event_id && mine ? 'It will also be removed from your Outlook calendar.' : 'It will be removed from the CRM calendar.', 'Delete'))) return;
+      try { await api(`/api/appointments/${ap.id}`, { method: 'DELETE' }); toast('Appointment deleted'); rerenderAfterAppt(ap.lead_id); } catch (e) { fail(e); }
+    };
+  }
+
+  /* email */
+
+  function emailTemplates(lead) {
+    const first = lead.first_name || 'there';
+    const co = spokenCompany(lead.company) || 'your business';
+    const me = (state.user.name || '').split(' ')[0];
+    const next = (lead.appointments || []).filter((a) => a.status === 'scheduled' && new Date(a.starts_at) > new Date()).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))[0];
+    const when = next ? new Date(next.starts_at).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '[day and time]';
+    return {
+      blank: { label: 'Blank', subject: '', body: '' },
+      followup: {
+        label: 'Follow-up after a call',
+        subject: `Great talking with you, ${first}`,
+        body: `Hi ${first},\n\nThanks for taking the time to talk today. Like I mentioned, we help businesses like ${co} turn their Facebook and Instagram into something that brings in work, without ads or paying for leads.\n\nI'd love to grab 20 minutes to show you what we'd post for ${co} and what it would cost. What day works best for you this week?\n\nThanks,\n${me}\nM2`,
+      },
+      confirm: {
+        label: 'Appointment confirmation',
+        subject: `Confirmed: M2 meeting${next ? ' on ' + new Date(next.starts_at).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : ''}`,
+        body: `Hi ${first},\n\nLooking forward to meeting on ${when}${next && next.location ? ` at ${next.location}` : ''}. I'll walk you through what we'd post for ${co} and what it would cost.\n\nIf you get a chance beforehand, feel free to text me a few pictures from recent jobs.\n\nSee you then,\n${me}\nM2`,
+      },
+      missed: {
+        label: "Couldn't reach you",
+        subject: `Quick question for ${co}`,
+        body: `Hi ${first},\n\nI tried giving you a call but couldn't catch you. I'm with M2. We help businesses like ${co} get more customers from their own Facebook and Instagram, without ads.\n\nWould you be open to a quick 20-minute chat this week?\n\nThanks,\n${me}\nM2`,
+      },
+    };
+  }
+
+  function openEmail(lead) {
+    const ol = state.outlook;
+    const tpls = emailTemplates(lead);
+    const to = (lead.email || '').split(/[;,\s]+/).filter(Boolean).join(', ');
+    const m = openModal(`
+      <div class="modal-h"><div><h3>Email ${esc(leadName(lead))}</h3><p>${ol.connected ? `Sends from your Outlook (${esc(ol.email || '')}) and is saved to your Sent folder.` : 'Connect Outlook in Settings to send from the CRM. Until then this opens your email app.'}</p></div>
+        <button class="btn ghost icon close" aria-label="Close">${icon('x')}</button></div>
+      <form id="email-form">
+        <div class="modal-b">
+          <div class="email-tpls">${Object.entries(tpls).map(([k, t]) => `<button type="button" class="btn sm ${k === 'blank' ? '' : ''}" data-tpl="${k}">${esc(t.label)}</button>`).join('')}</div>
+          <label class="field"><span>To</span><input class="input" name="to" value="${esc(to)}" placeholder="name@example.com" required></label>
+          <label class="field"><span>Subject</span><input class="input" name="subject" maxlength="300" required></label>
+          <label class="field"><span>Message</span><textarea class="textarea email-body" name="body" required></textarea></label>
+        </div>
+        <div class="modal-f">
+          <button type="button" class="btn" data-close>Cancel</button>
+          ${ol.connected ? `<button type="submit" class="btn primary" id="email-send">${icon('mail')} Send email</button>` : `<button type="submit" class="btn primary">${icon('external')} Open in email app</button>`}
+        </div>
+      </form>`, { wide: true });
+    const f = $('#email-form');
+    $$('[data-tpl]', m).forEach((b) => b.onclick = () => {
+      const t = tpls[b.dataset.tpl];
+      f.subject.value = t.subject; f.body.value = t.body;
+      $$('[data-tpl]', m).forEach((x) => x.classList.toggle('primary', x === b));
+    });
+    (to ? f.subject : f.to).focus();
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      if (!ol.connected) {
+        location.href = `mailto:${encodeURIComponent(f.to.value)}?subject=${encodeURIComponent(f.subject.value)}&body=${encodeURIComponent(f.body.value)}`;
+        closeModal();
+        return;
+      }
+      const btn = $('#email-send');
+      btn.disabled = true;
+      try {
+        await api(`/api/leads/${lead.id}/email`, { method: 'POST', body: { to: f.to.value, subject: f.subject.value, body: f.body.value } });
+        closeModal();
+        toast(`Email sent to ${f.to.value}`);
+        refreshDrawerIf(lead.id);
+      } catch (err) { fail(err); btn.disabled = false; }
+    };
+  }
+
   /* ================================================================ lead drawer */
 
   let drawerSeq = 0;
@@ -1484,8 +1960,15 @@
   async function loadDrawer(id) {
     const seq = ++drawerSeq;
     let data;
-    try { data = await api(`/api/leads/${id}`); } catch (e) { fail(e); closeDrawer(); return; }
+    let appts = [];
+    try {
+      [data, appts] = await Promise.all([
+        api(`/api/leads/${id}`),
+        api(`/api/appointments?lead_id=${id}`).then((r) => r.appointments).catch(() => []),
+      ]);
+    } catch (e) { fail(e); closeDrawer(); return; }
     if (seq !== drawerSeq || state.openLeadId !== id) return;
+    data.lead.appointments = appts;
     renderDrawer(data.lead, data.activities);
   }
 
@@ -1558,7 +2041,19 @@
               <input type="date" class="input" id="followup" value="${esc(lead.next_follow_up || '')}" style="height:28px;width:auto;padding:0 6px;font-size:12.5px">
             </span>
           </div>
+          <div class="lead-actions">
+            <button class="btn sm" id="lead-email">${icon('mail')} Email</button>
+            <button class="btn sm" id="lead-book">${icon('calendar')} Book appointment</button>
+          </div>
         </div>
+
+        ${(lead.appointments || []).length ? `
+        <div>
+          <div class="section-h"><h4>Appointments</h4></div>
+          <div class="appt-list">
+            ${lead.appointments.slice().sort((x, y) => new Date(y.starts_at) - new Date(x.starts_at)).map((ap) => apptRowHtml(ap)).join('')}
+          </div>
+        </div>` : ''}
 
         <div>
           <div class="section-h"><h4>Details</h4>
@@ -1615,6 +2110,8 @@
                     ${a.type === 'note' || a.type === 'call' ? `<button class="tl-del" data-del="${a.id}" title="Delete">${icon('trash')}</button>` : ''}
                   </div>
                   ${a.type === 'note' && a.body ? `<div class="tl-body">${esc(a.body)}</div>` : ''}
+                  ${a.type === 'email' && a.body ? `<div class="tl-body">${esc(a.body.split('\n').slice(2).join('\n').slice(0, 1200))}</div><div class="tl-time" style="margin-top:4px">To ${esc(((a.meta && a.meta.to) || []).join(', '))}</div>` : ''}
+                  ${a.type === 'appointment' && a.meta && a.meta.event === 'booked' ? `<div class="tl-time" style="margin-top:2px">${esc(a.body || '')}${a.meta.invited ? ' · Outlook invite sent' : ''}</div>` : ''}
                   ${a.type === 'disqualified' && a.body ? `<div class="tl-body">${esc(a.body)}</div>` : ''}
                   ${a.type === 'stage' || a.type === 'created' ? `<div class="tl-time" style="margin-top:2px">${esc(a.body || '')}</div>` : ''}
                 </div>
@@ -1651,6 +2148,12 @@
       } catch (e) { fail(e); }
     });
 
+    $('#lead-email').onclick = () => openEmail(lead);
+    $('#lead-book').onclick = () => openAppointmentForm({ lead });
+    $$('[data-appt]', drawer).forEach((el) => el.addEventListener('click', () => {
+      const ap = lead.appointments.find((x) => String(x.id) === el.dataset.appt);
+      if (ap) openAppointmentDetail(ap);
+    }));
     if ($('#lead-pipe')) $('#lead-pipe').onchange = async (e) => {
       const target = pipelineById(e.target.value);
       if (!target || target.id === lead.pipeline_id) return;
@@ -1907,6 +2410,11 @@
     if (a.type === 'disqualified') return `Disqualified · ${(a.meta && a.meta.reason) || 'Other'}`;
     if (a.type === 'requalified') return 'Restored to pipeline';
     if (a.type === 'created') return 'Lead added';
+    if (a.type === 'email') return `Email sent · ${(a.meta && a.meta.subject) || ''}`;
+    if (a.type === 'appointment') {
+      if (a.meta && a.meta.event === 'booked') return `Appointment booked${a.meta.starts_at ? ' · ' + fmtDateTime(a.meta.starts_at) : ''}`;
+      return a.body || 'Appointment updated';
+    }
     return a.type;
   }
 
@@ -2314,10 +2822,36 @@
   /* ================================================================ settings */
 
   async function renderSettings(view, alive) {
-    const [users] = await Promise.all([api('/api/users'), loadPipelines()]);
+    const [users] = await Promise.all([api('/api/users'), loadPipelines(), loadOutlook()]);
     if (!alive()) return;
+    const ol = state.outlook;
     view.innerHTML = `
       <div class="settings">
+        <div class="card" id="outlook-card">
+          <div class="card-h"><h3>Outlook</h3><span class="sub">Send email and book appointments from the CRM</span></div>
+          <div class="card-b">
+            ${ol.connected ? `
+              <div class="ol-row"><div class="dot-ic" style="background:var(--black);color:#fff">${icon('check')}</div>
+                <div class="li-main"><div class="li-title">Connected as ${esc(ol.email || 'your Outlook account')}</div><div class="li-sub">Emails send from this address. Appointments go on this calendar and invites come from it.</div></div>
+                <button class="btn sm" id="ol-disconnect">Disconnect</button></div>` : ol.configured ? `
+              <div class="ol-row"><div class="dot-ic">${icon('mail')}</div>
+                <div class="li-main"><div class="li-title">Connect your Outlook account</div><div class="li-sub">You'll sign in with Microsoft and approve access to send mail and manage your calendar. Each teammate connects their own account.</div></div>
+                <a class="btn primary sm" href="/api/outlook/connect">${icon('mail')} Connect Outlook</a></div>` : isOwner() ? `
+              <div class="ol-setup">
+                <p><b>One-time setup.</b> Microsoft needs this CRM registered before anyone can connect Outlook. It's free and takes about 10 minutes:</p>
+                <ol>
+                  <li>Go to <a href="https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener">Microsoft Entra → App registrations</a> (sign in with your Outlook account) and click <b>New registration</b>.</li>
+                  <li>Name it <b>M2 CRM</b>. Under <b>Supported account types</b> choose <b>Accounts in any organizational directory and personal Microsoft accounts</b>.</li>
+                  <li>Under <b>Redirect URI</b> pick <b>Web</b> and paste: <code class="copy" id="ol-redirect">${esc(location.origin)}/api/outlook/callback</code></li>
+                  <li>Click <b>Register</b>, then copy the <b>Application (client) ID</b>.</li>
+                  <li>Open <b>Certificates &amp; secrets → New client secret</b>, create one, and copy its <b>Value</b>.</li>
+                  <li>In Railway, open the <b>m2-crm</b> service → <b>Variables</b> and add <code>MS_CLIENT_ID</code> and <code>MS_CLIENT_SECRET</code> with those two values.</li>
+                </ol>
+                <p class="muted">Railway restarts the CRM on its own, and a <b>Connect Outlook</b> button appears here.</p>
+              </div>` : `<div class="muted">Outlook isn't set up for this CRM yet. Ask the account owner to finish the setup in Settings.</div>`}
+          </div>
+        </div>
+
         ${isOwner() ? `
         <div class="card">
           <div class="card-h"><h3>Pipelines</h3><span class="sub">Give each teammate their own pipeline and stages</span><span class="chip outline right">${icon('award')}Owner only</span></div>
@@ -2402,6 +2936,11 @@
       };
     }
     if ($('#pipe-list')) renderPipelineEditors(users);
+    if ($('#ol-disconnect')) $('#ol-disconnect').onclick = async () => {
+      if (!(await confirmDialog('Disconnect Outlook?', 'The CRM will stop sending email and adding events from your account. Existing Outlook events stay where they are.', 'Disconnect'))) return;
+      try { state.outlook = await api('/api/outlook/disconnect', { method: 'POST' }); toast('Outlook disconnected'); route(); } catch (e) { fail(e); }
+    };
+    if ($('#ol-redirect')) $('#ol-redirect').onclick = () => { navigator.clipboard && navigator.clipboard.writeText($('#ol-redirect').textContent).then(() => toast('Copied')); };
     if ($('#new-pipe')) $('#new-pipe').onsubmit = async (e) => {
       e.preventDefault();
       const body = Object.fromEntries(new FormData(e.target));
@@ -2574,6 +3113,18 @@
     state.user = me.user;
     await loadPipelines();
     state.talkTrack = await api('/api/talk-track').then((r) => r.text).catch(() => '');
+    await loadOutlook();
+    const oq = new URLSearchParams((location.hash.split('?')[1] || ''));
+    const notice = {
+      connected: [`Outlook connected${state.outlook.email ? ` · ${state.outlook.email}` : ''}`],
+      denied: ['Outlook connection was canceled', true],
+      error: [`Couldn't connect Outlook${oq.get('msg') ? `: ${oq.get('msg')}` : ''}`, true],
+      not_configured: ['Outlook isn\'t set up for this CRM yet', true],
+    }[oq.get('outlook')];
+    if (notice) {
+      setTimeout(() => toast(notice[0], { error: !!notice[1], duration: 6000 }), 300);
+      history.replaceState(null, '', location.hash.split('?')[0]);
+    }
     renderShell();
     await loadLeads().catch(() => {});
     if (!location.hash) location.hash = '#/dashboard';
