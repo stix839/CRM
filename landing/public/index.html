@@ -4,222 +4,360 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>M2 — Social media that grows your business</title>
-  <meta name="description" content="M2 turns your business's own Facebook and Instagram into a steady source of new customers. We capture your work and your team, run your pages, and turn the attention into leads. No ads. No paying for leads.">
+  <meta name="claude:viewport-fit-sides" content="cover">
+  <meta name="description" content="M2 is a social media team that grows your business. We create your content, run your Facebook and Instagram, and turn the attention into new customers. No ads. No paying for leads.">
   <meta name="theme-color" content="#0a0a0a">
   <meta property="og:type" content="website">
   <meta property="og:title" content="M2 — Social media that grows your business">
-  <meta property="og:description" content="We capture your work and your team, run your Facebook and Instagram, and turn the attention into new customers. No ads. No paying for leads.">
+  <meta property="og:description" content="We create your content, run your Facebook and Instagram, and turn the attention into new customers. No ads. No paying for leads.">
   <meta property="og:image" content="/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
+    /* Layout: black stage hero with parallax post cards → white "how it works" with a sticky phone that plays
+       Create / Grow / Scale → black band of scroll-driven giant type → contact cards → black closing call. */
     :root {
-      --black: #0a0a0a; --ink: #111; --ink-2: #3f3f46; --muted: #71717a; --faint: #a1a1aa;
-      --line: #e4e4e7; --soft: #f4f4f5; --bg: #ffffff; --dark-line: #27272a; --dark-muted: #a1a1aa;
-      --max: 1120px; --gutter: 24px;
+      --ink: #0a0a0a;        /* M2 black */
+      --ink-2: #18181b;      /* raised black */
+      --paper: #ffffff;
+      --mist: #f4f4f5;       /* quiet white sections */
+      --steel: #71717a;      /* muted text on white */
+      --fog: #a1a1aa;        /* muted text on black */
+      --rule-d: #27272a;     /* lines on black */
+      --rule-l: #e4e4e7;     /* lines on white */
+      --display: "Archivo", "Arial Black", "Helvetica Neue", Arial, sans-serif;
+      --body: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --max: 1180px;
+      --gutter: 28px;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      color-scheme: light;
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
-    body { margin: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; line-height: 1.55; }
+    body { margin: 0; font-family: var(--body); font-size: 17px; line-height: 1.55; color: var(--ink); background: var(--ink); -webkit-font-smoothing: antialiased; }
+    body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--ink); }
     a { color: inherit; }
+    :focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 6px; }
     svg.i { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
-    .wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
-    .eyebrow { font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-    .dark .eyebrow { color: var(--dark-muted); }
-    h1, h2, h3 { letter-spacing: -.03em; line-height: 1.05; margin: 0; }
-    h2 { font-size: clamp(32px, 4.6vw, 52px); font-weight: 900; }
-    .lead-p { font-size: clamp(17px, 1.6vw, 19px); color: var(--ink-2); max-width: 640px; }
-    .hero .lead-p, .process .lead-p, .cta .lead-p { color: #d4d4d8; }
-    .process .eyebrow, .cta .eyebrow, .hero .eyebrow { color: var(--dark-muted); }
+    .wrap { max-width: var(--max); margin: 0 auto; padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: max(var(--gutter), env(safe-area-inset-right, 0px)); }
+    .kicker { font-family: var(--mono); font-size: 12.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--steel); display: inline-flex; align-items: center; gap: 10px; }
+    .kicker::before { content: ""; width: 22px; height: 2px; background: currentColor; }
+    .hero .kicker, .band .kicker, .close .kicker { color: var(--fog); }
+    h1, h2, h3 { margin: 0; font-family: var(--display); text-wrap: balance; }
+    h2 { font-size: clamp(34px, 5vw, 64px); font-weight: 900; font-stretch: 112%; line-height: .98; letter-spacing: -.02em; }
 
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 52px; padding: 0 22px; border-radius: 12px; font-weight: 700; font-size: 15.5px; text-decoration: none; border: 1.5px solid currentColor; transition: transform .08s, background .15s, color .15s; white-space: nowrap; }
-    .btn:active { transform: translateY(1px); }
-    .btn.solid { background: #fff; color: var(--black); border-color: #fff; }
-    .btn.solid:hover { background: #e4e4e7; border-color: #e4e4e7; }
-    .btn.ghost { color: #fff; border-color: #52525b; }
-    .btn.ghost:hover { border-color: #fff; }
-    .btn.black { background: var(--black); color: #fff; border-color: var(--black); }
-    .btn.black:hover { background: #27272a; }
-    .btn.line { color: var(--black); border-color: var(--line); background: #fff; }
-    .btn.line:hover { border-color: var(--black); }
+    /* buttons */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 54px; padding: 0 24px; border-radius: 999px; font: 700 15.5px/1 var(--body); text-decoration: none; border: 1.5px solid currentColor; white-space: nowrap; transition: transform .25s var(--ease), background .2s, color .2s, border-color .2s; }
+    .btn:hover { transform: translateY(-2px); }
+    .btn:active { transform: translateY(0); }
+    .btn .i { transition: transform .25s var(--ease); }
+    .btn:hover .i.go { transform: translateX(4px); }
+    .btn.solid { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+    .btn.solid:hover { background: var(--rule-l); border-color: var(--rule-l); }
+    .btn.ghost { color: var(--paper); border-color: #52525b; background: transparent; }
+    .btn.ghost:hover { border-color: var(--paper); }
+    .btn.black { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+    .btn.black:hover { background: var(--ink-2); }
+    .btn.line { color: var(--ink); border-color: var(--rule-l); background: var(--paper); }
+    .btn.line:hover { border-color: var(--ink); }
 
     /* nav */
-    .nav { position: sticky; top: 0; z-index: 20; background: rgba(10,10,10,.92); backdrop-filter: saturate(1.4) blur(10px); -webkit-backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid var(--dark-line); color: #fff; }
-    .nav .wrap { display: flex; align-items: center; gap: 24px; height: 68px; }
-    .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; }
-    .logo { width: 40px; height: 40px; border-radius: 10px; background: #fff; color: var(--black); display: grid; place-items: center; font-weight: 900; font-size: 16px; letter-spacing: -.03em; }
-    .brand-name { font-weight: 800; font-size: 17px; letter-spacing: -.02em; }
-    .nav-links { display: flex; gap: 26px; margin-left: auto; font-size: 14.5px; font-weight: 600; }
-    .nav-links a { text-decoration: none; color: var(--dark-muted); }
-    .nav-links a:hover { color: #fff; }
-    .nav .btn { height: 42px; padding: 0 16px; font-size: 14px; }
+    .nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; color: var(--paper); background: rgba(10, 10, 10, .93); backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px); border-bottom: 1px solid rgba(255, 255, 255, .08); }
+    .nav .wrap { display: flex; align-items: center; gap: 28px; height: 70px; }
+    .logo { width: 42px; height: 42px; border-radius: 11px; background: var(--paper); color: var(--ink); display: grid; place-items: center; font: 900 17px/1 var(--display); letter-spacing: -.03em; text-decoration: none; transition: transform .3s var(--ease); }
+    .logo:hover { transform: rotate(-6deg) scale(1.05); }
+    .nav-links { display: flex; gap: 28px; margin-left: auto; font-size: 15px; font-weight: 600; }
+    .nav-links a { text-decoration: none; color: var(--fog); transition: color .15s; }
+    .nav-links a:hover { color: var(--paper); }
+    .nav .btn { height: 44px; padding: 0 18px; font-size: 14.5px; }
 
     /* hero */
-    .hero { background: var(--black); color: #fff; padding: clamp(64px, 9vw, 120px) 0 clamp(64px, 8vw, 100px); position: relative; overflow: hidden; }
-    .hero::after { content: ""; position: absolute; right: -10%; top: -30%; width: 70%; height: 160%; background: radial-gradient(closest-side, rgba(255,255,255,.07), transparent 70%); pointer-events: none; }
-    .hero-grid { display: grid; grid-template-columns: 1.25fr .9fr; gap: 56px; align-items: center; position: relative; z-index: 1; }
-    .hero h1 { font-size: clamp(42px, 7vw, 84px); font-weight: 900; letter-spacing: -.045em; line-height: .98; margin: 18px 0 22px; }
-    .hero h1 .outline { color: transparent; -webkit-text-stroke: 1.5px #fff; }
-    .hero .lead-p { margin: 0 0 32px; }
-    .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
-    .pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 34px; }
-    .pill { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--dark-line); font-size: 13px; font-weight: 600; color: #d4d4d8; }
-    .pill svg.i { width: 14px; height: 14px; }
+    .hero { position: relative; overflow: hidden; overflow: clip; background: var(--ink); color: var(--paper); padding-block: clamp(56px, 8vw, 110px) clamp(72px, 9vw, 130px); }
+    .hero-grid-bg { position: absolute; inset: -20% 0 0; background-image: linear-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .045) 1px, transparent 1px); background-size: 64px 64px; mask-image: radial-gradient(ellipse 80% 70% at 70% 40%, #000 20%, transparent 75%); -webkit-mask-image: radial-gradient(ellipse 80% 70% at 70% 40%, #000 20%, transparent 75%); pointer-events: none; }
+    .hero .wrap { position: relative; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); gap: 40px; align-items: center; }
+    .hero-copy { position: relative; z-index: 2; min-width: 0; }
+    .hero h1 { font-size: clamp(40px, 5.5vw, 84px); font-weight: 900; font-stretch: 108%; line-height: .94; letter-spacing: -.025em; margin: 22px 0 26px; }
+    .hero h1 .ln { display: block; }
+    .grow { display: inline-flex; align-items: flex-end; color: transparent; -webkit-text-stroke: 2px var(--paper); white-space: nowrap; }
+    .grow span { display: inline-block; transform: translateY(calc(var(--i) * -.055em)); }
+    .grow svg { width: .62em; height: .62em; margin-left: .06em; transform: translateY(calc(-5 * .055em - .12em)); stroke: var(--paper); stroke-width: 3.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .grow svg path { stroke-dasharray: 60; stroke-dashoffset: 0; }
+    .hero .sub { font-size: clamp(17.5px, 1.7vw, 20px); color: #d4d4d8; max-width: 33em; margin: 0 0 34px; }
+    .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+    .scroll-cue { margin-top: 56px; display: inline-flex; align-items: center; gap: 12px; font: 700 11.5px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--fog); text-decoration: none; }
+    .scroll-cue i { width: 1.5px; height: 34px; background: rgba(255, 255, 255, .2); position: relative; overflow: hidden; }
+    .scroll-cue i::after { content: ""; position: absolute; left: 0; right: 0; top: -40%; height: 40%; background: var(--paper); animation: drip 1.8s var(--ease) infinite; }
 
-    /* phone mock */
-    .phone { justify-self: center; width: min(320px, 100%); aspect-ratio: 9 / 18.5; border-radius: 42px; border: 10px solid #1c1c1e; background: #fff; box-shadow: 0 40px 80px rgba(0,0,0,.6), 0 0 0 1px #3f3f46; overflow: hidden; position: relative; color: var(--ink); transform: rotate(2.5deg); }
-    .phone .notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 34%; height: 22px; border-radius: 12px; background: #1c1c1e; z-index: 2; }
-    .phone .screen { padding: 40px 14px 14px; display: flex; flex-direction: column; gap: 10px; height: 100%; }
-    .ph-profile { display: flex; align-items: center; gap: 10px; }
-    .ph-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--black); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 13px; flex: none; }
-    .ph-name { font-weight: 800; font-size: 13.5px; }
-    .ph-sub { font-size: 11px; color: var(--muted); }
-    .ph-stats { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 8px 0; }
-    .ph-stats b { display: block; font-size: 13px; }
-    .ph-stats span { font-size: 10px; color: var(--muted); }
-    .ph-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
-    .ph-grid div { aspect-ratio: 1; border-radius: 3px; background: var(--soft); position: relative; overflow: hidden; }
-    .ph-grid div:nth-child(3n+1) { background: #18181b; }
-    .ph-grid div:nth-child(4n+2) { background: #d4d4d8; }
-    .ph-grid div:nth-child(5n) { background: #52525b; }
-    .ph-grid div::after { content: ""; position: absolute; inset: 22% 18%; border: 2px solid rgba(255,255,255,.35); border-radius: 2px; }
-    .ph-dm { margin-top: auto; background: var(--soft); border-radius: 14px; padding: 10px 12px; font-size: 12px; }
-    .ph-dm b { display: block; font-size: 11px; margin-bottom: 2px; }
-    .ph-dm.me { background: var(--black); color: #fff; align-self: flex-end; margin-top: 0; }
+    /* hero collage */
+    .collage { position: relative; height: 530px; min-width: 0; }
+    .ghost-m2 { position: absolute; right: -6%; top: 50%; margin-top: -.5em; font: 900 clamp(240px, 30vw, 440px)/1 var(--display); font-stretch: 125%; letter-spacing: -.04em; color: transparent; -webkit-text-stroke: 1.5px rgba(255, 255, 255, .09); pointer-events: none; user-select: none; }
+    .fl { position: absolute; will-change: transform; }
+    .fl > .card { animation: bob 7s ease-in-out infinite; animation-delay: var(--bd, 0s); }
+    .card { background: var(--paper); color: var(--ink); border-radius: 18px; box-shadow: 0 30px 60px -12px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 255, 255, .06); }
+    .c-post { left: 2%; top: 7%; width: 64%; --r: -4deg; }
+    .c-follow { right: -2%; top: 1%; width: 56%; --r: 4deg; --bd: -2s; }
+    .c-dm { right: -4%; top: 50%; width: 60%; --r: 2.5deg; --bd: -4s; }
+    .c-book { left: -4%; bottom: 2%; width: 60%; --r: -2deg; --bd: -1s; }
+    .c-reach { right: 8%; bottom: 0; --r: -3deg; --bd: -5s; }
+    .post { padding: 12px; }
+    .post-h { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+    .av { width: 32px; height: 32px; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; font: 800 11px/1 var(--body); flex: none; }
+    .post-h b, .pill b, .book b { display: block; font-size: 13.5px; line-height: 1.2; }
+    .post-h small, .pill small, .book small { display: block; font-size: 11.5px; color: var(--steel); line-height: 1.3; }
+    .post-h .more { margin-left: auto; color: var(--fog); letter-spacing: 2px; font-weight: 800; }
+    .ba { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; display: grid; grid-template-columns: 1fr 1fr; }
+    .ba .b { background: repeating-linear-gradient(-45deg, #d4d4d8 0 7px, #e4e4e7 7px 14px); }
+    .ba .a { background: radial-gradient(circle at 70% 30%, #52525b, var(--ink) 70%); }
+    .ba::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--paper); }
+    .ba .knob { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; background: var(--paper); z-index: 1; display: grid; place-items: center; box-shadow: 0 4px 12px rgba(0, 0, 0, .35); }
+    .ba .knob svg { width: 16px; height: 16px; stroke: var(--ink); stroke-width: 2.4; fill: none; }
+    .ba .lb { position: absolute; bottom: 8px; font: 700 9.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 5px 7px; border-radius: 5px; }
+    .ba .lb.l { left: 8px; background: var(--paper); color: var(--ink); }
+    .ba .lb.r { right: 8px; background: var(--ink); color: var(--paper); border: 1px solid #3f3f46; }
+    .post-a { display: flex; gap: 12px; padding: 10px 2px 6px; }
+    .post-a svg { width: 19px; height: 19px; stroke: var(--ink); stroke-width: 2; fill: none; }
+    .post-a svg.on { fill: var(--ink); }
+    .post-a .sv { margin-left: auto; }
+    .post-c { margin: 0 2px; font-size: 12.5px; line-height: 1.4; color: #3f3f46; }
+    .post-c b { color: var(--ink); }
+    .pill { display: flex; align-items: center; gap: 11px; padding: 12px 14px; border-radius: 16px; }
+    .pill .ic { width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; flex: none; }
+    .pill .ic svg { width: 16px; height: 16px; }
+    .dm { padding: 14px 16px; border-radius: 18px 18px 18px 6px; }
+    .dm small { display: block; font: 700 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--steel); margin-bottom: 7px; }
+    .dm p { margin: 0; font-size: 14px; line-height: 1.4; font-weight: 500; }
+    .book { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--ink-2); color: var(--paper); box-shadow: 0 30px 60px -12px rgba(0, 0, 0, .8), 0 0 0 1px #3f3f46; }
+    .book small { color: var(--fog); }
+    .cal { width: 42px; height: 46px; border-radius: 10px; background: var(--paper); color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; flex: none; overflow: hidden; }
+    .cal small { font: 700 9px/1 var(--mono); letter-spacing: .08em; color: var(--steel); }
+    .cal b { font: 900 13px/1.15 var(--display); font-stretch: 78%; color: var(--ink); }
+    .reach { display: flex; align-items: center; gap: 10px; padding: 10px 14px 10px 12px; border-radius: 999px; font: 700 12.5px/1 var(--mono); letter-spacing: .04em; }
+    .reach svg { width: 58px; height: 24px; stroke: var(--ink); stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .reach .up { width: 16px; height: 16px; }
 
-    /* sections */
-    section { padding: clamp(72px, 9vw, 120px) 0; }
-    .sec-head { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: end; margin-bottom: 52px; }
-    .sec-head .eyebrow { margin-bottom: 14px; display: block; }
-    .sec-head p { margin: 0; }
+    /* load sequence */
+    .hero .ln, .hero .sub, .hero .ctas, .hero .kicker, .scroll-cue { animation: rise .9s var(--ease) both; }
+    .hero .kicker { animation-delay: .05s; }
+    .hero .ln:nth-child(1) { animation-delay: .12s; }
+    .hero .ln:nth-child(2) { animation-delay: .22s; }
+    .hero .ln:nth-child(3) { animation-delay: .32s; }
+    .hero .sub { animation-delay: .45s; }
+    .hero .ctas { animation-delay: .55s; }
+    .scroll-cue { animation-delay: .7s; }
+    .grow span { animation: step .7s var(--ease) both; animation-delay: calc(.55s + var(--i) * .07s); }
+    .grow svg path { animation: draw .8s var(--ease) both; animation-delay: .95s; }
+    .fl > .card { opacity: 1; }
+    .collage .fl { animation: drop 1s var(--ease) backwards; animation-delay: var(--ld, .3s); }
+    .c-post { --ld: .35s; } .c-follow { --ld: .55s; } .c-dm { --ld: .7s; } .c-book { --ld: .85s; } .c-reach { --ld: 1s; }
 
-    /* about */
-    .about-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 64px; align-items: start; }
-    .about-copy p { font-size: 17.5px; color: var(--ink-2); margin: 0 0 18px; }
-    .about-copy p:first-of-type { font-size: 21px; color: var(--ink); font-weight: 500; line-height: 1.5; }
-    .about-side { display: flex; flex-direction: column; gap: 12px; }
-    .about-card { border: 1.5px solid var(--black); border-radius: 18px; padding: 24px; }
-    .about-card h3 { font-size: 20px; margin-bottom: 8px; }
-    .about-card p { margin: 0; color: var(--ink-2); }
-    .about-card.inv { background: var(--black); color: #fff; }
-    .about-card.inv p { color: #d4d4d8; }
+    @keyframes rise { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+    @keyframes step { from { transform: translateY(0); } to { transform: translateY(calc(var(--i) * -.055em)); } }
+    @keyframes draw { from { stroke-dashoffset: 60; } to { stroke-dashoffset: 0; } }
+    @keyframes drop { from { opacity: 0; translate: 0 60px; scale: .92; } to { opacity: 1; translate: 0 0; scale: 1; } }
+    @keyframes bob { 0%, 100% { transform: rotate(var(--r, 0deg)) translateY(0); } 50% { transform: rotate(calc(var(--r, 0deg) * -.4)) translateY(-12px); } }
+    @keyframes drip { 0% { top: -40%; } 100% { top: 100%; } }
 
-    /* services */
-    .services { background: var(--soft); }
-    .svc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-    .svc { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 26px 22px; display: flex; flex-direction: column; gap: 12px; }
-    .svc .ic { width: 46px; height: 46px; border-radius: 12px; background: var(--black); color: #fff; display: grid; place-items: center; }
-    .svc .ic svg.i { width: 21px; height: 21px; }
-    .svc h3 { font-size: 19px; }
-    .svc p { margin: 0; color: var(--ink-2); font-size: 15px; }
+    /* how it works */
+    .how { background: var(--paper); color: var(--ink); padding-block: clamp(84px, 10vw, 140px) clamp(60px, 7vw, 100px); }
+    .how-head { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; margin-bottom: clamp(32px, 5vw, 64px); }
+    .how-head h2 { margin-top: 18px; }
+    .how-head p { margin: 0; color: #3f3f46; font-size: 18px; max-width: 30em; }
+    .story { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px); gap: clamp(32px, 6vw, 88px); }
+    .steps { position: relative; padding-left: 52px; min-width: 0; }
+    .rail { position: absolute; left: 15px; top: 12vh; bottom: 12vh; width: 2px; background: var(--rule-l); border-radius: 2px; }
+    .rail i { position: absolute; inset: 0; background: var(--ink); transform-origin: top; transform: scaleY(var(--p, 0)); border-radius: 2px; }
+    .step { position: relative; min-height: 76vh; display: flex; flex-direction: column; justify-content: center; padding-block: 48px; transition: opacity .5s var(--ease); }
+    .step-dot { position: absolute; left: -52px; top: 50%; width: 32px; height: 32px; margin-top: -16px; border-radius: 50%; background: var(--paper); border: 2px solid var(--rule-l); display: grid; place-items: center; font: 700 12px/1 var(--mono); color: var(--steel); transition: background .35s, color .35s, border-color .35s, transform .35s var(--ease); }
+    .step.is-on .step-dot { background: var(--ink); color: var(--paper); border-color: var(--ink); transform: scale(1.12); }
+    .js .story-live .step:not(.is-on) { opacity: .4; }
+    .step .kicker { margin-bottom: 16px; }
+    .step h3 { font-size: clamp(34px, 4.6vw, 60px); font-weight: 900; font-stretch: 114%; line-height: .98; letter-spacing: -.02em; margin-bottom: 18px; }
+    .step p { margin: 0; color: #3f3f46; font-size: 18px; max-width: 30em; }
+    .step-media { display: none; }
 
-    /* process */
-    .process { background: var(--black); color: #fff; }
-    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; position: relative; counter-reset: s; }
-    .step { position: relative; padding: 0 20px 0 0; }
-    .step-top { display: flex; align-items: center; margin-bottom: 22px; }
-    .step-num { width: 54px; height: 54px; border-radius: 50%; background: #fff; color: var(--black); display: grid; place-items: center; font-weight: 900; font-size: 20px; flex: none; position: relative; z-index: 1; }
-    .step-line { flex: 1; height: 2px; background: repeating-linear-gradient(90deg, #52525b 0 8px, transparent 8px 14px); margin-left: 10px; position: relative; }
-    .step-line::after { content: ""; position: absolute; right: -2px; top: -5px; border: 6px solid transparent; border-left: 9px solid #71717a; }
-    .step:last-child .step-line { display: none; }
-    .step h3 { font-size: 22px; margin-bottom: 10px; }
-    .step p { margin: 0; color: #d4d4d8; font-size: 15px; }
-    .step .tag { display: inline-block; margin-top: 14px; font-size: 12px; font-weight: 700; color: var(--dark-muted); border: 1px solid var(--dark-line); padding: 4px 10px; border-radius: 999px; }
+    .stage { position: sticky; top: max(90px, calc(50vh - 300px)); align-self: start; height: 600px; display: grid; place-items: center; }
+    .bignum { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+    .bignum span { grid-area: 1 / 1; font: 900 520px/1 var(--display); font-stretch: 125%; color: transparent; -webkit-text-stroke: 2px var(--rule-l); opacity: 0; transform: translateY(40px) scale(.9); transition: opacity .6s var(--ease), transform .8s var(--ease); }
+    .bignum span.on { opacity: 1; transform: none; }
 
-    .funnel-wrap { margin-top: 84px; display: grid; grid-template-columns: .9fr 1.1fr; gap: 56px; align-items: center; }
-    .funnel-wrap h3 { font-size: clamp(28px, 3.4vw, 40px); font-weight: 900; margin: 14px 0 16px; }
-    .funnel-wrap p { color: #d4d4d8; margin: 0; font-size: 16.5px; }
-    .funnel { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-    .f-row { height: 74px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 22px; color: var(--black); background: #fff; clip-path: polygon(0 0, 100% 0, calc(100% - 22px) 100%, 22px 100%); }
-    .f-row:nth-child(1) { width: 100%; }
-    .f-row:nth-child(2) { width: 84%; background: #e4e4e7; }
-    .f-row:nth-child(3) { width: 68%; background: #a1a1aa; }
-    .f-row:nth-child(4) { width: 52%; background: #52525b; color: #fff; }
-    .f-row:nth-child(5) { width: 36%; background: #fff; clip-path: none; border-radius: 12px; justify-content: center; outline: 2px solid #fff; outline-offset: 4px; }
-    .f-row b { font-size: 16px; font-weight: 800; letter-spacing: -.01em; }
-    .f-row span { font-size: 12.5px; font-weight: 600; opacity: .75; text-align: right; }
-    .f-row:nth-child(5) > span:not(.lbl) { display: none; }
-    .f-row svg.i { width: 18px; height: 18px; }
-    .f-row .lbl { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    /* phone */
+    .device { position: relative; width: 290px; height: 590px; border-radius: 46px; background: var(--ink); padding: 11px; box-shadow: 0 40px 60px -28px rgba(10, 10, 10, .5), inset 0 0 0 1.5px #3f3f46; }
+    .device::before { content: ""; position: absolute; top: 20px; left: 50%; width: 86px; height: 24px; margin-left: -43px; border-radius: 14px; background: var(--ink); z-index: 3; }
+    .screens { position: relative; height: 100%; border-radius: 36px; background: var(--paper); overflow: hidden; }
+    .screen { position: absolute; inset: 0; padding: 50px 14px 16px; display: flex; flex-direction: column; gap: 12px; opacity: 0; transform: translateY(14px) scale(.98); transition: opacity .45s var(--ease), transform .55s var(--ease); font-size: 12px; }
+    .screen.on { opacity: 1; transform: none; }
+    .app-h { display: flex; align-items: center; gap: 10px; }
+    .app-h .av { width: 44px; height: 44px; font-size: 13px; border: 2px solid var(--paper); box-shadow: 0 0 0 2px var(--ink); }
+    .app-h b { display: block; font-size: 14px; line-height: 1.2; }
+    .app-h small { display: block; font-size: 11px; color: var(--steel); }
+    .hl { display: flex; gap: 10px; }
+    .hl span { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 600; color: #3f3f46; }
+    .hl span::before { content: ""; width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--ink); background: radial-gradient(circle at 50% 40%, #a1a1aa 0 26%, var(--mist) 27%); box-shadow: inset 0 0 0 2px var(--paper); }
+    .hl span:nth-child(2)::before { background: radial-gradient(circle at 36% 42%, #52525b 0 17%, transparent 18%), radial-gradient(circle at 66% 42%, #a1a1aa 0 17%, transparent 18%), var(--mist); }
+    .hl span:nth-child(3)::before { background: conic-gradient(from 0deg, var(--ink) 0 25%, var(--mist) 0 50%, var(--ink) 0 75%, var(--mist) 0); }
+    .hl span:nth-child(4)::before { background: var(--ink); }
+    .feed { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+    .feed i { aspect-ratio: 1; border-radius: 4px; position: relative; overflow: hidden; background: var(--mist); }
+    .t1 { background: linear-gradient(90deg, #d4d4d8 50%, var(--ink) 50%) !important; }
+    .t2 { background: radial-gradient(circle at 70% 30%, #52525b, var(--ink) 75%) !important; }
+    .t2::after, .t6::after { content: ""; position: absolute; left: 50%; top: 50%; margin: -7px 0 0 -4px; border: 7px solid transparent; border-left: 11px solid var(--paper); border-right: 0; }
+    .t3 { background: radial-gradient(circle at 34% 46%, #71717a 0 15%, transparent 16%), radial-gradient(circle at 66% 46%, #3f3f46 0 15%, transparent 16%), linear-gradient(transparent 70%, #d4d4d8 70%), var(--mist) !important; }
+    .t4::after { content: "★★★★★"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 9px; letter-spacing: 1px; color: var(--ink); }
+    .t5 { background: repeating-linear-gradient(-45deg, #d4d4d8 0 5px, #e4e4e7 5px 10px) !important; }
+    .t6 { background: linear-gradient(160deg, #3f3f46, var(--ink)) !important; }
+    .t7 { background: conic-gradient(from 45deg, var(--ink) 0 25%, #a1a1aa 0 50%, var(--ink) 0 75%, #e4e4e7 0) !important; }
+    .t8 { background: linear-gradient(90deg, #e4e4e7 50%, #52525b 50%) !important; }
+    .t9 { background: var(--ink) !important; }
+    .t9::after { content: "M2"; position: absolute; inset: 0; display: grid; place-items: center; font: 900 13px/1 var(--display); color: var(--paper); }
+    .toast { margin-top: auto; display: flex; align-items: center; gap: 9px; padding: 10px 12px; border-radius: 12px; background: var(--ink); color: var(--paper); font-weight: 600; font-size: 11.5px; }
+    .toast svg { width: 15px; height: 15px; }
+    .chart { border: 1px solid var(--rule-l); border-radius: 14px; padding: 12px 12px 8px; }
+    .chart small { display: flex; justify-content: space-between; font: 700 9.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--steel); }
+    .chart svg { display: block; width: 100%; height: 120px; margin-top: 8px; overflow: visible; }
+    .chart .gl { stroke: var(--rule-l); stroke-width: 1; }
+    .chart .area { fill: url(#fade); }
+    .chart .ln2 { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 400; stroke-dashoffset: 0; }
+    .chart .end { fill: var(--ink); stroke: var(--paper); stroke-width: 3; }
+    .nlist { display: flex; flex-direction: column; gap: 8px; }
+    .nrow { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 12px; background: var(--mist); }
+    .nrow .av { width: 28px; height: 28px; font-size: 9.5px; }
+    .nrow > span:not(.av) { flex: 1; min-width: 0; font-size: 11.5px; line-height: 1.3; }
+    .nrow b { font-weight: 700; }
+    .nrow em { font-style: normal; font: 600 10px/1 var(--mono); color: var(--steel); }
+    .dm-h { display: flex; align-items: center; gap: 9px; padding-bottom: 10px; border-bottom: 1px solid var(--rule-l); }
+    .dm-h .av { width: 34px; height: 34px; background: #52525b; }
+    .dm-h b { display: block; font-size: 13.5px; }
+    .dm-h small { display: block; font-size: 10.5px; color: var(--steel); }
+    .thread { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+    .msg { max-width: 82%; padding: 9px 12px; border-radius: 16px; font-size: 12.5px; line-height: 1.38; }
+    .msg.in { background: var(--mist); border-bottom-left-radius: 5px; align-self: flex-start; }
+    .msg.out { background: var(--ink); color: var(--paper); border-bottom-right-radius: 5px; align-self: flex-end; }
+    .booked { margin-top: 6px; display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: 14px; border: 2px solid var(--ink); }
+    .booked .cal { width: 38px; height: 42px; background: var(--ink); color: var(--paper); }
+    .booked .cal small { color: var(--fog); }
+    .booked .cal b { color: var(--paper); font-size: 12px; }
+    .booked b { display: block; font-size: 13px; }
+    .booked small { display: block; font-size: 10.5px; color: var(--steel); }
+    .booked .ok { margin-left: auto; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; }
+    .booked .ok svg { width: 13px; height: 13px; stroke-width: 3; }
+    .compose { margin-top: auto; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px; border: 1px solid var(--rule-l); border-radius: 999px; color: var(--fog); font-size: 12px; }
+    .compose span { flex: 1; }
+    .compose b { width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; }
+    .compose b svg { width: 14px; height: 14px; }
+    /* each screen plays its own little sequence when it comes on */
+    .screen.play .seq { animation: pop .55s var(--ease) both; animation-delay: calc(var(--d, 0) * 90ms + 120ms); }
+    .screen.play .ln2 { animation: draw2 1.6s var(--ease) both .2s; }
+    .screen.play .end { animation: pop .5s var(--ease) both 1.5s; transform-box: fill-box; transform-origin: center; }
+    @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.92); } to { opacity: 1; transform: none; } }
+    @keyframes draw2 { from { stroke-dashoffset: 400; } to { stroke-dashoffset: 0; } }
 
-    /* compare */
-    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .cmp { border-radius: 20px; padding: 30px; }
-    .cmp h3 { font-size: 22px; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
-    .cmp ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; }
-    .cmp li { display: flex; gap: 12px; align-items: flex-start; font-size: 16px; }
-    .cmp li svg.i { margin-top: 3px; }
-    .cmp.them { border: 1px solid var(--line); color: var(--ink-2); }
-    .cmp.them h3 { color: var(--muted); }
-    .cmp.us { background: var(--black); color: #fff; }
+    /* why band */
+    .band { position: relative; overflow: hidden; overflow: clip; background: var(--ink); color: var(--paper); padding-block: clamp(80px, 10vw, 140px); }
+    .marquee { white-space: nowrap; font: 900 clamp(64px, 11vw, 168px)/1 var(--display); font-stretch: 125%; letter-spacing: -.03em; user-select: none; }
+    .marquee + .marquee { margin-top: .08em; }
+    .track { display: inline-block; will-change: transform; }
+    .marquee.o .track { color: transparent; -webkit-text-stroke: 2px var(--paper); }
+    .marquee .sep { display: inline-block; width: .38em; height: .38em; margin: 0 .3em .1em; border-radius: 50%; background: var(--paper); vertical-align: middle; }
+    .marquee.o .sep { background: transparent; border: 2px solid var(--paper); }
+    .band-copy { margin-top: clamp(56px, 7vw, 96px); display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); gap: 48px; align-items: end; }
+    .band-copy .big { margin: 18px 0 0; font: 600 clamp(24px, 2.7vw, 34px)/1.25 var(--body); letter-spacing: -.012em; text-wrap: balance; }
+    .band-copy .small { margin: 0; color: #d4d4d8; font-size: 17.5px; }
+    .checks { list-style: none; margin: 22px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+    .checks li { display: flex; align-items: center; gap: 12px; font-weight: 600; }
+    .checks .ok { width: 26px; height: 26px; border-radius: 50%; background: var(--paper); color: var(--ink); display: grid; place-items: center; flex: none; }
+    .checks .ok svg { width: 14px; height: 14px; stroke-width: 3; }
 
     /* contact */
-    .contact { background: var(--soft); }
-    .people { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-    .person { background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 30px; display: flex; flex-direction: column; gap: 22px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
-    .person-top { display: flex; align-items: center; gap: 16px; }
-    .p-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--black); color: #fff; display: grid; place-items: center; font-weight: 900; font-size: 22px; letter-spacing: -.02em; flex: none; }
-    .person h3 { font-size: 26px; }
-    .role { font-size: 13px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+    .contact { background: var(--mist); color: var(--ink); padding-block: clamp(84px, 10vw, 140px); }
+    .contact-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: end; margin-bottom: 48px; }
+    .contact-head h2 { margin-top: 18px; }
+    .contact-head p { margin: 0; color: #3f3f46; font-size: 18px; max-width: 30em; }
+    .people { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    .person { position: relative; background: var(--paper); border: 1px solid var(--rule-l); border-radius: 26px; padding: 30px; display: flex; flex-direction: column; gap: 24px; overflow: hidden; transition: transform .4s var(--ease), box-shadow .4s var(--ease), border-color .3s; }
+    .person::before { content: ""; position: absolute; inset: 0; background: radial-gradient(420px circle at var(--x, 50%) var(--y, 0%), rgba(10, 10, 10, .06), transparent 60%); opacity: 0; transition: opacity .3s; pointer-events: none; }
+    .person:hover { transform: translateY(-4px); box-shadow: 0 30px 60px -30px rgba(10, 10, 10, .35); border-color: #d4d4d8; }
+    .person:hover::before { opacity: 1; }
+    .person-top { display: flex; align-items: center; gap: 18px; }
+    .p-av { width: 68px; height: 68px; border-radius: 20px; background: var(--ink); color: var(--paper); display: grid; place-items: center; font: 900 23px/1 var(--display); font-stretch: 115%; flex: none; transition: transform .4s var(--ease); }
+    .person:hover .p-av { transform: rotate(-6deg); }
+    .person h3 { font-size: clamp(24px, 2.4vw, 30px); font-weight: 900; font-stretch: 110%; line-height: 1.05; letter-spacing: -.015em; }
+    .role { margin-top: 6px; font: 700 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--steel); }
     .p-lines { display: flex; flex-direction: column; gap: 8px; }
-    .p-line { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); text-decoration: none; font-weight: 600; font-size: 16px; transition: border-color .15s, background .15s; min-width: 0; }
-    .p-line:hover { border-color: var(--black); }
-    .p-line .k { font-size: 12px; color: var(--muted); font-weight: 600; display: block; }
-    .p-line .v { display: block; overflow-wrap: anywhere; }
+    .p-line { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--rule-l); text-decoration: none; font-weight: 600; font-size: 16px; min-width: 0; transition: border-color .15s, background .15s; }
+    .p-line:hover { border-color: var(--ink); }
     .p-line .txt { min-width: 0; }
-    .p-line .go { margin-left: auto; color: var(--faint); }
-    .p-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-    .p-actions .btn { height: 46px; font-size: 14px; padding: 0 10px; }
-    .p-actions svg.i { width: 16px; height: 16px; }
+    .p-line .k { display: block; font: 700 10.5px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--steel); }
+    .p-line .v { display: block; overflow-wrap: anywhere; }
+    .p-line .go { margin-left: auto; color: var(--fog); transition: transform .25s var(--ease), color .2s; }
+    .p-line:hover .go { color: var(--ink); transform: translateX(3px); }
+    .p-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .p-actions .btn { height: 48px; font-size: 14px; padding: 0 10px; }
+    .p-actions .btn svg { width: 16px; height: 16px; }
 
-    .cta { background: var(--black); color: #fff; text-align: center; }
-    .cta h2 { max-width: 760px; margin: 16px auto 18px; }
-    .cta .lead-p { margin: 0 auto 32px; }
-    .cta .hero-ctas { justify-content: center; }
+    /* closing */
+    .close { background: var(--ink); color: var(--paper); padding-block: clamp(90px, 11vw, 150px) 0; overflow: hidden; overflow: clip; }
+    .close h2 { font-size: clamp(38px, 6.4vw, 92px); max-width: 13em; margin: 20px 0 22px; }
+    .close p { margin: 0 0 34px; color: #d4d4d8; font-size: 19px; }
+    .foot { margin-top: clamp(80px, 10vw, 130px); border-top: 1px solid var(--rule-d); }
+    .foot .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-block: 26px; font-size: 14px; color: var(--fog); }
+    .foot .logo { width: 34px; height: 34px; font-size: 14px; border-radius: 9px; }
 
-    footer { background: var(--black); color: var(--dark-muted); border-top: 1px solid var(--dark-line); padding: 28px 0; font-size: 13.5px; }
-    footer .wrap { display: flex; align-items: center; gap: 16px; justify-content: space-between; flex-wrap: wrap; }
-    footer .brand-name { color: #fff; }
-    footer .logo { width: 32px; height: 32px; font-size: 13px; border-radius: 8px; }
-
-    .people > *, .svc-grid > *, .compare > *, .about-grid > *, .hero-grid > *, .sec-head > *, .funnel-wrap > * { min-width: 0; }
-    .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s cubic-bezier(.2,.8,.2,1); }
-    .reveal.in { opacity: 1; transform: none; }
-    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }
+    /* scroll reveal: only things below the first screen wait, so the page is complete at rest */
+    .rv { transition: opacity .8s var(--ease), transform .9s var(--ease); }
+    .rv.wait { opacity: 0; transform: translateY(36px); }
+    .rv.wait.in { opacity: 1; transform: none; }
+    .rv-d1 { transition-delay: .08s; } .rv-d2 { transition-delay: .16s; }
 
     @media (max-width: 980px) {
-      .hero-grid, .about-grid, .funnel-wrap, .sec-head { grid-template-columns: 1fr; }
-      .hero-grid { gap: 56px; }
-      .phone { width: min(280px, 80%); }
-      .svc-grid { grid-template-columns: 1fr 1fr; }
-      .steps { grid-template-columns: 1fr 1fr; row-gap: 44px; }
-      .step:nth-child(2) .step-line { display: none; }
+      .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+      .hero h1 { font-size: clamp(44px, 8.4vw, 76px); }
+      .collage { height: 470px; max-width: 470px; width: 100%; justify-self: center; margin-top: 28px; }
+      .scroll-cue { display: none; }
+      .how-head, .contact-head, .band-copy { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+      .story { grid-template-columns: minmax(0, 1fr); }
+      .stage { display: none; }
+      .rail { top: 40px; bottom: 40px; }
+      .step { min-height: 0; padding-block: 28px 44px; }
+      .step-dot { top: 34px; margin-top: 0; }
+      .js .story-live .step:not(.is-on) { opacity: 1; }
+      .step-media { display: flex; justify-content: flex-start; margin-top: 28px; }
+      .step-media .device { width: 250px; height: 500px; border-radius: 40px; padding: 10px; }
+      .step-media .screens { border-radius: 31px; }
+      .step-media .device::before { top: 18px; width: 74px; height: 21px; margin-left: -37px; }
+      .step-media .screen { padding-top: 44px; }
       .nav-links { display: none; }
       .nav .btn { margin-left: auto; }
     }
-    @media (max-width: 680px) {
+    @media (max-width: 600px) {
       :root { --gutter: 16px; }
-      .svc-grid, .compare, .people { grid-template-columns: 1fr; }
-      .steps { grid-template-columns: 1fr; }
-      .step { padding: 0 0 0 76px; min-height: 60px; }
-      .step-top { position: absolute; left: 0; top: 0; bottom: -44px; flex-direction: column; margin: 0; }
-      .step-line { width: 2px; height: auto; flex: 1; margin: 8px 0 0; background: repeating-linear-gradient(180deg, #52525b 0 8px, transparent 8px 14px); }
-      .step-line::after { display: none; }
-      .step:nth-child(2) .step-line { display: block; }
-      .step:last-child .step-line { display: none; }
-      .f-row { height: 64px; padding: 0 16px; }
-      .f-row:nth-child(2) { width: 90%; } .f-row:nth-child(3) { width: 80%; } .f-row:nth-child(4) { width: 70%; } .f-row:nth-child(5) { width: 60%; }
-      .f-row > span:not(.lbl) { display: none; }
-      .f-row { justify-content: center; }
-      .person, .cmp { padding: 22px; }
+      body { font-size: 16px; }
+      .hero h1 { font-stretch: 100%; font-size: clamp(38px, 11.4vw, 60px); letter-spacing: -.03em; }
+      .collage { height: 400px; }
+      .c-post { width: 64%; left: 0; }
+      .c-follow { width: 58%; }
+      .c-dm { width: 64%; right: 0; top: 50%; }
+      .c-book { width: 64%; }
+      .c-reach { display: none; }
+      .ghost-m2 { font-size: 260px; right: -20%; }
+      h2, .step h3 { font-stretch: 100%; }
+      .marquee { font-size: clamp(56px, 18vw, 96px); font-stretch: 100%; }
+      .people { grid-template-columns: minmax(0, 1fr); }
+      .person { padding: 22px; }
       .p-actions { grid-template-columns: 1fr 1fr; }
       .p-actions .btn:last-child { grid-column: span 2; }
       .nav .btn span { display: none; }
-      .nav .btn { width: 42px; padding: 0; }
+      .nav .btn { width: 44px; padding: 0; }
+      .ctas .btn { flex: 1 1 auto; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .rv.wait { opacity: 1; transform: none; }
     }
   </style>
 </head>
@@ -228,185 +366,178 @@
     <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
     <symbol id="i-mail" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></symbol>
     <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
-    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
     <symbol id="i-cal" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></symbol>
-    <symbol id="i-trend" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol>
-    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
-    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
-    <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
-    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
-    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
-    <symbol id="i-hammer" viewBox="0 0 24 24"><path d="m15 12-8.5 8.5a2.12 2.12 0 1 1-3-3L12 9"/><path d="M17.64 15 22 10.64"/><path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 0 0-3.94-1.64H9l.92.82A6.18 6.18 0 0 1 12 8.4v1.56l2 2h2.47l2.26 1.91"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
-    <symbol id="i-layout" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></symbol>
+    <symbol id="i-userplus" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></symbol>
+    <symbol id="i-comment" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5"/><path d="m16 7 5 5-5 5"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></symbol>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a0a0a" stop-opacity=".16"/><stop offset="1" stop-color="#0a0a0a" stop-opacity="0"/></linearGradient>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
   </svg>
 
   <header class="nav">
     <div class="wrap">
-      <a class="brand" href="#top" aria-label="M2 home"><span class="logo">M2</span></a>
+      <a class="logo" href="#top" aria-label="M2 home">M2</a>
       <nav class="nav-links" aria-label="Sections">
-        <a href="#about">About</a>
-        <a href="#services">What we do</a>
-        <a href="#process">Process</a>
+        <a href="#how">How it works</a>
+        <a href="#why">Why M2</a>
         <a href="#contact">Contact</a>
       </nav>
-      <a class="btn solid" href="tel:+13252495262" aria-label="Call M2"><svg class="i"><use href="#i-phone"/></svg><span>Call us</span></a>
+      <a class="btn solid" href="#contact" aria-label="Talk to M2"><svg class="i"><use href="#i-phone"/></svg><span>Let's talk</span></a>
     </div>
   </header>
 
   <main id="top">
     <!-- hero -->
-    <div class="hero">
-      <div class="wrap hero-grid">
-        <div>
-          <span class="eyebrow">Social media that grows your business</span>
-          <h1>Your work is<br>your best <span class="outline">ad.</span></h1>
-          <p class="lead-p">M2 turns your own Facebook and Instagram into a steady source of new customers. We capture your work and your team, run your pages for you, and turn the attention into leads. No ads. No paying for leads.</p>
-          <div class="hero-ctas">
+    <section class="hero">
+      <div class="hero-grid-bg" data-speed="-0.12" aria-hidden="true"></div>
+      <div class="wrap">
+        <div class="hero-copy" data-speed="-0.1">
+          <span class="kicker">M2 · Social media marketing</span>
+          <h1>
+            <span class="ln">Social media</span>
+            <span class="ln">that <span class="grow" aria-label="grows"><span style="--i:0">g</span><span style="--i:1">r</span><span style="--i:2">o</span><span style="--i:3">w</span><span style="--i:4">s</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M9 5h10v10"/></svg></span></span>
+            <span class="ln">your business.</span>
+          </h1>
+          <p class="sub">We create your content, run your Facebook and Instagram, and turn the attention into new customers. You run the business. We handle the rest.</p>
+          <div class="ctas">
             <a class="btn solid" href="#contact"><svg class="i"><use href="#i-cal"/></svg> Book a 20-minute call</a>
-            <a class="btn ghost" href="#process">See how it works <svg class="i"><use href="#i-arrow"/></svg></a>
+            <a class="btn ghost" href="#how">See how it works <svg class="i go"><use href="#i-arrow"/></svg></a>
           </div>
-          <div class="pills">
-            <span class="pill"><svg class="i"><use href="#i-camera"/></svg>We create the content</span>
-            <span class="pill"><svg class="i"><use href="#i-layout"/></svg>We run your pages</span>
-            <span class="pill"><svg class="i"><use href="#i-phone"/></svg>You get the customers</span>
-          </div>
+          <a class="scroll-cue" href="#how"><i></i>Scroll</a>
         </div>
-        <div class="phone" aria-hidden="true">
-          <div class="notch"></div>
-          <div class="screen">
-            <div class="ph-profile"><div class="ph-avatar">YB</div><div><div class="ph-name">Your Business</div><div class="ph-sub">Your industry · Your town</div></div></div>
-            <div class="ph-stats"><div><b>Weekly</b><span>posts</span></div><div><b>Real</b><span>photos &amp; video</span></div><div><b>Local</b><span>followers</span></div></div>
-            <div class="ph-grid"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
-            <div class="ph-dm"><b>New customer</b>Saw your post this week. Do you have any openings on Thursday?</div>
-            <div class="ph-dm me">We sure do. What time works best for you?</div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- about -->
-    <section id="about" class="reveal">
-      <div class="wrap about-grid">
-        <div class="about-copy">
-          <span class="eyebrow">About M2</span>
-          <h2 style="margin:14px 0 26px">We make the work you already do bring in more business.</h2>
-          <p>M2 is a social media team for business owners who do great work but don't have the time to post about it. Whatever you do, we help more of the right people see it.</p>
-          <p>When someone hears about your business, the first thing they do is look you up. If your page hasn't posted in months, that interest goes cold. We fix that. We capture your work, your team and what makes you different, and keep your Facebook and Instagram active, professional and consistent.</p>
-          <p>Then we turn that attention into a funnel, so the people who see your work have a clear, easy way to reach you. You focus on running your business. We handle the rest.</p>
-        </div>
-        <div class="about-side">
-          <div class="about-card inv">
-            <h3>No ads. No paying for leads.</h3>
-            <p>Your page, your content, your customers. Not shared leads sold to your competitors.</p>
+        <div class="collage" aria-hidden="true">
+          <div class="ghost-m2" data-speed="-0.06">M2</div>
+          <div class="fl c-post" data-speed="0.08" data-depth="10">
+            <div class="card post">
+              <div class="post-h"><span class="av">YB</span><div><b>yourbusiness</b><small>Your town</small></div><span class="more">···</span></div>
+              <div class="ba"><span class="b"></span><span class="a"></span><span class="knob"><svg viewBox="0 0 24 24"><use href="#i-swap"/></svg></span><span class="lb l">Before</span><span class="lb r">After</span></div>
+              <div class="post-a"><svg class="on" viewBox="0 0 24 24"><use href="#i-heart"/></svg><svg viewBox="0 0 24 24"><use href="#i-comment"/></svg><svg viewBox="0 0 24 24"><use href="#i-send"/></svg><svg class="sv" viewBox="0 0 24 24"><use href="#i-save"/></svg></div>
+              <p class="post-c"><b>yourbusiness</b> Another one finished this week. Spots open for next week, send us a message.</p>
+            </div>
           </div>
-          <div class="about-card">
-            <h3>Completely off your plate</h3>
-            <p>We create it, write it, post it and keep it consistent, even in your busiest weeks.</p>
+          <div class="fl c-follow" data-speed="0.2" data-depth="22">
+            <div class="card pill"><span class="ic"><svg class="i"><use href="#i-userplus"/></svg></span><div><b>New follower</b><small>Started following you</small></div></div>
           </div>
-          <div class="about-card">
-            <h3>Built for your market</h3>
-            <p>Your real work and your real team, shown to the customers you actually want to reach.</p>
+          <div class="fl c-dm" data-speed="0.3" data-depth="30">
+            <div class="card dm"><small>New message</small><p>Saw your post this week. Do you have any openings Thursday?</p></div>
+          </div>
+          <div class="fl c-book" data-speed="0.14" data-depth="16">
+            <div class="card book"><span class="cal"><small>THU</small><b>10:00</b></span><div><b>Appointment booked</b><small>Thursday · 10:00 AM</small></div></div>
+          </div>
+          <div class="fl c-reach" data-speed="0.38" data-depth="38">
+            <div class="card reach"><svg viewBox="0 0 58 24"><path d="M2 21 12 16l9 3 10-8 9 2L56 3"/></svg>Reach<svg class="i up"><use href="#i-up"/></svg></div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- services -->
-    <section id="services" class="services">
+    <!-- how it works -->
+    <section id="how" class="how">
       <div class="wrap">
-        <div class="sec-head reveal">
-          <div><span class="eyebrow">What we do</span><h2>Everything it takes to turn your page into a pipeline.</h2></div>
-          <p class="lead-p">One team handling the whole thing, from the first photo to the message in your inbox.</p>
+        <div class="how-head">
+          <div class="rv"><span class="kicker">How it works</span><h2>From your first post to your phone ringing.</h2></div>
+          <p class="rv rv-d1">Three steps. We take your social media, grow it, and turn it into a steady flow of new customers.</p>
         </div>
-        <div class="svc-grid">
-          <div class="svc reveal"><div class="ic"><svg class="i"><use href="#i-camera"/></svg></div><h3>Content creation</h3><p>We shoot photos and video of your work, your products or services, and the team behind it. Real content, made for you.</p></div>
-          <div class="svc reveal"><div class="ic"><svg class="i"><use href="#i-layout"/></svg></div><h3>Page management</h3><p>We run your Facebook and Instagram: a steady posting schedule, captions written in your voice, and a page that looks the part.</p></div>
-          <div class="svc reveal"><div class="ic"><svg class="i"><use href="#i-trend"/></svg></div><h3>Audience growth</h3><p>We build a following of the people you want to reach, the customers who'll actually buy from you.</p></div>
-          <div class="svc reveal"><div class="ic"><svg class="i"><use href="#i-filter"/></svg></div><h3>Lead funnel</h3><p>We turn views into messages and calls, with clear ways to reach you and quick follow-up, so interest becomes new customers.</p></div>
+
+        <div class="story">
+          <div class="steps">
+            <div class="rail" aria-hidden="true"><i></i></div>
+            <article class="step is-on" data-step="1">
+              <span class="step-dot" aria-hidden="true">1</span>
+              <span class="kicker">Step 1 · Create</span>
+              <h3>We capture your business.</h3>
+              <p>We shoot photos and video of your work, your team and your results, and write every post in your voice. Real content that no stock photo can match.</p>
+              <div class="step-media" aria-hidden="true"></div>
+            </article>
+            <article class="step" data-step="2">
+              <span class="step-dot" aria-hidden="true">2</span>
+              <span class="kicker">Step 2 · Grow</span>
+              <h3>We grow your audience.</h3>
+              <p>We run your Facebook and Instagram on a steady schedule, so more of the right local people see your work every week, and yours is the name they remember.</p>
+              <div class="step-media" aria-hidden="true"></div>
+            </article>
+            <article class="step" data-step="3">
+              <span class="step-dot" aria-hidden="true">3</span>
+              <span class="kicker">Step 3 · Scale</span>
+              <h3>We turn attention into customers.</h3>
+              <p>Followers become messages, messages become calls, and calls become booked customers. Your page keeps working for you, month after month.</p>
+              <div class="step-media" aria-hidden="true"></div>
+            </article>
+          </div>
+
+          <div class="stage" aria-hidden="true">
+            <div class="bignum"><span class="on">1</span><span>2</span><span>3</span></div>
+            <div class="device">
+              <div class="screens">
+                <div class="screen s1 on" data-s="1">
+                  <div class="app-h seq" style="--d:0"><span class="av">YB</span><div><b>Your Business</b><small>Your industry · Your town</small></div></div>
+                  <div class="hl seq" style="--d:1"><span>Work</span><span>Team</span><span>Reviews</span><span>Reels</span></div>
+                  <div class="feed">
+                    <i class="t1 seq" style="--d:2"></i><i class="t2 seq" style="--d:3"></i><i class="t3 seq" style="--d:4"></i>
+                    <i class="t4 seq" style="--d:5"></i><i class="t5 seq" style="--d:6"></i><i class="t6 seq" style="--d:7"></i>
+                    <i class="t7 seq" style="--d:8"></i><i class="t8 seq" style="--d:9"></i><i class="t9 seq" style="--d:10"></i>
+                  </div>
+                  <div class="toast seq" style="--d:12"><svg class="i"><use href="#i-clock"/></svg>Next post scheduled · Today 6:00 PM</div>
+                </div>
+                <div class="screen s2" data-s="2">
+                  <div class="app-h seq" style="--d:0"><span class="av">YB</span><div><b>Your Business</b><small>Insights</small></div></div>
+                  <div class="chart seq" style="--d:1">
+                    <small><span>Followers</span><span>Last 90 days</span></small>
+                    <svg viewBox="0 0 240 120" preserveAspectRatio="none">
+                      <line class="gl" x1="0" y1="30" x2="240" y2="30"/><line class="gl" x1="0" y1="65" x2="240" y2="65"/><line class="gl" x1="0" y1="100" x2="240" y2="100"/>
+                      <path class="area" d="M4 104 C30 100 44 96 64 92 S100 86 118 74 S150 64 168 50 S206 30 232 14 L232 120 L4 120 Z"/>
+                      <path class="ln2" d="M4 104 C30 100 44 96 64 92 S100 86 118 74 S150 64 168 50 S206 30 232 14"/>
+                      <circle class="end" cx="232" cy="14" r="6"/>
+                    </svg>
+                  </div>
+                  <div class="nlist">
+                    <div class="nrow seq" style="--d:3"><span class="av">JM</span><span><b>jamie.m</b> started following you</span><em>2m</em></div>
+                    <div class="nrow seq" style="--d:4"><span class="av">KR</span><span><b>k.reyes</b> liked your reel</span><em>9m</em></div>
+                    <div class="nrow seq" style="--d:5"><span class="av">AL</span><span><b>alee</b> shared your post</span><em>1h</em></div>
+                    <div class="nrow seq" style="--d:6"><span class="av">DT</span><span><b>dtaylor</b> started following you</span><em>3h</em></div>
+                  </div>
+                </div>
+                <div class="screen s3" data-s="3">
+                  <div class="dm-h seq" style="--d:0"><span class="av">JM</span><div><b>Jamie M.</b><small>Found you on Instagram</small></div></div>
+                  <div class="thread">
+                    <div class="msg in seq" style="--d:2">Hi! Saw your post this week. Do you have any openings Thursday?</div>
+                    <div class="msg out seq" style="--d:5">We sure do. What time works best for you?</div>
+                    <div class="msg in seq" style="--d:8">10 AM works great.</div>
+                    <div class="booked seq" style="--d:11"><span class="cal"><small>THU</small><b>10:00</b></span><div><b>Appointment booked</b><small>Thursday · 10:00 AM</small></div><span class="ok"><svg class="i"><use href="#i-check"/></svg></span></div>
+                  </div>
+                  <div class="compose seq" style="--d:13"><span>Message…</span><b><svg class="i"><use href="#i-send"/></svg></b></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- process -->
-    <section id="process" class="process">
-      <div class="wrap">
-        <div class="sec-head reveal">
-          <div><span class="eyebrow">Our process</span><h2>From your first post to your phone ringing.</h2></div>
-          <p class="lead-p">We take your social media, grow it, and turn it into a lead funnel. Here's how it works.</p>
+    <!-- why -->
+    <section id="why" class="band" aria-label="Why M2">
+      <div class="marquee o" data-dir="-1" aria-hidden="true"><div class="track">No ads<span class="sep"></span>No paying for leads<span class="sep"></span>No ads<span class="sep"></span>No paying for leads<span class="sep"></span>No ads<span class="sep"></span>No paying for leads<span class="sep"></span></div></div>
+      <div class="marquee" data-dir="1" aria-hidden="true"><div class="track">Real content<span class="sep"></span>Real customers<span class="sep"></span>Real content<span class="sep"></span>Real customers<span class="sep"></span>Real content<span class="sep"></span>Real customers<span class="sep"></span></div></div>
+      <div class="wrap band-copy">
+        <div class="rv">
+          <span class="kicker">Why M2</span>
+          <p class="big">We're a social media team for business owners who do great work but don't have the time to post about it.</p>
         </div>
-        <div class="steps">
-          <div class="step reveal">
-            <div class="step-top"><div class="step-num">1</div><div class="step-line"></div></div>
-            <h3>Take it over</h3>
-            <p>We take your Facebook and Instagram completely off your plate and get your profiles looking sharp and professional.</p>
-            <span class="tag">Your social media</span>
-          </div>
-          <div class="step reveal">
-            <div class="step-top"><div class="step-num">2</div><div class="step-line"></div></div>
-            <h3>Capture the work</h3>
-            <p>We capture your business in action: your work, your team and your results. Real content no stock photo can match.</p>
-            <span class="tag">Real work, real people</span>
-          </div>
-          <div class="step reveal">
-            <div class="step-top"><div class="step-num">3</div><div class="step-line"></div></div>
-            <h3>Grow it</h3>
-            <p>Consistent posts reach more of the right people every week, and your business becomes the one they recognize.</p>
-            <span class="tag">More reach</span>
-          </div>
-          <div class="step reveal">
-            <div class="step-top"><div class="step-num">4</div><div class="step-line"></div></div>
-            <h3>Turn it into leads</h3>
-            <p>Views become messages, messages become calls, and calls become customers, without paying for a single lead.</p>
-            <span class="tag">Your lead funnel</span>
-          </div>
-        </div>
-
-        <div class="funnel-wrap reveal">
-          <div>
-            <span class="eyebrow">The funnel</span>
-            <h3>Attention in at the top. New customers out the bottom.</h3>
-            <p>Every post works for you long after it goes up. As your page grows, more people see your work, more of them reach out, and more of them become customers. That's a pipeline you own.</p>
-          </div>
-          <div class="funnel" role="img" aria-label="Lead funnel: people see your posts, follow your page, message or call you, book a consultation, and become new customers.">
-            <div class="f-row"><span class="lbl"><svg class="i"><use href="#i-users"/></svg><b>People see your work</b></span><span>Posts &amp; video</span></div>
-            <div class="f-row"><span class="lbl"><svg class="i"><use href="#i-trend"/></svg><b>They follow your page</b></span><span>Your audience</span></div>
-            <div class="f-row"><span class="lbl"><svg class="i"><use href="#i-msg"/></svg><b>They reach out</b></span><span>Messages &amp; calls</span></div>
-            <div class="f-row"><span class="lbl"><svg class="i"><use href="#i-cal"/></svg><b>Appointments</b></span><span>On your calendar</span></div>
-            <div class="f-row"><span class="lbl"><svg class="i"><use href="#i-check"/></svg><b>New customers</b></span></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- compare -->
-    <section class="reveal">
-      <div class="wrap">
-        <div class="sec-head">
-          <div><span class="eyebrow">Why M2</span><h2>Stop renting leads. Build something you own.</h2></div>
-          <p class="lead-p">Lead sites charge you for names they sell to everyone else. Your own page keeps working for you.</p>
-        </div>
-        <div class="compare">
-          <div class="cmp them">
-            <h3><svg class="i"><use href="#i-x"/></svg>Paying for leads</h3>
-            <ul>
-              <li><svg class="i"><use href="#i-x"/></svg>The same lead is sold to your competitors</li>
-              <li><svg class="i"><use href="#i-x"/></svg>You pay whether it turns into a sale or not</li>
-              <li><svg class="i"><use href="#i-x"/></svg>Stop paying and the leads stop</li>
-              <li><svg class="i"><use href="#i-x"/></svg>Nothing that shows off your actual work</li>
-            </ul>
-          </div>
-          <div class="cmp us">
-            <h3><svg class="i"><use href="#i-check"/></svg>Growing with M2</h3>
-            <ul>
-              <li><svg class="i"><use href="#i-check"/></svg>People reach out to you, not a list of five</li>
-              <li><svg class="i"><use href="#i-check"/></svg>Your real work and team do the selling</li>
-              <li><svg class="i"><use href="#i-check"/></svg>Your page and audience keep growing over time</li>
-              <li><svg class="i"><use href="#i-check"/></svg>New customers find an active, professional page</li>
-            </ul>
-          </div>
+        <div class="rv rv-d1">
+          <p class="small">Lead sites sell the same names to you and your competitors. Your own page brings people straight to you, and it keeps growing the longer we run it.</p>
+          <ul class="checks">
+            <li><span class="ok"><svg class="i"><use href="#i-check"/></svg></span>Your page, your content, your customers</li>
+            <li><span class="ok"><svg class="i"><use href="#i-check"/></svg></span>Completely off your plate</li>
+          </ul>
         </div>
       </div>
     </section>
@@ -414,13 +545,13 @@
     <!-- contact -->
     <section id="contact" class="contact">
       <div class="wrap">
-        <div class="sec-head reveal">
-          <div><span class="eyebrow">Contact</span><h2>Let's talk about your business.</h2></div>
-          <p class="lead-p">Grab 20 minutes with us, at your place of business or on a quick Zoom. We'll show you what we'd post for you and what it would cost.</p>
+        <div class="contact-head">
+          <div class="rv"><span class="kicker">Contact</span><h2>Let's grow your business.</h2></div>
+          <p class="rv rv-d1">Grab 20 minutes with us at your place of business or on a quick Zoom. We'll show you what we'd post for you and what it would cost.</p>
         </div>
         <div class="people">
-          <div class="person reveal">
-            <div class="person-top"><div class="p-avatar">CD</div><div><h3>Caden Dorman</h3><div class="role">Owner</div></div></div>
+          <div class="person rv">
+            <div class="person-top"><div class="p-av">CD</div><div><h3>Caden Dorman</h3><div class="role">Owner</div></div></div>
             <div class="p-lines">
               <a class="p-line" href="tel:+13252495262"><svg class="i"><use href="#i-phone"/></svg><span class="txt"><span class="k">Phone</span><span class="v">(325) 249-5262</span></span><svg class="i go"><use href="#i-arrow"/></svg></a>
               <a class="p-line" href="mailto:caden.dorman839@outlook.com"><svg class="i"><use href="#i-mail"/></svg><span class="txt"><span class="k">Email</span><span class="v">caden.dorman839@outlook.com</span></span><svg class="i go"><use href="#i-arrow"/></svg></a>
@@ -431,52 +562,173 @@
               <a class="btn line" href="/caden-dorman.vcf" download><svg class="i"><use href="#i-download"/></svg>Save contact</a>
             </div>
           </div>
-          <div class="person reveal">
-            <div class="person-top"><div class="p-avatar">ZD</div><div><h3>Zakry Dorman</h3><div class="role">Co-Owner</div></div></div>
+          <div class="person rv rv-d1">
+            <div class="person-top"><div class="p-av">HL</div><div><h3>Houston Lindop</h3><div class="role">Co-Founder</div></div></div>
             <div class="p-lines">
-              <a class="p-line" href="tel:+13259987711"><svg class="i"><use href="#i-phone"/></svg><span class="txt"><span class="k">Phone</span><span class="v">(325) 998-7711</span></span><svg class="i go"><use href="#i-arrow"/></svg></a>
-              <a class="p-line" href="mailto:zakrydorman@outlook.com"><svg class="i"><use href="#i-mail"/></svg><span class="txt"><span class="k">Email</span><span class="v">zakrydorman@outlook.com</span></span><svg class="i go"><use href="#i-arrow"/></svg></a>
+              <a class="p-line" href="tel:+14694078842"><svg class="i"><use href="#i-phone"/></svg><span class="txt"><span class="k">Phone</span><span class="v">(469) 407-8842</span></span><svg class="i go"><use href="#i-arrow"/></svg></a>
+              <a class="p-line" href="mailto:houstonlindop257@outlook.com"><svg class="i"><use href="#i-mail"/></svg><span class="txt"><span class="k">Email</span><span class="v">houstonlindop257@outlook.com</span></span><svg class="i go"><use href="#i-arrow"/></svg></a>
             </div>
             <div class="p-actions">
-              <a class="btn black" href="tel:+13259987711"><svg class="i"><use href="#i-phone"/></svg>Call</a>
-              <a class="btn line" href="sms:+13259987711"><svg class="i"><use href="#i-msg"/></svg>Text</a>
-              <a class="btn line" href="/zakry-dorman.vcf" download><svg class="i"><use href="#i-download"/></svg>Save contact</a>
+              <a class="btn black" href="tel:+14694078842"><svg class="i"><use href="#i-phone"/></svg>Call</a>
+              <a class="btn line" href="sms:+14694078842"><svg class="i"><use href="#i-msg"/></svg>Text</a>
+              <a class="btn line" href="/houston-lindop.vcf" download><svg class="i"><use href="#i-download"/></svg>Save contact</a>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- cta -->
-    <section class="cta">
-      <div class="wrap reveal">
-        <span class="eyebrow">Ready when you are</span>
+    <!-- closing -->
+    <section class="close">
+      <div class="wrap rv">
+        <span class="kicker">Ready when you are</span>
         <h2>Your next customer is already looking you up.</h2>
-        <p class="lead-p">Let's make sure they like what they find.</p>
-        <div class="hero-ctas">
+        <p>Let's make sure they like what they find.</p>
+        <div class="ctas">
           <a class="btn solid" href="tel:+13252495262"><svg class="i"><use href="#i-phone"/></svg> Call Caden</a>
-          <a class="btn ghost" href="tel:+13259987711"><svg class="i"><use href="#i-phone"/></svg> Call Zakry</a>
+          <a class="btn ghost" href="tel:+14694078842"><svg class="i"><use href="#i-phone"/></svg> Call Houston</a>
         </div>
       </div>
+      <footer class="foot">
+        <div class="wrap">
+          <a class="logo" href="#top" aria-label="Back to top">M2</a>
+          <span>Social media that grows your business · © <span id="yr">2026</span> M2</span>
+        </div>
+      </footer>
     </section>
   </main>
 
-  <footer>
-    <div class="wrap">
-      <a class="brand" href="#top"><span class="logo">M2</span></a>
-      <span>Social media that grows your business · © <span id="yr">2026</span> M2</span>
-    </div>
-  </footer>
-
   <script>
-    document.getElementById('yr').textContent = new Date().getFullYear();
     (function () {
-      var els = document.querySelectorAll('.reveal');
-      if (!('IntersectionObserver' in window)) { els.forEach(function (e) { e.classList.add('in'); }); return; }
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
-      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-      els.forEach(function (e) { io.observe(e); });
+      var doc = document.documentElement;
+      doc.classList.add('js');
+      document.getElementById('yr').textContent = new Date().getFullYear();
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var hasIO = 'IntersectionObserver' in window;
+      var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+      // Reveal on scroll. Only elements that start below the first screen wait, so the page is complete at rest.
+      if (hasIO && !reduce) {
+        var rio = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); rio.unobserve(e.target); } });
+        }, { rootMargin: '0px 0px -10% 0px' });
+        $$('.rv').forEach(function (el) {
+          if (el.getBoundingClientRect().top > window.innerHeight * 0.9) { el.classList.add('wait'); rio.observe(el); }
+        });
+      }
+
+      // Replays a screen's little sequence.
+      function play(screen) {
+        if (reduce) return;
+        screen.classList.remove('play');
+        void screen.offsetWidth;
+        screen.classList.add('play');
+      }
+
+      // How it works: the sticky phone follows the step in the middle of the screen.
+      var story = document.querySelector('.story');
+      var steps = $$('.step');
+      var screens = $$('.stage .screen');
+      var nums = $$('.bignum span');
+      var current = 1;
+      function activate(n) {
+        if (n === current) return;
+        current = n;
+        steps.forEach(function (s) { s.classList.toggle('is-on', +s.dataset.step === n); });
+        nums.forEach(function (s, i) { s.classList.toggle('on', i + 1 === n); });
+        screens.forEach(function (s) {
+          var on = +s.dataset.s === n;
+          s.classList.toggle('on', on);
+          if (on) play(s); else s.classList.remove('play');
+        });
+      }
+      if (hasIO) {
+        story.classList.add('story-live');
+        var sio = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) activate(+e.target.dataset.step); });
+        }, { rootMargin: '-48% 0px -48% 0px' });
+        steps.forEach(function (s) { sio.observe(s); });
+      }
+
+      // On phones each step gets its own copy of its screen, played when it scrolls in.
+      steps.forEach(function (step) {
+        var slot = step.querySelector('.step-media');
+        var src = document.querySelector('.stage .screen[data-s="' + step.dataset.step + '"]');
+        var device = document.createElement('div');
+        device.className = 'device';
+        device.innerHTML = '<div class="screens"></div>';
+        var copy = src.cloneNode(true);
+        copy.classList.add('on');
+        copy.classList.remove('play');
+        $$('[id]', copy).forEach(function (el) { el.removeAttribute('id'); });
+        device.firstChild.appendChild(copy);
+        slot.appendChild(device);
+      });
+      if (hasIO) {
+        var mio = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { play(e.target); mio.unobserve(e.target); } });
+        }, { threshold: 0.35 });
+        $$('.step-media .screen').forEach(function (s) { mio.observe(s); });
+      }
+
+      if (reduce) return;
+      play(screens[0]);
+
+      // Parallax and scroll-linked type.
+      var layers = $$('[data-speed]').map(function (el) { return { el: el, speed: parseFloat(el.dataset.speed) }; });
+      var marquees = $$('.marquee').map(function (el) { return { el: el, track: el.firstElementChild, dir: +el.dataset.dir }; });
+      var rail = document.querySelector('.rail i');
+      var hero = document.querySelector('.hero');
+      var ticking = false;
+      function frame() {
+        ticking = false;
+        var y = window.scrollY || window.pageYOffset;
+        var vh = window.innerHeight;
+        // On narrow screens the cards sit under the buttons, so they drift much less.
+        var k = window.innerWidth < 980 ? 0.1 : 1;
+        if (y < hero.offsetHeight + vh) {
+          layers.forEach(function (l) { l.el.style.transform = 'translate3d(0,' + (-y * l.speed * k).toFixed(1) + 'px,0)'; });
+        }
+        marquees.forEach(function (m) {
+          var r = m.el.getBoundingClientRect();
+          if (r.bottom < -200 || r.top > vh + 200) return;
+          var off = (vh - r.top) * 0.45;
+          var x = m.dir > 0 ? off - m.track.offsetWidth * 0.36 : -off;
+          m.track.style.transform = 'translate3d(' + x.toFixed(1) + 'px,0,0)';
+        });
+        var sr = story.getBoundingClientRect();
+        var p = Math.min(1, Math.max(0, (vh * 0.5 - sr.top) / sr.height));
+        rail.style.setProperty('--p', p.toFixed(3));
+      }
+      function onScroll() { if (!ticking) { ticking = true; window.requestAnimationFrame(frame); } }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll);
+      frame();
+
+      // The hero cards lean toward the pointer, each by its own depth.
+      var collage = document.querySelector('.collage');
+      var cards = $$('.collage [data-depth]');
+      if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+        hero.addEventListener('pointermove', function (e) {
+          var r = collage.getBoundingClientRect();
+          var mx = (e.clientX - (r.left + r.width / 2)) / window.innerWidth;
+          var my = (e.clientY - (r.top + r.height / 2)) / window.innerHeight;
+          cards.forEach(function (c) {
+            var d = +c.dataset.depth;
+            c.style.translate = (mx * d).toFixed(1) + 'px ' + (my * d).toFixed(1) + 'px';
+          });
+        });
+        hero.addEventListener('pointerleave', function () { cards.forEach(function (c) { c.style.translate = ''; }); });
+      }
+
+      // Contact cards: a soft light follows the pointer.
+      $$('.person').forEach(function (card) {
+        card.addEventListener('pointermove', function (e) {
+          var r = card.getBoundingClientRect();
+          card.style.setProperty('--x', (e.clientX - r.left) + 'px');
+          card.style.setProperty('--y', (e.clientY - r.top) + 'px');
+        });
+      });
     })();
   </script>
 </body>
