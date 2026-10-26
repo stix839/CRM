@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M2 Growth Presentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  /* M2 presentation. Same tokens as the landing page: black stage, white type, zinc greys. */
+  :root {
+    --ink: #0a0a0a; --ink-2: #18181b; --ink-3: #27272a;
+    --paper: #ffffff; --mist: #f4f4f5;
+    --steel: #71717a; --fog: #a1a1aa; --line: #3f3f46; --soft: #d4d4d8;
+    --display: "Archivo", "Arial Black", "Helvetica Neue", Arial, sans-serif;
+    --body: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --ease: cubic-bezier(.2, .8, .2, 1);
+    --gutter: clamp(16px, 4vw, 56px);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--ink); color: var(--paper); font-family: var(--body); overflow: hidden; -webkit-font-smoothing: antialiased; }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* ---------- deck chrome ---------- */
+  .top { position: fixed; inset: 0 0 auto 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 18px var(--gutter); pointer-events: none; }
+  .logo { font-family: var(--display); font-weight: 900; font-size: 22px; letter-spacing: -.02em; pointer-events: auto; }
+  .logo span { color: var(--fog); font-weight: 600; font-size: 12px; font-family: var(--mono); letter-spacing: .08em; margin-left: 10px; text-transform: uppercase; }
+  .count { font-family: var(--mono); font-size: 12px; color: var(--fog); }
+  .bar { position: fixed; left: 0; top: 0; height: 3px; background: var(--paper); width: 0; z-index: 30; transition: width .6s var(--ease); }
+  .nav { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 20; display: flex; gap: 8px; align-items: center; background: rgba(24,24,27,.82); backdrop-filter: blur(10px); border: 1px solid var(--ink-3); border-radius: 999px; padding: 6px; }
+  .nav button.arrow { width: 38px; height: 38px; border-radius: 50%; border: 0; background: transparent; display: grid; place-items: center; }
+  .nav button.arrow:hover { background: var(--ink-3); }
+  .nav button.arrow svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .dots { display: flex; gap: 6px; padding: 0 4px; }
+  .dots button { width: 8px; height: 8px; border-radius: 99px; border: 0; padding: 0; background: var(--line); transition: width .4s var(--ease), background .3s; }
+  .dots button.on { width: 26px; background: var(--paper); }
+
+  /* ---------- slides ---------- */
+  .deck { position: fixed; inset: 0; }
+  .slide { position: absolute; inset: 0; overflow-y: auto; padding: 84px var(--gutter) 96px; display: flex; flex-direction: column; justify-content: center;
+    opacity: 0; visibility: hidden; transform: translateX(60px); transition: opacity .6s var(--ease), transform .7s var(--ease), visibility 0s .7s; }
+  .slide.prev { transform: translateX(-60px); }
+  .slide.on { opacity: 1; visibility: visible; transform: none; transition: opacity .6s var(--ease), transform .7s var(--ease), visibility 0s; }
+  .slide.light { background: var(--paper); color: var(--ink); }
+  .wrap { width: 100%; max-width: 1200px; margin: 0 auto; }
+  .st { opacity: 0; transform: translateY(26px); }
+  .slide.on .st { animation: rise .8s var(--ease) both; animation-delay: calc(var(--i, 0) * 90ms + 150ms); }
+  @keyframes rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+
+  .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--fog); margin: 0 0 18px; display: flex; align-items: center; gap: 10px; }
+  .kicker::before { content: ""; width: 22px; height: 1px; background: currentColor; }
+  .light .kicker { color: var(--steel); }
+  h1, h2 { font-family: var(--display); font-weight: 900; letter-spacing: -.035em; line-height: .95; margin: 0; font-stretch: 112%; }
+  h1 { font-size: clamp(48px, 9vw, 132px); }
+  h2 { font-size: clamp(34px, 5.4vw, 76px); }
+  .lede { font-size: clamp(17px, 1.6vw, 21px); line-height: 1.5; color: var(--fog); max-width: 620px; margin: 20px 0 0; }
+  .light .lede { color: var(--steel); }
+  .grey { color: var(--line); }
+  .light .grey { color: var(--soft); }
+
+  .btn { display: inline-flex; align-items: center; gap: 10px; border: 0; border-radius: 999px; padding: 15px 24px; background: var(--paper); color: var(--ink); font-weight: 700; transition: transform .25s var(--ease), box-shadow .25s; }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(255,255,255,.12); }
+  .light .btn { background: var(--ink); color: var(--paper); }
+  .btn.ghost { background: transparent; color: inherit; border: 1px solid var(--line); }
+  .light .btn.ghost { border-color: var(--soft); }
+
+  .chip { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 12px 18px; font-weight: 600; transition: all .3s var(--ease); }
+  .chip:hover { border-color: var(--fog); }
+  .chip.on { background: var(--paper); color: var(--ink); border-color: var(--paper); transform: scale(1.04); }
+  .light .chip { border-color: var(--soft); }
+  .light .chip.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .card { background: var(--ink-2); border: 1px solid var(--ink-3); border-radius: 22px; padding: 24px; }
+  .light .card { background: var(--mist); border-color: #e4e4e7; }
+
+  /* ---------- 1. title ---------- */
+  .hero-name { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 34px; }
+  .hero-name input { background: transparent; border: 0; border-bottom: 2px solid var(--line); font-family: var(--display); font-size: clamp(22px, 2.6vw, 32px); font-weight: 800; padding: 8px 2px; width: min(440px, 100%); outline: none; transition: border-color .3s; }
+  .hero-name input:focus { border-color: var(--paper); }
+  .floaters { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: -1; }
+  .floaters i { position: absolute; width: 150px; height: 190px; border-radius: 18px; background: linear-gradient(160deg, var(--ink-2), var(--ink)); border: 1px solid var(--ink-3); animation: float 9s ease-in-out infinite; animation-delay: var(--bd); opacity: .7; }
+  @keyframes float { 50% { transform: translateY(-24px) rotate(var(--r, 0deg)); } }
+
+  /* ---------- 2. poll ---------- */
+  .poll { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 32px; max-width: 760px; }
+  .reply { margin-top: 28px; font-size: clamp(18px, 2vw, 24px); font-weight: 600; min-height: 3em; max-width: 720px; transition: opacity .4s; }
+
+  /* ---------- 3. algorithm ---------- */
+  .algo { display: grid; grid-template-columns: 1fr 1.05fr; gap: 48px; align-items: center; }
+  .signals { display: grid; gap: 10px; margin-top: 28px; }
+  .sig { display: flex; gap: 14px; align-items: center; text-align: left; width: 100%; border: 1px solid var(--ink-3); background: var(--ink-2); border-radius: 16px; padding: 14px 16px; transition: all .35s var(--ease); }
+  .sig b { display: block; font-size: 16px; }
+  .sig small { color: var(--fog); font-size: 13px; }
+  .sig .ic { width: 38px; height: 38px; flex: none; border-radius: 12px; display: grid; place-items: center; background: var(--ink-3); font-size: 18px; transition: all .35s; }
+  .sig.on { border-color: var(--paper); }
+  .sig.on .ic { background: var(--paper); color: var(--ink); }
+  .rings { position: relative; aspect-ratio: 1; width: 100%; max-width: 520px; margin: 0 auto; }
+  .ring { position: absolute; border-radius: 50%; border: 1px dashed var(--line); display: grid; place-items: start center; transition: all .7s var(--ease); }
+  .ring span { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--steel); margin-top: 10px; background: var(--ink); padding: 2px 8px; border-radius: 99px; transition: color .5s; }
+  .ring.lit { border: 1px solid var(--paper); background: rgba(255,255,255,.035); box-shadow: 0 0 60px rgba(255,255,255,.06) inset; }
+  .ring.lit span { color: var(--paper); }
+  .r1 { inset: 36%; } .r2 { inset: 25%; } .r3 { inset: 13%; } .r4 { inset: 0; }
+  .r1 span, .r2 span { margin-top: -10px; }
+  .post { position: absolute; inset: 41%; border-radius: 14px; background: var(--paper); color: var(--ink); display: grid; place-items: center; font-family: var(--display); font-weight: 900; font-size: 20px; z-index: 2; box-shadow: 0 0 0 0 rgba(255,255,255,.5); }
+  .post.pulse { animation: pulse .8s var(--ease); }
+  @keyframes pulse { from { box-shadow: 0 0 0 0 rgba(255,255,255,.55); } to { box-shadow: 0 0 0 40px rgba(255,255,255,0); } }
+  .people { position: absolute; inset: 0; }
+  .people i { position: absolute; width: 7px; height: 7px; margin: -3.5px; border-radius: 50%; background: var(--paper); opacity: 0; transform: scale(0); transition: opacity .5s, transform .5s var(--ease); }
+  .people i.show { opacity: .9; transform: scale(1); }
+  .reach { text-align: center; margin-top: 18px; font-family: var(--mono); color: var(--fog); font-size: 13px; }
+  .reach b { color: var(--paper); font-size: 15px; }
+
+  /* ---------- 4. daily ---------- */
+  .daily { display: grid; grid-template-columns: .9fr 1.1fr; gap: 48px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--soft); border-radius: 999px; padding: 4px; margin-top: 28px; gap: 4px; flex-wrap: wrap; }
+  .seg button { border: 0; background: transparent; border-radius: 999px; padding: 10px 16px; font-weight: 600; transition: all .3s var(--ease); }
+  .seg button.on { background: var(--ink); color: var(--paper); }
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  .cal .d { aspect-ratio: 1; border-radius: 10px; background: var(--mist); position: relative; transition: all .45s var(--ease); display: grid; place-items: center; font-family: var(--mono); font-size: 11px; color: var(--soft); }
+  .cal .d.p { background: var(--ink); color: var(--fog); transform: scale(1); }
+  .cal .d.hit { background: var(--ink); color: var(--paper); box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink); }
+  .cal .d.hit::after { content: "↗"; position: absolute; top: 3px; right: 6px; font-size: 12px; color: var(--paper); }
+  .cal .dh { text-align: center; font-family: var(--mono); font-size: 11px; color: var(--steel); }
+  .daystats { display: flex; gap: 14px; margin-top: 22px; flex-wrap: wrap; }
+  .daystats .card { flex: 1 1 150px; padding: 18px 20px; }
+  .big { font-family: var(--display); font-weight: 900; font-size: clamp(30px, 3.4vw, 46px); letter-spacing: -.03em; line-height: 1; }
+  .lbl { font-size: 13px; color: var(--steel); margin-top: 6px; }
+  .note { font-size: 13px; color: var(--steel); margin-top: 14px; }
+
+  /* ---------- 5. process ---------- */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 40px; }
+  .step { text-align: left; border: 1px solid var(--ink-3); background: var(--ink-2); border-radius: 22px; padding: 22px; min-height: 230px; display: flex; flex-direction: column; transition: all .5s var(--ease); position: relative; overflow: hidden; }
+  .step .n { font-family: var(--mono); font-size: 12px; color: var(--steel); }
+  .step h3 { font-family: var(--display); font-size: 26px; margin: 14px 0 0; letter-spacing: -.02em; }
+  .step p { color: var(--fog); line-height: 1.5; margin: 12px 0 0; font-size: 15px; max-height: 0; opacity: 0; transition: max-height .6s var(--ease), opacity .5s; }
+  .step .when { margin-top: auto; padding-top: 16px; font-family: var(--mono); font-size: 11px; color: var(--steel); text-transform: uppercase; letter-spacing: .08em; }
+  .step.on { background: var(--paper); color: var(--ink); border-color: var(--paper); transform: translateY(-8px); }
+  .step.on p { max-height: 200px; opacity: 1; color: var(--steel); }
+  .step:not(.on):hover { border-color: var(--line); }
+  .track { height: 2px; background: var(--ink-3); margin-top: 26px; border-radius: 2px; overflow: hidden; }
+  .track i { display: block; height: 100%; background: var(--paper); width: 25%; transition: width .7s var(--ease); }
+
+  /* ---------- 6. what we do ---------- */
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 36px; }
+  .tile { perspective: 900px; height: 170px; border: 0; padding: 0; background: none; text-align: left; }
+  .tile .in { position: relative; width: 100%; height: 100%; transition: transform .7s var(--ease); transform-style: preserve-3d; }
+  .tile.flip .in { transform: rotateY(180deg); }
+  .tile .f, .tile .b { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 20px; padding: 22px; display: flex; flex-direction: column; }
+  .tile .f { background: var(--mist); border: 1px solid #e4e4e7; }
+  .tile .f .e { font-size: 28px; }
+  .tile .f b { font-family: var(--display); font-size: 22px; margin-top: auto; letter-spacing: -.02em; }
+  .tile .f small { color: var(--steel); font-family: var(--mono); font-size: 11px; margin-top: 4px; text-transform: uppercase; letter-spacing: .06em; }
+  .tile .b { background: var(--ink); color: var(--paper); transform: rotateY(180deg); line-height: 1.5; font-size: 15px; justify-content: center; }
+
+  /* ---------- 7. numbers ---------- */
+  .calc { display: grid; grid-template-columns: 1.1fr .9fr; gap: 28px; margin-top: 30px; align-items: start; }
+  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field { background: var(--ink-2); border: 1px solid var(--ink-3); border-radius: 18px; padding: 14px 16px; transition: border-color .3s; }
+  .field:focus-within { border-color: var(--paper); }
+  .field label { display: block; font-size: 13px; color: var(--fog); }
+  .field .row { display: flex; align-items: baseline; gap: 4px; margin-top: 4px; }
+  .field .row em { font-style: normal; font-family: var(--display); font-weight: 800; font-size: 26px; color: var(--steel); }
+  .field input[type=number] { background: transparent; border: 0; outline: none; font-family: var(--display); font-weight: 800; font-size: 30px; width: 100%; letter-spacing: -.02em; -moz-appearance: textfield; }
+  .field input::-webkit-outer-spin-button, .field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .field input[type=range] { width: 100%; margin-top: 8px; }
+  .field.wide { grid-column: 1 / -1; }
+  input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 4px; background: var(--ink-3); outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--paper); border: 4px solid var(--ink); box-shadow: 0 0 0 1px var(--paper); cursor: grab; }
+  input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--paper); border: 4px solid var(--ink); cursor: grab; }
+  .out { display: grid; gap: 12px; }
+  .out .card { padding: 20px 22px; }
+  .out .card.hero { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+  .out .card.hero .lbl { color: var(--steel); }
+  .out .lbl { color: var(--fog); }
+  .jobsviz { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 14px; }
+  .jobsviz i { width: 16px; height: 16px; border-radius: 5px; background: var(--ink); animation: pop .4s var(--ease) both; animation-delay: calc(var(--k) * 40ms); }
+  @keyframes pop { from { transform: scale(0); } }
+  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ---------- 8. growth ---------- */
+  .growth { display: grid; grid-template-columns: 1.45fr .55fr; gap: 24px; margin-top: 26px; align-items: stretch; }
+  .chart { position: relative; background: var(--ink-2); border: 1px solid var(--ink-3); border-radius: 22px; padding: 18px 18px 12px; }
+  .chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .chart .axis text { fill: var(--steel); font-family: var(--mono); font-size: 11px; }
+  .chart .grid line { stroke: var(--ink-3); }
+  .slider-row { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+  .slider-row input { flex: 1; }
+  .month-tag { font-family: var(--mono); font-size: 13px; min-width: 92px; text-align: right; }
+  .scen { display: flex; gap: 8px; flex-wrap: wrap; }
+  .scen .chip { padding: 8px 14px; font-size: 14px; }
+  .side { display: grid; gap: 10px; align-content: start; }
+  .side .card { padding: 16px 18px; }
+  .side .big { font-size: clamp(26px, 2.6vw, 38px); }
+  .side .card.hero { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+  .side .card.hero .lbl { color: var(--steel); }
+  .delta { font-family: var(--mono); font-size: 12px; color: var(--fog); margin-top: 6px; }
+  .hero .delta { color: var(--steel); }
+  .toggle { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--fog); cursor: pointer; user-select: none; }
+  .toggle input { accent-color: #fff; width: 16px; height: 16px; }
+  .fine { font-size: 12px; color: var(--steel); margin-top: 12px; }
+
+  /* ---------- 9. pricing ---------- */
+  .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; align-items: stretch; }
+  .plan { text-align: left; border: 1px solid #e4e4e7; background: var(--mist); border-radius: 24px; padding: 26px; display: flex; flex-direction: column; transition: all .5s var(--ease); }
+  .plan:hover { transform: translateY(-4px); }
+  .plan.on { background: var(--ink); color: var(--paper); border-color: var(--ink); transform: translateY(-10px); box-shadow: 0 30px 60px rgba(0,0,0,.18); }
+  .plan .tag { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--steel); }
+  .plan h3 { font-family: var(--display); font-size: 28px; margin: 8px 0 0; letter-spacing: -.02em; }
+  .plan .price { font-family: var(--display); font-weight: 900; font-size: 52px; letter-spacing: -.04em; margin-top: 18px; display: flex; align-items: baseline; gap: 2px; }
+  .plan .price span[contenteditable] { outline: none; border-bottom: 1px dashed transparent; min-width: 1ch; }
+  .plan .price span[contenteditable]:focus { border-bottom-color: currentColor; }
+  .plan .price small { font-size: 16px; font-weight: 600; color: var(--steel); letter-spacing: 0; margin-left: 4px; }
+  .plan ul { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 10px; font-size: 15px; }
+  .plan li::before { content: "✓"; margin-right: 10px; font-weight: 700; }
+  .plan .pays { margin-top: auto; padding-top: 20px; font-size: 14px; color: var(--steel); border-top: 1px solid #e4e4e7; margin-top: 22px; }
+  .plan.on .pays { border-color: var(--ink-3); color: var(--fog); }
+  .plan.on .pays b { color: var(--paper); }
+
+  /* ---------- 10. close ---------- */
+  .recap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 36px; }
+  .recap .card { padding: 22px; }
+
+  @media (max-width: 900px) {
+    .algo, .daily, .calc, .growth { grid-template-columns: 1fr; gap: 28px; }
+    .steps { grid-template-columns: 1fr 1fr; }
+    .tiles, .plans, .recap { grid-template-columns: 1fr; }
+    .tile { height: 140px; }
+    .slide { justify-content: flex-start; }
+  }
+  @media (max-width: 520px) { .fields, .steps, .vs { grid-template-columns: 1fr; } .logo span { display: none; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+<header class="top"><div class="logo">M2<span>Social media that grows your business</span></div><div class="count tnum" id="count">01 / 10</div></header>
+
+<main class="deck" id="deck">
+
+  <!-- 1. Title -->
+  <section class="slide" data-dark>
+    <div class="floaters" aria-hidden="true">
+      <i style="left:72%;top:14%;--bd:-1s;--r:4deg"></i><i style="left:84%;top:48%;--bd:-3s;--r:-5deg"></i><i style="left:62%;top:62%;--bd:-5s;--r:3deg"></i>
+    </div>
+    <div class="wrap">
+      <p class="kicker st" style="--i:0">M2 · Growth plan</p>
+      <h1 class="st" style="--i:1">Let's grow<br><span class="grey">your business.</span></h1>
+      <p class="lede st" style="--i:2">A quick look at how social media brings in customers, what we'd do for you, and what that could look like in your numbers.</p>
+      <div class="hero-name st" style="--i:3">
+        <input id="bizName" placeholder="Your business name" autocomplete="off" aria-label="Business name">
+        <button class="btn" data-next>Let's start →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Poll -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="kicker st" style="--i:0">Quick question</p>
+      <h2 class="st" style="--i:1">Where do your new<br>customers come from today?</h2>
+      <p class="lede st" style="--i:2">Tap all that apply.</p>
+      <div class="poll st" style="--i:3" id="poll">
+        <button class="chip" data-r="Word of mouth is the best customer there is. Social media is word of mouth that runs 24/7.">Word of mouth</button>
+        <button class="chip" data-r="Lead sites sell the same names to you and your competitors. Your own page sends people straight to you.">Lead sites</button>
+        <button class="chip" data-r="Ads stop the second you stop paying. Content keeps working and keeps building.">Paid ads</button>
+        <button class="chip" data-r="People search you up before they call. Your page is your first impression.">Google search</button>
+        <button class="chip" data-r="You already have a page. Let's make it work as hard as you do.">Social media</button>
+        <button class="chip" data-r="Repeat customers are gold. Staying in their feed keeps you the name they remember.">Repeat customers</button>
+      </div>
+      <p class="reply" id="reply"></p>
+    </div>
+  </section>
+
+  <!-- 3. Algorithm -->
+  <section class="slide">
+    <div class="wrap algo">
+      <div>
+        <p class="kicker st" style="--i:0">How the algorithm works</p>
+        <h2 class="st" style="--i:1">Every post is<br><span class="grey">a test.</span></h2>
+        <p class="lede st" style="--i:2">Facebook and Instagram show a new post to a few people first. If they react, it gets pushed further out. Tap what people do and watch it spread.</p>
+        <div class="signals st" style="--i:3" id="signals">
+          <button class="sig" data-w="1"><span class="ic">✋</span><span><b>They stop scrolling</b><small>A strong first second tells the app it's worth a look.</small></span></button>
+          <button class="sig" data-w="1"><span class="ic">▶</span><span><b>They watch it all</b><small>Watch time is the loudest signal there is.</small></span></button>
+          <button class="sig" data-w="1"><span class="ic">💬</span><span><b>They comment</b><small>Conversation means people care.</small></span></button>
+          <button class="sig" data-w="1"><span class="ic">↗</span><span><b>They share or save it</b><small>Sending it to a friend is the strongest vote of all.</small></span></button>
+        </div>
+      </div>
+      <div class="st" style="--i:2">
+        <div class="rings" id="rings">
+          <div class="ring r4"><span>New local people</span></div>
+          <div class="ring r3"><span>Friends of followers</span></div>
+          <div class="ring r2"><span>Your followers</span></div>
+          <div class="ring r1"><span>Test group</span></div>
+          <div class="people" id="people"></div>
+          <div class="post" id="post">POST</div>
+        </div>
+        <p class="reach">Reach: <b class="tnum" id="reachN">a few people</b> · <button class="chip" style="padding:4px 12px;font-size:12px" id="sigReset">Reset</button></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Daily -->
+  <section class="slide light">
+    <div class="wrap daily">
+      <div>
+        <p class="kicker st" style="--i:0">Why we post every day</p>
+        <h2 class="st" style="--i:1">More shots.<br><span class="grey">More wins.</span></h2>
+        <p class="lede st" style="--i:2">You can't predict which post takes off. You can only take more shots. Posting every day also tells the app you're active, so it keeps showing you.</p>
+        <div class="seg st" style="--i:3" id="freq">
+          <button data-f="1">Once a week</button><button data-f="3">3× a week</button><button data-f="7" class="on">Every day</button>
+        </div>
+        <div class="daystats st" style="--i:4">
+          <div class="card"><div class="big tnum" id="postsN">30</div><div class="lbl">posts a month</div></div>
+          <div class="card"><div class="big tnum" id="hitsN">5</div><div class="lbl">posts that take off ↗</div></div>
+        </div>
+        <p class="note st" style="--i:5">Illustration: roughly 1 in 6 posts outperforms the rest.</p>
+      </div>
+      <div class="st" style="--i:3">
+        <div class="cal" id="cal"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Process -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="kicker st" style="--i:0">Our process</p>
+      <h2 class="st" style="--i:1">From first post<br><span class="grey">to booked jobs.</span></h2>
+      <div class="steps st" style="--i:2" id="steps">
+        <button class="step on"><span class="n">01</span><h3>Plan</h3><p>We learn your business, your best jobs and your customers, then map out a month of content.</p><span class="when">Week 1</span></button>
+        <button class="step"><span class="n">02</span><h3>Create</h3><p>We shoot photo and video of your work, your team and your results, and write every post in your voice.</p><span class="when">Ongoing</span></button>
+        <button class="step"><span class="n">03</span><h3>Grow</h3><p>We post every day on Facebook and Instagram, so more of the right local people see your work every week.</p><span class="when">Every day</span></button>
+        <button class="step"><span class="n">04</span><h3>Convert</h3><p>Followers turn into messages, messages into calls, calls into booked jobs. We report what's working each month.</p><span class="when">Monthly</span></button>
+      </div>
+      <div class="track st" style="--i:3"><i id="track"></i></div>
+    </div>
+  </section>
+
+  <!-- 6. What we do -->
+  <section class="slide light">
+    <div class="wrap">
+      <p class="kicker st" style="--i:0">What we do for you</p>
+      <h2 class="st" style="--i:1">Completely off<br><span class="grey">your plate.</span></h2>
+      <p class="lede st" style="--i:2">Tap a card to see what's included.</p>
+      <div class="tiles st" style="--i:3" id="tiles">
+        <button class="tile"><div class="in"><div class="f"><span class="e">🎥</span><b>Content shoots</b><small>Photo + video</small></div><div class="b">We come to you and capture real jobs, real team, real results. No stock photos.</div></div></button>
+        <button class="tile"><div class="in"><div class="f"><span class="e">✍️</span><b>Editing & writing</b><small>In your voice</small></div><div class="b">Every reel edited, every caption written, so it sounds like you on your best day.</div></div></button>
+        <button class="tile"><div class="in"><div class="f"><span class="e">📅</span><b>Daily posting</b><small>Facebook + Instagram</small></div><div class="b">Posted on schedule every day, at the times your local customers are scrolling.</div></div></button>
+        <button class="tile"><div class="in"><div class="f"><span class="e">💬</span><b>Engagement</b><small>Comments + messages</small></div><div class="b">We keep the conversation going and flag new leads to you fast.</div></div></button>
+        <button class="tile"><div class="in"><div class="f"><span class="e">📈</span><b>Monthly report</b><small>Plain English</small></div><div class="b">What went out, who saw it, and what turned into calls. No jargon.</div></div></button>
+        <button class="tile"><div class="in"><div class="f"><span class="e">🏠</span><b>Your page, your customers</b><small>Yours to keep</small></div><div class="b">Everything we build stays yours. It keeps growing the longer we run it.</div></div></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Your numbers -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="kicker st" style="--i:0">Your numbers</p>
+      <h2 class="st" style="--i:1">Let's talk about<br><span class="grey"><span class="bn">your business</span>.</span></h2>
+      <div class="calc">
+        <div class="fields st" style="--i:2">
+          <div class="field"><label for="iValue">Average pay per job</label><div class="row"><em>$</em><input type="number" id="iValue" min="0" step="50" value="1500"></div></div>
+          <div class="field"><label for="iMargin">Profit you keep per job</label><div class="row"><input type="number" id="iMargin" min="1" max="100" value="35"><em>%</em></div></div>
+          <div class="field"><label for="iJobs">Jobs per month now</label><div class="row"><input type="number" id="iJobs" min="0" value="12"></div></div>
+          <div class="field"><label for="iGoal">Jobs per month you want</label><div class="row"><input type="number" id="iGoal" min="1" value="25"></div></div>
+          <div class="field"><label for="iAds">Spent on ads / leads per month</label><div class="row"><em>$</em><input type="number" id="iAds" min="0" step="50" value="1000"></div></div>
+          <div class="field"><label for="iCpl">Cost per lead</label><div class="row"><em>$</em><input type="number" id="iCpl" min="0" step="5" value="60"></div></div>
+        </div>
+        <div class="out st" style="--i:3">
+          <div class="card hero">
+            <div class="lbl">Jobs a month that pay for M2</div>
+            <div class="big tnum" id="oBreak">0</div>
+            <div class="jobsviz" id="oBreakViz"></div>
+            <div class="lbl" style="margin-top:12px" id="oBreakTxt"></div>
+          </div>
+          <div class="vs">
+            <div class="card"><div class="big tnum" id="oProfitNow">$0</div><div class="lbl">profit / month today</div></div>
+            <div class="card"><div class="big tnum" id="oProfitGoal">$0</div><div class="lbl">profit / month at your goal</div></div>
+            <div class="card"><div class="big tnum" id="oAdsYear">$0</div><div class="lbl">a year on ads & leads</div></div>
+            <div class="card"><div class="big tnum" id="oCpj">$0</div><div class="lbl" id="oCpjL">ad cost per booked job</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. Growth -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="kicker st" style="--i:0">Your next 24 months</p>
+      <h2 class="st" style="--i:1">Slide forward<br><span class="grey">and see it grow.</span></h2>
+      <div class="growth">
+        <div class="st" style="--i:2">
+          <div class="chart">
+            <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+              <div class="scen" id="scen">
+                <button class="chip" data-r="0.06">Steady</button><button class="chip on" data-r="0.10">Expected</button><button class="chip" data-r="0.15">Strong</button>
+              </div>
+              <label class="toggle"><input type="checkbox" id="keepAds"> Keep current ad spend</label>
+            </div>
+            <svg id="gsvg" viewBox="0 0 720 340" role="img" aria-label="Projected jobs per month over 24 months"></svg>
+            <div class="slider-row">
+              <input type="range" id="month" min="0" max="24" value="0" aria-label="Month">
+              <span class="month-tag tnum" id="monthTag">Today</span>
+            </div>
+          </div>
+          <p class="fine">Illustration using your numbers and the M2 plan selected on the pricing slide. Growth compounds monthly and levels off at the most jobs you can handle. Not a guarantee.</p>
+        </div>
+        <div class="side st" style="--i:3">
+          <div class="card hero"><div class="lbl">Jobs per month</div><div class="big tnum" id="gJobs">0</div><div class="delta" id="gJobsD"></div></div>
+          <div class="card"><div class="lbl">Revenue per month</div><div class="big tnum" id="gRev">$0</div><div class="delta" id="gRevD"></div></div>
+          <div class="card"><div class="lbl">Profit after expenses</div><div class="big tnum" id="gProfit">$0</div><div class="delta" id="gProfitD"></div></div>
+          <div class="card"><div class="lbl">Extra profit so far</div><div class="big tnum" id="gCum">$0</div><div class="delta" id="gGoal"></div></div>
+          <div class="field" style="padding:12px 16px"><label for="iCap">Most jobs/month you could handle</label><div class="row"><input type="number" id="iCap" min="1" value="40" style="font-size:24px"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. Pricing -->
+  <section class="slide light">
+    <div class="wrap">
+      <p class="kicker st" style="--i:0">Pricing</p>
+      <h2 class="st" style="--i:1">Simple monthly plans.<br><span class="grey">No contracts to dread.</span></h2>
+      <div class="plans st" style="--i:2" id="plans">
+        <button class="plan" data-plan="0"><span class="tag">Starter</span><h3>Show up</h3><div class="price">$<span contenteditable="true" spellcheck="false">997</span><small>/mo</small></div>
+          <ul><li>3 posts a week</li><li>Facebook + Instagram</li><li>1 content shoot a month</li><li>Monthly report</li></ul><div class="pays"></div></button>
+        <button class="plan on" data-plan="1"><span class="tag">Most popular</span><h3>Grow</h3><div class="price">$<span contenteditable="true" spellcheck="false">1,497</span><small>/mo</small></div>
+          <ul><li>A post every day</li><li>Facebook + Instagram</li><li>2 content shoots a month</li><li>Comments + messages handled</li><li>Monthly report</li></ul><div class="pays"></div></button>
+        <button class="plan" data-plan="2"><span class="tag">Dominate</span><h3>Scale</h3><div class="price">$<span contenteditable="true" spellcheck="false">2,497</span><small>/mo</small></div>
+          <ul><li>Daily posts + stories</li><li>Weekly content shoots</li><li>Comments + messages handled</li><li>Lead follow-up support</li><li>Monthly strategy call</li></ul><div class="pays"></div></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. Close -->
+  <section class="slide">
+    <div class="wrap">
+      <p class="kicker st" style="--i:0">A year from now</p>
+      <h2 class="st" style="--i:1"><span class="bn">Your business</span>,<br><span class="grey">twelve months in.</span></h2>
+      <div class="recap">
+        <div class="card st" style="--i:2"><div class="big tnum" id="cJobs">0</div><div class="lbl" style="color:var(--fog)" id="cJobsL">jobs a month</div></div>
+        <div class="card st" style="--i:3"><div class="big tnum" id="cProfit">$0</div><div class="lbl" style="color:var(--fog)">profit a month after expenses</div></div>
+        <div class="card st" style="--i:4"><div class="big tnum" id="cCum">$0</div><div class="lbl" style="color:var(--fog)">extra profit over the year</div></div>
+      </div>
+      <p class="lede st" style="--i:5">Your next customer is already looking you up. Let's make sure they like what they find.</p>
+      <div class="st" style="--i:6;margin-top:28px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" data-go="8">Pick a plan</button>
+        <button class="btn ghost" data-go="7">Back to the chart</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<nav class="nav" aria-label="Slides">
+  <button class="arrow" id="prevB" aria-label="Previous slide"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+  <div class="dots" id="dots"></div>
+  <button class="arrow" id="nextB" aria-label="Next slide"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+</nav>
+
+<script>
+(function () {
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var money = function (n) { var neg = n < 0; n = Math.round(Math.abs(n)); return (neg ? '−$' : '$') + n.toLocaleString('en-US'); };
+  var num = function (el, min) { var v = parseFloat(el.value); return isFinite(v) ? Math.max(min || 0, v) : (min || 0); };
+
+  /* ---------------- navigation ---------------- */
+  var slides = $$('.slide'), cur = 0, dots = $('#dots');
+  slides.forEach(function (_, i) { var b = document.createElement('button'); b.setAttribute('aria-label', 'Slide ' + (i + 1)); b.onclick = function () { go(i); }; dots.appendChild(b); });
+  function go(i) {
+    i = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, k) { s.classList.toggle('on', k === i); s.classList.toggle('prev', k < i); });
+    $$('button', dots).forEach(function (d, k) { d.classList.toggle('on', k === i); });
+    $('#count').textContent = String(i + 1).padStart(2, '0') + ' / ' + String(slides.length).padStart(2, '0');
+    $('#bar').style.width = ((i + 1) / slides.length * 100) + '%';
+    cur = i;
+    if (enter[i]) enter[i]();
+  }
+  $('#prevB').onclick = function () { go(cur - 1); };
+  $('#nextB').onclick = function () { go(cur + 1); };
+  $$('[data-next]').forEach(function (b) { b.onclick = function () { go(cur + 1); }; });
+  $$('[data-go]').forEach(function (b) { b.onclick = function () { go(+b.dataset.go); }; });
+  document.addEventListener('keydown', function (e) {
+    var t = e.target;
+    if (t.isContentEditable || (t.tagName === 'INPUT' && t.type !== 'range' && t.type !== 'checkbox')) { if (e.key === 'Enter') t.blur(); return; }
+    if (t.type === 'range') return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(cur + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(cur - 1); }
+  });
+  var sx = null;
+  document.addEventListener('touchstart', function (e) { sx = e.target.closest('input,.chart,[contenteditable]') ? null : e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', function (e) { if (sx === null) return; var dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 60) go(cur + (dx < 0 ? 1 : -1)); sx = null; });
+  var enter = {};
+
+  /* count-up for big numbers */
+  function countTo(el, to, fmt) {
+    var from = +el.dataset.v || 0; el.dataset.v = to;
+    var t0 = performance.now(), d = 500;
+    (function f(t) { var p = Math.min(1, (t - t0) / d); p = 1 - Math.pow(1 - p, 3); el.textContent = fmt(from + (to - from) * p); if (p < 1) requestAnimationFrame(f); })(t0);
+  }
+
+  /* ---------------- 1. name ---------------- */
+  var nameIn = $('#bizName');
+  function syncName() { var n = nameIn.value.trim() || 'your business'; $$('.bn').forEach(function (s) { s.textContent = s.closest('h2') && s.parentNode.tagName === 'H2' ? (nameIn.value.trim() || 'Your business') : n; }); }
+  nameIn.addEventListener('input', syncName);
+  nameIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(1); });
+
+  /* ---------------- 2. poll ---------------- */
+  $$('#poll .chip').forEach(function (c) {
+    c.onclick = function () {
+      c.classList.toggle('on');
+      var r = $('#reply'); r.style.opacity = 0;
+      setTimeout(function () { r.textContent = c.classList.contains('on') ? c.dataset.r : ''; r.style.opacity = 1; }, 200);
+    };
+  });
+
+  /* ---------------- 3. algorithm ---------------- */
+  var people = $('#people'), dotsP = [];
+  var ringR = [[0, .14], [.15, .24], [.26, .36], [.38, .48]], perRing = [6, 14, 26, 44];
+  var seed = 7; function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+  ringR.forEach(function (rr, ri) {
+    for (var k = 0; k < perRing[ri]; k++) {
+      var a = rnd() * Math.PI * 2, r = rr[0] + .03 + rnd() * (rr[1] - rr[0] - .04);
+      if (ri === 0) r = .1 + rnd() * .03;
+      var i = document.createElement('i'); i.style.left = (50 + Math.cos(a) * r * 100) + '%'; i.style.top = (50 + Math.sin(a) * r * 100) + '%';
+      i.dataset.ring = ri; i.style.transitionDelay = (k * 18) + 'ms'; people.appendChild(i); dotsP.push(i);
+    }
+  });
+  var ringEls = [$('.r1'), $('.r2'), $('.r3'), $('.r4')], reachTxt = ['a few people', 'your followers', 'friends of your followers', 'new local people'];
+  function algo() {
+    var lvl = $$('#signals .sig.on').length;
+    ringEls.forEach(function (r, i) { r.classList.toggle('lit', i <= lvl); });
+    dotsP.forEach(function (d) { d.classList.toggle('show', +d.dataset.ring <= lvl); });
+    $('#reachN').textContent = lvl >= 4 ? 'way beyond your followers' : reachTxt[Math.min(lvl, 3)];
+    var p = $('#post'); p.classList.remove('pulse'); void p.offsetWidth; p.classList.add('pulse');
+  }
+  $$('#signals .sig').forEach(function (s) { s.onclick = function () { s.classList.toggle('on'); algo(); }; });
+  $('#sigReset').onclick = function () { $$('#signals .sig').forEach(function (s) { s.classList.remove('on'); }); algo(); };
+  algo();
+
+  /* ---------------- 4. daily ---------------- */
+  var cal = $('#cal');
+  ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(function (d) { var h = document.createElement('div'); h.className = 'dh'; h.textContent = d; cal.appendChild(h); });
+  var days = [];
+  for (var d = 1; d <= 28; d++) { var c = document.createElement('div'); c.className = 'd'; c.textContent = d; cal.appendChild(c); days.push(c); }
+  // fixed "breakout" days so the picture is the same every time; every 6th post or so
+  var breakout = { 3: 1, 9: 1, 14: 1, 19: 1, 25: 1 };
+  function freq(f) {
+    var pattern = f === 7 ? [0, 1, 2, 3, 4, 5, 6] : f === 3 ? [0, 2, 4] : [2];
+    var posts = 0, hits = 0;
+    days.forEach(function (c, i) {
+      var p = pattern.indexOf(i % 7) > -1, h = p && breakout[i];
+      if (p) posts++; if (h) hits++;
+      c.style.transitionDelay = (i * 18) + 'ms';
+      c.classList.toggle('p', p); c.classList.toggle('hit', !!h);
+    });
+    posts = Math.round(posts * 30 / 28);
+    countTo($('#postsN'), posts, function (v) { return Math.round(v); });
+    countTo($('#hitsN'), hits, function (v) { return Math.round(v); });
+    $$('#freq button').forEach(function (b) { b.classList.toggle('on', +b.dataset.f === f); });
+  }
+  $$('#freq button').forEach(function (b) { b.onclick = function () { freq(+b.dataset.f); }; });
+  enter[3] = function () { days.forEach(function (c) { c.classList.remove('p', 'hit'); }); setTimeout(function () { freq(+$('#freq .on').dataset.f); }, 400); };
+
+  /* ---------------- 5. process ---------------- */
+  var steps = $$('#steps .step');
+  steps.forEach(function (s, i) { s.onclick = function () { steps.forEach(function (x) { x.classList.toggle('on', x === s); }); $('#track').style.width = ((i + 1) * 25) + '%'; }; });
+
+  /* ---------------- 6. tiles ---------------- */
+  $$('#tiles .tile').forEach(function (t) { t.onclick = function () { t.classList.toggle('flip'); }; });
+
+  /* ---------------- 9. pricing (feeds the calculators) ---------------- */
+  var plans = $$('#plans .plan'), planIdx = 1;
+  function fee() { var v = parseFloat(plans[planIdx].querySelector('[contenteditable]').textContent.replace(/[^0-9.]/g, '')); return isFinite(v) ? v : 0; }
+  plans.forEach(function (p, i) {
+    p.onclick = function (e) { if (e.target.isContentEditable) return; planIdx = i; plans.forEach(function (x) { x.classList.toggle('on', x === p); }); update(); };
+    var ed = p.querySelector('[contenteditable]');
+    ed.addEventListener('input', update);
+    ed.addEventListener('keydown', function (e) { if (e.key === ' ') e.stopPropagation(); });
+    ed.addEventListener('blur', function () { var v = parseFloat(ed.textContent.replace(/[^0-9.]/g, '')) || 0; ed.textContent = Math.round(v).toLocaleString('en-US'); update(); });
+  });
+
+  /* ---------------- 7 + 8. the model ---------------- */
+  var I = { value: $('#iValue'), margin: $('#iMargin'), jobs: $('#iJobs'), goal: $('#iGoal'), ads: $('#iAds'), cpl: $('#iCpl'), cap: $('#iCap') };
+  var rate = 0.10;
+
+  function inputs() {
+    var value = num(I.value), margin = Math.min(100, num(I.margin)) / 100, jobs = num(I.jobs), goal = num(I.goal, 1);
+    var cap = Math.max(num(I.cap, 1), 1);
+    return { value: value, margin: margin, perJob: value * margin, jobs: jobs, goal: goal, ads: num(I.ads), cpl: num(I.cpl), cap: cap, fee: fee() };
+  }
+  // jobs in month t: compounds from today's jobs, levels off at capacity (logistic curve)
+  function jobsAt(m, t) {
+    var start = Math.max(m.jobs, 1), K = Math.max(m.cap, start);
+    if (start >= K) return K;
+    var j = K / (1 + ((K - start) / start) * Math.exp(-rate * t));
+    return m.jobs === 0 ? Math.max(0, j - 1 + Math.min(1, t / 6)) : j; // starting from zero: begin at 0, not 1
+  }
+  function profitAt(m, t, keepAds) {
+    var j = Math.round(jobsAt(m, t)); // whole jobs, so jobs × pay matches the revenue shown
+    var exp = t === 0 ? m.ads : m.fee + (keepAds ? m.ads : 0);
+    return { jobs: j, rev: j * m.value, profit: j * m.perJob - exp };
+  }
+
+  function calc() {
+    var m = inputs();
+    var breakEven = m.perJob > 0 ? Math.ceil(m.fee / m.perJob) : 0;
+    countTo($('#oBreak'), breakEven, function (v) { return Math.round(v) + (Math.round(v) === 1 ? ' job' : ' jobs'); });
+    var viz = $('#oBreakViz'); viz.innerHTML = '';
+    for (var k = 0; k < Math.min(breakEven, 60); k++) { var i = document.createElement('i'); i.style.setProperty('--k', k); viz.appendChild(i); }
+    $('#oBreakTxt').textContent = m.perJob > 0
+      ? 'You keep ' + money(m.perJob) + ' per job, so ' + breakEven + ' extra job' + (breakEven === 1 ? '' : 's') + ' covers a ' + money(m.fee) + '/mo plan. Everything after that is profit.'
+      : 'Enter your pay per job and profit % to see this.';
+    countTo($('#oProfitNow'), m.jobs * m.perJob - m.ads, money);
+    countTo($('#oProfitGoal'), m.goal * m.perJob - m.fee, money);
+    countTo($('#oAdsYear'), m.ads * 12, money);
+    countTo($('#oCpj'), m.jobs > 0 ? m.ads / m.jobs : 0, money);
+    var leads = m.cpl > 0 ? Math.round(m.ads / m.cpl) : 0;
+    $('#oCpjL').textContent = 'ad cost per job' + (leads ? ' · about ' + leads + ' paid leads/mo' : '');
+    $$('#plans .pays').forEach(function (el, i) {
+      var f = parseFloat(plans[i].querySelector('[contenteditable]').textContent.replace(/[^0-9.]/g, '')) || 0;
+      var n = m.perJob > 0 ? Math.ceil(f / m.perJob) : 0;
+      el.innerHTML = 'Pays for itself with <b>' + n + ' extra job' + (n === 1 ? '' : 's') + '</b> a month';
+    });
+  }
+
+  /* chart */
+  var svg = $('#gsvg'), W = 720, H = 340, P = { l: 44, r: 16, t: 16, b: 30 }, NS = 'http://www.w3.org/2000/svg';
+  function el(n, a, p) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); (p || svg).appendChild(e); return e; }
+  var lastPath = '';
+  function chart() {
+    var m = inputs(), keep = $('#keepAds').checked, t = +$('#month').value;
+    var maxY = Math.max(m.cap, m.goal, m.jobs) * 1.1, sx = function (x) { return P.l + x / 24 * (W - P.l - P.r); }, sy = function (y) { return H - P.b - y / maxY * (H - P.t - P.b); };
+    svg.innerHTML = '';
+    var g = el('g', { 'class': 'grid' }), ax = el('g', { 'class': 'axis' });
+    var step = Math.max(1, Math.ceil(maxY / 5 / 5) * 5);
+    for (var y = 0; y <= maxY; y += step) { el('line', { x1: P.l, x2: W - P.r, y1: sy(y), y2: sy(y) }, g); el('text', { x: P.l - 8, y: sy(y) + 4, 'text-anchor': 'end' }, ax).textContent = y; }
+    [0, 6, 12, 18, 24].forEach(function (x) { el('text', { x: sx(x), y: H - 8, 'text-anchor': 'middle' }, ax).textContent = x === 0 ? 'Now' : x + ' mo'; });
+    // goal line
+    el('line', { x1: P.l, x2: W - P.r, y1: sy(m.goal), y2: sy(m.goal), stroke: '#a1a1aa', 'stroke-dasharray': '4 6' });
+    el('text', { x: W - P.r, y: sy(m.goal) - 8, 'text-anchor': 'end', fill: '#a1a1aa', 'font-family': 'JetBrains Mono, monospace', 'font-size': 11 }).textContent = 'Your goal · ' + m.goal + '/mo';
+    // today baseline
+    el('line', { x1: P.l, x2: W - P.r, y1: sy(m.jobs), y2: sy(m.jobs), stroke: '#3f3f46' });
+    var pts = [], d = '', area = '';
+    for (var x = 0; x <= 24; x += .25) pts.push([sx(x), sy(jobsAt(m, x))]);
+    d = 'M' + pts.map(function (p) { return p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' L');
+    var defs = el('defs', {}), gr = el('linearGradient', { id: 'fillG', x1: 0, x2: 0, y1: 0, y2: 1 }, defs);
+    el('stop', { offset: 0, 'stop-color': '#fff', 'stop-opacity': .22 }, gr); el('stop', { offset: 1, 'stop-color': '#fff', 'stop-opacity': 0 }, gr);
+    var clip = el('clipPath', { id: 'upTo' }, defs); el('rect', { x: 0, y: 0, width: sx(t), height: H }, clip);
+    area = d + ' L' + sx(24) + ' ' + sy(0) + ' L' + sx(0) + ' ' + sy(0) + ' Z';
+    el('path', { d: area, fill: 'url(#fillG)', 'clip-path': 'url(#upTo)' });
+    el('path', { d: d, fill: 'none', stroke: '#3f3f46', 'stroke-width': 2, 'stroke-dasharray': '2 5' });
+    var line = el('path', { d: d, fill: 'none', stroke: '#fff', 'stroke-width': 3, 'stroke-linecap': 'round', 'clip-path': 'url(#upTo)' });
+    if (d !== lastPath && cur === 7) { var L = line.getTotalLength(); line.style.strokeDasharray = L; line.style.strokeDashoffset = L; line.getBoundingClientRect(); line.style.transition = 'stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1)'; line.style.strokeDashoffset = 0; lastPath = d; }
+    var j = jobsAt(m, t);
+    el('line', { x1: sx(t), x2: sx(t), y1: P.t, y2: H - P.b, stroke: '#fff', 'stroke-opacity': .25 });
+    el('circle', { cx: sx(t), cy: sy(j), r: 12, fill: '#fff', 'fill-opacity': .15 });
+    el('circle', { cx: sx(t), cy: sy(j), r: 6, fill: '#fff', stroke: '#0a0a0a', 'stroke-width': 3 });
+
+    // side stats
+    var now = profitAt(m, 0, keep), at = profitAt(m, t, keep);
+    countTo($('#gJobs'), at.jobs, function (v) { return Math.round(v); });
+    countTo($('#gRev'), at.rev, money);
+    countTo($('#gProfit'), at.profit, money);
+    var dj = Math.round(at.jobs) - Math.round(now.jobs);
+    $('#gJobsD').textContent = t === 0 ? 'where you are today' : (dj >= 0 ? '+' : '') + dj + ' vs today';
+    $('#gRevD').textContent = t === 0 ? '' : '+' + money(at.rev - now.rev) + ' vs today';
+    $('#gProfitD').textContent = t === 0 ? 'after ' + money(m.ads) + ' ads' : 'after ' + money(m.fee + (keep ? m.ads : 0)) + ' in marketing';
+    var cum = 0; for (var k = 1; k <= t; k++) cum += profitAt(m, k, keep).profit - now.profit;
+    countTo($('#gCum'), cum, money);
+    var hit = -1; for (var k2 = 0; k2 <= 24; k2++) { if (jobsAt(m, k2) >= m.goal - 0.5) { hit = k2; break; } }
+    $('#gGoal').textContent = hit === 0 ? 'already at your goal' : hit > 0 ? 'goal reached around month ' + hit : 'goal beyond 24 months at this pace';
+    $('#monthTag').textContent = t === 0 ? 'Today' : 'Month ' + t;
+    return m;
+  }
+
+  function closeSlide() {
+    var m = inputs(), keep = $('#keepAds').checked, a = profitAt(m, 12, keep), now = profitAt(m, 0, keep), cum = 0;
+    for (var k = 1; k <= 12; k++) cum += profitAt(m, k, keep).profit - now.profit;
+    countTo($('#cJobs'), a.jobs, function (v) { return Math.round(v); });
+    $('#cJobsL').textContent = 'jobs a month (up from ' + Math.round(m.jobs) + ')';
+    countTo($('#cProfit'), a.profit, money);
+    countTo($('#cCum'), cum, money);
+  }
+
+  function update() { calc(); chart(); }
+  Object.keys(I).forEach(function (k) { I[k].addEventListener('input', update); });
+  $('#month').addEventListener('input', chart);
+  $('#keepAds').addEventListener('change', chart);
+  $$('#scen .chip').forEach(function (c) { c.onclick = function () { rate = +c.dataset.r; $$('#scen .chip').forEach(function (x) { x.classList.toggle('on', x === c); }); chart(); }; });
+
+  enter[6] = calc;
+  enter[7] = function () {
+    lastPath = ''; var s = $('#month'); s.value = 0; chart();
+    // auto-play the slider once so the curve sweeps in
+    var t0 = null; (function f(ts) { if (cur !== 7) return; if (!t0) t0 = ts; var v = Math.min(12, Math.round((ts - t0) / 110)); if (+s.value !== v) { s.value = v; chart(); } if (v < 12) requestAnimationFrame(f); })(performance.now());
+  };
+  enter[8] = calc;
+  enter[9] = closeSlide;
+
+  syncName(); update(); go(0);
+})();
+</script>
+</body>
+</html>
