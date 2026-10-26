@@ -11,7 +11,7 @@
   /* M2 presentation. Same tokens as the landing page: black stage, white type, zinc greys. */
   :root {
     --ink: #0a0a0a; --ink-2: #18181b; --ink-3: #27272a;
-    --paper: #ffffff; --mist: #f4f4f5;
+    --paper: #ffffff; --mist: #f4f4f5; --rule-l: #e4e4e7;
     --steel: #71717a; --fog: #a1a1aa; --line: #3f3f46; --soft: #d4d4d8;
     --display: "Archivo", "Arial Black", "Helvetica Neue", Arial, sans-serif;
     --body: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -24,40 +24,43 @@
   button, input { font: inherit; color: inherit; }
   button { cursor: pointer; }
   .tnum { font-variant-numeric: tabular-nums; }
+  svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
   /* ---------- deck chrome ---------- */
-  .top { position: fixed; inset: 0 0 auto 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 18px var(--gutter); pointer-events: none; }
-  .logo { font-family: var(--display); font-weight: 900; font-size: 22px; letter-spacing: -.02em; pointer-events: auto; }
-  .logo span { color: var(--fog); font-weight: 600; font-size: 12px; font-family: var(--mono); letter-spacing: .08em; margin-left: 10px; text-transform: uppercase; }
-  .count { font-family: var(--mono); font-size: 12px; color: var(--fog); }
-  .bar { position: fixed; left: 0; top: 0; height: 3px; background: var(--paper); width: 0; z-index: 30; transition: width .6s var(--ease); }
-  .nav { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 20; display: flex; gap: 8px; align-items: center; background: rgba(24,24,27,.82); backdrop-filter: blur(10px); border: 1px solid var(--ink-3); border-radius: 999px; padding: 6px; }
+  .top { position: fixed; inset: 0 0 auto 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 18px var(--gutter); pointer-events: none; mix-blend-mode: difference; color: #fff; }
+  .logo { font-family: var(--display); font-weight: 900; font-size: 22px; letter-spacing: -.02em; }
+  .logo span { font-weight: 600; font-size: 12px; font-family: var(--mono); letter-spacing: .08em; margin-left: 10px; text-transform: uppercase; opacity: .6; }
+  .count { font-family: var(--mono); font-size: 12px; opacity: .6; }
+  .bar { position: fixed; left: 0; top: 0; height: 3px; background: var(--fog); width: 0; z-index: 30; transition: width .6s var(--ease); }
+  .nav { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 20; display: flex; gap: 8px; align-items: center; background: rgba(24,24,27,.86); backdrop-filter: blur(10px); border: 1px solid var(--ink-3); border-radius: 999px; padding: 6px; color: var(--paper); }
   .nav button.arrow { width: 38px; height: 38px; border-radius: 50%; border: 0; background: transparent; display: grid; place-items: center; }
   .nav button.arrow:hover { background: var(--ink-3); }
-  .nav button.arrow svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
   .dots { display: flex; gap: 6px; padding: 0 4px; }
   .dots button { width: 8px; height: 8px; border-radius: 99px; border: 0; padding: 0; background: var(--line); transition: width .4s var(--ease), background .3s; }
   .dots button.on { width: 26px; background: var(--paper); }
 
   /* ---------- slides ---------- */
   .deck { position: fixed; inset: 0; }
-  .slide { position: absolute; inset: 0; overflow-y: auto; padding: 84px var(--gutter) 96px; display: flex; flex-direction: column; justify-content: center;
+  .slide { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; padding: 84px var(--gutter) 100px; display: flex; flex-direction: column; background: var(--ink);
     opacity: 0; visibility: hidden; transform: translateX(60px); transition: opacity .6s var(--ease), transform .7s var(--ease), visibility 0s .7s; }
   .slide.prev { transform: translateX(-60px); }
   .slide.on { opacity: 1; visibility: visible; transform: none; transition: opacity .6s var(--ease), transform .7s var(--ease), visibility 0s; }
   .slide.light { background: var(--paper); color: var(--ink); }
-  .wrap { width: 100%; max-width: 1200px; margin: 0 auto; }
+  .wrap { width: 100%; max-width: 1200px; margin: auto; position: relative; z-index: 1; } /* auto margins center without clipping tall slides */
+  .tight h2 { font-size: clamp(32px, 4.2vw, 58px); }
+  .nav button:focus:not(:focus-visible) { outline: none; }
   .st { opacity: 0; transform: translateY(26px); }
   .slide.on .st { animation: rise .8s var(--ease) both; animation-delay: calc(var(--i, 0) * 90ms + 150ms); }
   @keyframes rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { from { transform: scale(0); } }
 
   .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--fog); margin: 0 0 18px; display: flex; align-items: center; gap: 10px; }
   .kicker::before { content: ""; width: 22px; height: 1px; background: currentColor; }
   .light .kicker { color: var(--steel); }
   h1, h2 { font-family: var(--display); font-weight: 900; letter-spacing: -.035em; line-height: .95; margin: 0; font-stretch: 112%; }
   h1 { font-size: clamp(48px, 9vw, 132px); }
-  h2 { font-size: clamp(34px, 5.4vw, 76px); }
-  .lede { font-size: clamp(17px, 1.6vw, 21px); line-height: 1.5; color: var(--fog); max-width: 620px; margin: 20px 0 0; }
+  h2 { font-size: clamp(34px, 5.2vw, 72px); }
+  .lede { font-size: clamp(17px, 1.5vw, 20px); line-height: 1.5; color: var(--fog); max-width: 600px; margin: 20px 0 0; }
   .light .lede { color: var(--steel); }
   .grey { color: var(--line); }
   .light .grey { color: var(--soft); }
@@ -65,47 +68,50 @@
   .btn { display: inline-flex; align-items: center; gap: 10px; border: 0; border-radius: 999px; padding: 15px 24px; background: var(--paper); color: var(--ink); font-weight: 700; transition: transform .25s var(--ease), box-shadow .25s; }
   .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(255,255,255,.12); }
   .light .btn { background: var(--ink); color: var(--paper); }
-  .btn.ghost { background: transparent; color: inherit; border: 1px solid var(--line); }
-  .light .btn.ghost { border-color: var(--soft); }
+  .light .btn:hover { box-shadow: 0 10px 30px rgba(0,0,0,.18); }
 
   .chip { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 12px 18px; font-weight: 600; transition: all .3s var(--ease); }
   .chip:hover { border-color: var(--fog); }
-  .chip.on { background: var(--paper); color: var(--ink); border-color: var(--paper); transform: scale(1.04); }
+  .chip.on { background: var(--paper); color: var(--ink); border-color: var(--paper); }
   .light .chip { border-color: var(--soft); }
   .light .chip.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
-  .card { background: var(--ink-2); border: 1px solid var(--ink-3); border-radius: 22px; padding: 24px; }
-  .light .card { background: var(--mist); border-color: #e4e4e7; }
+  .card { background: var(--ink-2); border: 1px solid var(--ink-3); border-radius: 22px; padding: 22px; }
+  .light .card { background: var(--mist); border-color: var(--rule-l); }
+  .big { font-family: var(--display); font-weight: 900; font-size: clamp(30px, 3.4vw, 46px); letter-spacing: -.03em; line-height: 1; }
+  .lbl { font-size: 14px; color: var(--fog); margin-top: 8px; line-height: 1.4; }
+  .light .lbl { color: var(--steel); }
+  .src { font-size: 12px; color: var(--steel); margin-top: 14px; line-height: 1.5; }
+  .reply { margin-top: 24px; font-size: clamp(17px, 1.8vw, 22px); font-weight: 600; min-height: 3em; max-width: 680px; line-height: 1.4; transition: opacity .3s; }
 
   /* ---------- 1. title ---------- */
   .hero-name { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 34px; }
   .hero-name input { background: transparent; border: 0; border-bottom: 2px solid var(--line); font-family: var(--display); font-size: clamp(22px, 2.6vw, 32px); font-weight: 800; padding: 8px 2px; width: min(440px, 100%); outline: none; transition: border-color .3s; }
   .hero-name input:focus { border-color: var(--paper); }
-  .floaters { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: -1; }
+  .floaters { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
   .floaters i { position: absolute; width: 150px; height: 190px; border-radius: 18px; background: linear-gradient(160deg, var(--ink-2), var(--ink)); border: 1px solid var(--ink-3); animation: float 9s ease-in-out infinite; animation-delay: var(--bd); opacity: .7; }
   @keyframes float { 50% { transform: translateY(-24px) rotate(var(--r, 0deg)); } }
 
   /* ---------- 2. poll ---------- */
-  .poll { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 32px; max-width: 760px; }
-  .reply { margin-top: 28px; font-size: clamp(18px, 2vw, 24px); font-weight: 600; min-height: 3em; max-width: 720px; transition: opacity .4s; }
+  .poll { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; max-width: 760px; }
 
   /* ---------- 3. algorithm ---------- */
-  .algo { display: grid; grid-template-columns: 1fr 1.05fr; gap: 48px; align-items: center; }
+  .two { display: grid; grid-template-columns: 1fr 1.05fr; gap: 48px; align-items: center; }
   .signals { display: grid; gap: 10px; margin-top: 28px; }
   .sig { display: flex; gap: 14px; align-items: center; text-align: left; width: 100%; border: 1px solid var(--ink-3); background: var(--ink-2); border-radius: 16px; padding: 14px 16px; transition: all .35s var(--ease); }
   .sig b { display: block; font-size: 16px; }
   .sig small { color: var(--fog); font-size: 13px; }
-  .sig .ic { width: 38px; height: 38px; flex: none; border-radius: 12px; display: grid; place-items: center; background: var(--ink-3); font-size: 18px; transition: all .35s; }
+  .sig .ic { width: 40px; height: 40px; flex: none; border-radius: 12px; display: grid; place-items: center; background: var(--ink-3); transition: all .35s; }
   .sig.on { border-color: var(--paper); }
   .sig.on .ic { background: var(--paper); color: var(--ink); }
   .rings { position: relative; aspect-ratio: 1; width: 100%; max-width: 520px; margin: 0 auto; }
   .ring { position: absolute; border-radius: 50%; border: 1px dashed var(--line); display: grid; place-items: start center; transition: all .7s var(--ease); }
-  .ring span { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--steel); margin-top: 10px; background: var(--ink); padding: 2px 8px; border-radius: 99px; transition: color .5s; }
-  .ring.lit { border: 1px solid var(--paper); background: rgba(255,255,255,.035); box-shadow: 0 0 60px rgba(255,255,255,.06) inset; }
+  .ring span { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--steel); margin-top: -10px; background: var(--ink); padding: 2px 8px; border-radius: 99px; transition: color .5s; }
+  .ring.lit { border: 1px solid var(--paper); background: rgba(255,255,255,.035); }
   .ring.lit span { color: var(--paper); }
   .r1 { inset: 36%; } .r2 { inset: 25%; } .r3 { inset: 13%; } .r4 { inset: 0; }
-  .r1 span, .r2 span { margin-top: -10px; }
-  .post { position: absolute; inset: 41%; border-radius: 14px; background: var(--paper); color: var(--ink); display: grid; place-items: center; font-family: var(--display); font-weight: 900; font-size: 20px; z-index: 2; box-shadow: 0 0 0 0 rgba(255,255,255,.5); }
+  .post { position: absolute; inset: 41%; border-radius: 14px; background: var(--paper); color: var(--ink); display: grid; place-items: center; z-index: 2; }
+  .post svg.i { width: 34%; height: 34%; }
   .post.pulse { animation: pulse .8s var(--ease); }
   @keyframes pulse { from { box-shadow: 0 0 0 0 rgba(255,255,255,.55); } to { box-shadow: 0 0 0 40px rgba(255,255,255,0); } }
   .people { position: absolute; inset: 0; }
@@ -115,144 +121,250 @@
   .reach b { color: var(--paper); font-size: 15px; }
 
   /* ---------- 4. daily ---------- */
-  .daily { display: grid; grid-template-columns: .9fr 1.1fr; gap: 48px; align-items: center; }
-  .seg { display: inline-flex; border: 1px solid var(--soft); border-radius: 999px; padding: 4px; margin-top: 28px; gap: 4px; flex-wrap: wrap; }
+  .seg { display: inline-flex; border: 1px solid var(--soft); border-radius: 999px; padding: 4px; margin-top: 26px; gap: 4px; flex-wrap: wrap; }
   .seg button { border: 0; background: transparent; border-radius: 999px; padding: 10px 16px; font-weight: 600; transition: all .3s var(--ease); }
   .seg button.on { background: var(--ink); color: var(--paper); }
+  .whys { display: grid; gap: 16px; margin-top: 30px; max-width: 520px; }
+  .why { display: flex; gap: 14px; align-items: flex-start; }
+  .why .ic { width: 42px; height: 42px; border-radius: 12px; background: var(--ink); color: var(--paper); display: grid; place-items: center; flex: none; }
+  .why b { display: block; font-size: 17px; }
+  .why small { color: var(--steel); font-size: 14px; line-height: 1.45; display: block; margin-top: 2px; }
   .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
   .cal .d { aspect-ratio: 1; border-radius: 10px; background: var(--mist); position: relative; transition: all .45s var(--ease); display: grid; place-items: center; font-family: var(--mono); font-size: 11px; color: var(--soft); }
-  .cal .d.p { background: var(--ink); color: var(--fog); transform: scale(1); }
-  .cal .d.hit { background: var(--ink); color: var(--paper); box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink); }
-  .cal .d.hit::after { content: "↗"; position: absolute; top: 3px; right: 6px; font-size: 12px; color: var(--paper); }
+  .cal .d.p { background: var(--ink); color: var(--fog); }
+  .cal .d.hit { color: var(--paper); box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink); }
+  .cal .d svg { position: absolute; top: 4px; right: 4px; width: 13px; height: 13px; opacity: 0; transition: opacity .3s; }
+  .cal .d.hit svg { opacity: 1; }
   .cal .dh { text-align: center; font-family: var(--mono); font-size: 11px; color: var(--steel); }
-  .daystats { display: flex; gap: 14px; margin-top: 22px; flex-wrap: wrap; }
-  .daystats .card { flex: 1 1 150px; padding: 18px 20px; }
-  .big { font-family: var(--display); font-weight: 900; font-size: clamp(30px, 3.4vw, 46px); letter-spacing: -.03em; line-height: 1; }
-  .lbl { font-size: 13px; color: var(--steel); margin-top: 6px; }
-  .note { font-size: 13px; color: var(--steel); margin-top: 14px; }
+  .daystats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .daystats .card { padding: 16px 18px; }
 
-  /* ---------- 5. process ---------- */
-  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 40px; }
-  .step { text-align: left; border: 1px solid var(--ink-3); background: var(--ink-2); border-radius: 22px; padding: 22px; min-height: 230px; display: flex; flex-direction: column; transition: all .5s var(--ease); position: relative; overflow: hidden; }
-  .step .n { font-family: var(--mono); font-size: 12px; color: var(--steel); }
-  .step h3 { font-family: var(--display); font-size: 26px; margin: 14px 0 0; letter-spacing: -.02em; }
-  .step p { color: var(--fog); line-height: 1.5; margin: 12px 0 0; font-size: 15px; max-height: 0; opacity: 0; transition: max-height .6s var(--ease), opacity .5s; }
-  .step .when { margin-top: auto; padding-top: 16px; font-family: var(--mono); font-size: 11px; color: var(--steel); text-transform: uppercase; letter-spacing: .08em; }
-  .step.on { background: var(--paper); color: var(--ink); border-color: var(--paper); transform: translateY(-8px); }
-  .step.on p { max-height: 200px; opacity: 1; color: var(--steel); }
-  .step:not(.on):hover { border-color: var(--line); }
-  .track { height: 2px; background: var(--ink-3); margin-top: 26px; border-radius: 2px; overflow: hidden; }
-  .track i { display: block; height: 100%; background: var(--paper); width: 25%; transition: width .7s var(--ease); }
+  /* ---------- 5. data ---------- */
+  .bars { display: grid; gap: 14px; margin-top: 18px; }
+  .brow { display: grid; grid-template-columns: 96px 1fr 58px; gap: 12px; align-items: center; font-size: 14px; color: var(--fog); transition: color .3s; }
+  .brow b { font-family: var(--mono); font-size: 13px; text-align: right; color: var(--fog); }
+  .btrack { height: 34px; border-radius: 10px; background: var(--ink); position: relative; overflow: hidden; }
+  .btrack i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 10px; background: var(--line); transition: width 1.1s var(--ease), background .4s; transition-delay: calc(var(--k) * 120ms + 400ms); }
+  .slide.on .btrack i { width: var(--w); }
+  .brow.m2 .btrack i { background: var(--paper); }
+  .brow.m2 { color: var(--paper); }
+  .brow.m2 b { color: var(--paper); }
+  .btrack em { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-style: normal; font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); z-index: 1; opacity: 0; transition: opacity .4s 1.4s; }
+  .slide.on .brow.m2 .btrack em { opacity: 1; }
+  .brow.you .btrack { box-shadow: 0 0 0 1px var(--paper); }
+  .brow.you .btrack i { background: var(--fog); }
+  .brow .yt { display: none; }
+  .brow.you .yt { display: inline; color: var(--paper); font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .ask { font-weight: 700; margin: 30px 0 0; font-size: 17px; }
 
-  /* ---------- 6. what we do ---------- */
-  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 36px; }
-  .tile { perspective: 900px; height: 170px; border: 0; padding: 0; background: none; text-align: left; }
-  .tile .in { position: relative; width: 100%; height: 100%; transition: transform .7s var(--ease); transform-style: preserve-3d; }
-  .tile.flip .in { transform: rotateY(180deg); }
-  .tile .f, .tile .b { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 20px; padding: 22px; display: flex; flex-direction: column; }
-  .tile .f { background: var(--mist); border: 1px solid #e4e4e7; }
-  .tile .f .e { font-size: 28px; }
-  .tile .f b { font-family: var(--display); font-size: 22px; margin-top: auto; letter-spacing: -.02em; }
-  .tile .f small { color: var(--steel); font-family: var(--mono); font-size: 11px; margin-top: 4px; text-transform: uppercase; letter-spacing: .06em; }
-  .tile .b { background: var(--ink); color: var(--paper); transform: rotateY(180deg); line-height: 1.5; font-size: 15px; justify-content: center; }
+  /* ---------- 6. process + dashboard ---------- */
+  .psteps { display: grid; gap: 10px; margin-top: 28px; }
+  .pstep { display: flex; gap: 16px; text-align: left; width: 100%; background: var(--mist); border: 1px solid var(--rule-l); border-radius: 18px; padding: 16px 18px; transition: background .4s var(--ease), color .4s, border-color .4s; }
+  .pstep .pn { font-family: var(--mono); font-size: 12px; color: var(--steel); padding-top: 5px; width: 20px; flex: none; }
+  .pstep b { font-family: var(--display); font-size: 21px; letter-spacing: -.02em; }
+  .pstep small { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--steel); margin-left: 10px; }
+  .pstep p { margin: 0; max-height: 0; opacity: 0; overflow: hidden; color: var(--fog); font-size: 15px; line-height: 1.5; transition: max-height .5s var(--ease), opacity .4s, margin .4s; }
+  .pstep.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .pstep.on p { max-height: 120px; opacity: 1; margin-top: 8px; }
+  .pstep.done .pn { color: var(--ink); }
+  .pnext { margin-top: 16px; }
+  .dwrap { position: relative; max-width: 400px; width: 100%; margin: 0 auto; }
+  .dash { background: var(--ink); color: var(--paper); border-radius: 32px; padding: 22px; box-shadow: 0 40px 80px rgba(0,0,0,.2); border: 6px solid var(--ink-2); }
+  .dbar { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--steel); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 16px; }
+  .dtop { display: flex; align-items: center; gap: 14px; }
+  .avatar { width: 62px; height: 62px; border-radius: 50%; background: var(--paper); color: var(--ink); display: grid; place-items: center; font-family: var(--display); font-weight: 900; font-size: 21px; box-shadow: 0 0 0 3px var(--ink), 0 0 0 5px var(--line); flex: none; }
+  .handle b { font-size: 17px; display: block; }
+  .handle small { color: var(--fog); font-size: 13px; }
+  .dstats { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; margin-top: 18px; padding: 14px 0; border-top: 1px solid var(--ink-3); border-bottom: 1px solid var(--ink-3); }
+  .dstats > div { position: relative; }
+  .dstats b { font-family: var(--display); font-size: 26px; display: block; letter-spacing: -.02em; }
+  .dstats small { color: var(--fog); font-size: 12px; }
+  .dstats .fol b { font-size: 30px; }
+  .plus { position: absolute; left: 50%; top: -14px; transform: translateX(-50%); background: var(--paper); color: var(--ink); font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 99px; opacity: 0; pointer-events: none; white-space: nowrap; }
+  .plus.go { animation: plus 1.6s var(--ease); }
+  @keyframes plus { 0% { opacity: 0; transform: translate(-50%, 10px); } 20%, 70% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -14px); } }
+  .dins { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+  .dins div { background: var(--ink-2); border-radius: 14px; padding: 10px 12px; }
+  .dins b { font-size: 18px; display: block; font-family: var(--display); }
+  .dins small { color: var(--fog); font-size: 11px; }
+  .dgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 14px; }
+  .dgrid i { aspect-ratio: 1; border-radius: 6px; background: var(--ink-2); display: grid; place-items: center; color: transparent; transition: background .6s var(--ease), color .6s, transform .6s var(--ease); transform: scale(.92); }
+  .dgrid i.f { transform: none; color: rgba(255,255,255,.75); }
+  .dgrid i.f:nth-child(4n+1), .dgrid i.f:nth-child(4n+4) { background: linear-gradient(150deg, #3f3f46, #18181b); }
+  .dgrid i.f:nth-child(4n+2) { background: linear-gradient(150deg, #52525b, #27272a); }
+  .dgrid i.f:nth-child(4n+3) { background: linear-gradient(150deg, #71717a, #3f3f46); }
+  .dgrid i svg.i { width: 18px; height: 18px; }
+  .dnote { text-align: center; font-size: 11px; color: var(--steel); margin-top: 10px; font-family: var(--mono); }
+  .toast { position: absolute; left: -32px; bottom: -22px; width: 270px; background: var(--paper); color: var(--ink); border-radius: 16px; padding: 12px 14px; display: flex; gap: 12px; align-items: center; box-shadow: 0 20px 50px rgba(0,0,0,.25); opacity: 0; transform: translateY(16px) scale(.96); transition: opacity .4s var(--ease), transform .5s var(--ease); z-index: 3; }
+  .toast.show { opacity: 1; transform: none; }
+  .toast .ic { width: 36px; height: 36px; border-radius: 10px; background: var(--ink); color: var(--paper); display: grid; place-items: center; flex: none; }
+  .toast b { font-size: 14px; display: block; }
+  .toast small { color: var(--steel); font-size: 12px; }
 
-  /* ---------- 7. numbers ---------- */
-  .calc { display: grid; grid-template-columns: 1.1fr .9fr; gap: 28px; margin-top: 30px; align-items: start; }
-  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .field { background: var(--ink-2); border: 1px solid var(--ink-3); border-radius: 18px; padding: 14px 16px; transition: border-color .3s; }
-  .field:focus-within { border-color: var(--paper); }
-  .field label { display: block; font-size: 13px; color: var(--fog); }
-  .field .row { display: flex; align-items: baseline; gap: 4px; margin-top: 4px; }
-  .field .row em { font-style: normal; font-family: var(--display); font-weight: 800; font-size: 26px; color: var(--steel); }
-  .field input[type=number] { background: transparent; border: 0; outline: none; font-family: var(--display); font-weight: 800; font-size: 30px; width: 100%; letter-spacing: -.02em; -moz-appearance: textfield; }
-  .field input::-webkit-outer-spin-button, .field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  .field input[type=range] { width: 100%; margin-top: 8px; }
-  .field.wide { grid-column: 1 / -1; }
-  input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 4px; background: var(--ink-3); outline: none; }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--paper); border: 4px solid var(--ink); box-shadow: 0 0 0 1px var(--paper); cursor: grab; }
-  input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--paper); border: 4px solid var(--ink); cursor: grab; }
-  .out { display: grid; gap: 12px; }
-  .out .card { padding: 20px 22px; }
-  .out .card.hero { background: var(--paper); color: var(--ink); border-color: var(--paper); }
-  .out .card.hero .lbl { color: var(--steel); }
-  .out .lbl { color: var(--fog); }
-  .jobsviz { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 14px; }
-  .jobsviz i { width: 16px; height: 16px; border-radius: 5px; background: var(--ink); animation: pop .4s var(--ease) both; animation-delay: calc(var(--k) * 40ms); }
-  @keyframes pop { from { transform: scale(0); } }
-  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  /* ---------- 7. everything we do ---------- */
+  .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 34px; }
+  .fcard { background: var(--ink-2); border: 1px solid var(--ink-3); border-radius: 20px; padding: 20px; position: relative; overflow: hidden; }
+  .fcard::after { content: ""; position: absolute; left: 0; top: 0; height: 2px; width: 0; background: var(--paper); transition: width 1s var(--ease); transition-delay: calc(var(--i) * 90ms + 500ms); }
+  .slide.on .fcard::after { width: 100%; }
+  .fcard .ic { width: 42px; height: 42px; border-radius: 12px; background: var(--paper); color: var(--ink); display: grid; place-items: center; }
+  .fcard .n { position: absolute; top: 20px; right: 20px; font-family: var(--mono); font-size: 12px; color: var(--steel); }
+  .fcard b { display: block; font-family: var(--display); font-size: 20px; margin-top: 16px; letter-spacing: -.01em; }
+  .fcard p { color: var(--fog); font-size: 14px; line-height: 1.5; margin: 8px 0 0; }
+  .fcard .tag { display: inline-block; margin-top: 12px; font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; border: 1px solid var(--line); border-radius: 99px; padding: 3px 8px; color: var(--fog); }
 
-  /* ---------- 8. growth ---------- */
-  .growth { display: grid; grid-template-columns: 1.45fr .55fr; gap: 24px; margin-top: 26px; align-items: stretch; }
-  .chart { position: relative; background: var(--ink-2); border: 1px solid var(--ink-3); border-radius: 22px; padding: 18px 18px 12px; }
+  /* ---------- 8. your numbers ---------- */
+  .qs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 30px; }
+  .q { background: var(--mist); border: 1px solid var(--rule-l); border-radius: 22px; padding: 20px 22px; transition: border-color .3s; }
+  .q:focus-within { border-color: var(--ink); }
+  .q .qn { font-family: var(--mono); font-size: 11px; color: var(--steel); display: block; margin-bottom: 8px; letter-spacing: .08em; }
+  .q label { display: block; font-size: 17px; font-weight: 600; line-height: 1.35; min-height: 2.7em; }
+  .qin { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  .qin .val { flex: 1; min-width: 0; display: flex; align-items: baseline; justify-content: center; }
+  .qin input { width: 100%; min-width: 0; background: transparent; border: 0; outline: none; font-family: var(--display); font-weight: 900; font-size: clamp(34px, 3.4vw, 46px); letter-spacing: -.03em; text-align: center; -moz-appearance: textfield; }
+  .qin input::-webkit-outer-spin-button, .qin input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .qin em { font-style: normal; font-family: var(--display); font-weight: 900; font-size: 30px; color: var(--soft); }
+  .stp { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--soft); background: var(--paper); display: grid; place-items: center; flex: none; transition: all .2s; }
+  .stp:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .stp:active { transform: scale(.92); }
+  .res { margin-top: 14px; background: var(--ink); color: var(--paper); border-radius: 24px; padding: 26px 28px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 32px; align-items: center; }
+  .blocks { display: flex; flex-wrap: wrap; gap: 6px; }
+  .blocks i { width: 20px; height: 20px; border-radius: 6px; background: var(--paper); border: 1.5px solid var(--paper); transition: background .35s, border-color .35s; }
+  .blocks i.new { animation: pop .4s var(--ease) both; }
+  .blocks i.gap { background: transparent; border: 1.5px dashed var(--fog); }
+  .legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 16px; font-size: 13px; color: var(--fog); }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .legend i { width: 12px; height: 12px; border-radius: 4px; background: var(--paper); }
+  .legend i.gap { background: transparent; border: 1.5px dashed var(--fog); }
+  .res .big { font-size: clamp(44px, 5vw, 68px); }
+  .res .sub { color: var(--fog); font-size: 17px; margin-top: 10px; line-height: 1.45; }
+  .res .sub b, .res .cover b { color: var(--paper); }
+  .res .cover { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ink-3); color: var(--fog); font-size: 15px; line-height: 1.5; }
+
+  /* ---------- 9. follower growth ---------- */
+  .growth { display: grid; grid-template-columns: 1.45fr .55fr; gap: 22px; margin-top: 24px; align-items: stretch; }
+  .chart { background: var(--ink-2); border: 1px solid var(--ink-3); border-radius: 22px; padding: 16px 18px 14px; }
   .chart svg { width: 100%; height: auto; display: block; overflow: visible; }
-  .chart .axis text { fill: var(--steel); font-family: var(--mono); font-size: 11px; }
-  .chart .grid line { stroke: var(--ink-3); }
-  .slider-row { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
-  .slider-row input { flex: 1; }
-  .month-tag { font-family: var(--mono); font-size: 13px; min-width: 92px; text-align: right; }
+  .chart text.ax { fill: var(--steel); font-family: var(--mono); font-size: 11px; }
+  .chart text.hi { fill: var(--paper); font-weight: 700; }
+  .ctop { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
   .scen { display: flex; gap: 8px; flex-wrap: wrap; }
   .scen .chip { padding: 8px 14px; font-size: 14px; }
+  .assume { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--fog); flex-wrap: wrap; }
+  .assume input { width: 92px; background: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; font-weight: 700; color: var(--paper); outline: none; -moz-appearance: textfield; }
+  .assume input:focus { border-color: var(--paper); }
+  .assume input::-webkit-outer-spin-button, .assume input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .slider-row { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+  .slider-row input { flex: 1; }
+  .month-tag { font-family: var(--mono); font-size: 13px; min-width: 84px; text-align: right; }
+  input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 4px; background: var(--ink-3); outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--paper); border: 5px solid var(--ink); box-shadow: 0 0 0 1px var(--paper); cursor: grab; }
+  input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--paper); border: 5px solid var(--ink); cursor: grab; }
+  .cfoot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--ink-3); }
   .side { display: grid; gap: 10px; align-content: start; }
-  .side .card { padding: 16px 18px; }
-  .side .big { font-size: clamp(26px, 2.6vw, 38px); }
+  .side .card { padding: 15px 18px; }
+  .side .big { font-size: clamp(26px, 2.5vw, 36px); }
+  .side .lbl { margin: 0 0 6px; }
   .side .card.hero { background: var(--paper); color: var(--ink); border-color: var(--paper); }
-  .side .card.hero .lbl { color: var(--steel); }
+  .side .card.hero .lbl, .side .card.hero .delta { color: var(--steel); }
   .delta { font-family: var(--mono); font-size: 12px; color: var(--fog); margin-top: 6px; }
-  .hero .delta { color: var(--steel); }
-  .toggle { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--fog); cursor: pointer; user-select: none; }
-  .toggle input { accent-color: #fff; width: 16px; height: 16px; }
-  .fine { font-size: 12px; color: var(--steel); margin-top: 12px; }
 
-  /* ---------- 9. pricing ---------- */
-  .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; align-items: stretch; }
-  .plan { text-align: left; border: 1px solid #e4e4e7; background: var(--mist); border-radius: 24px; padding: 26px; display: flex; flex-direction: column; transition: all .5s var(--ease); }
+  /* ---------- 10. pricing ---------- */
+  .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 34px; align-items: stretch; }
+  .plan { text-align: left; border: 1px solid var(--rule-l); background: var(--mist); border-radius: 24px; padding: 26px; display: flex; flex-direction: column; transition: all .5s var(--ease); }
   .plan:hover { transform: translateY(-4px); }
   .plan.on { background: var(--ink); color: var(--paper); border-color: var(--ink); transform: translateY(-10px); box-shadow: 0 30px 60px rgba(0,0,0,.18); }
   .plan .tag { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--steel); }
   .plan h3 { font-family: var(--display); font-size: 28px; margin: 8px 0 0; letter-spacing: -.02em; }
-  .plan .price { font-family: var(--display); font-weight: 900; font-size: 52px; letter-spacing: -.04em; margin-top: 18px; display: flex; align-items: baseline; gap: 2px; }
-  .plan .price span[contenteditable] { outline: none; border-bottom: 1px dashed transparent; min-width: 1ch; }
-  .plan .price span[contenteditable]:focus { border-bottom-color: currentColor; }
+  .plan .desc { color: var(--steel); font-size: 15px; margin-top: 6px; }
+  .plan.on .desc { color: var(--fog); }
+  .plan .price { font-family: var(--display); font-weight: 900; font-size: clamp(40px, 4vw, 52px); letter-spacing: -.04em; margin-top: 16px; }
   .plan .price small { font-size: 16px; font-weight: 600; color: var(--steel); letter-spacing: 0; margin-left: 4px; }
-  .plan ul { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 10px; font-size: 15px; }
-  .plan li::before { content: "✓"; margin-right: 10px; font-weight: 700; }
-  .plan .pays { margin-top: auto; padding-top: 20px; font-size: 14px; color: var(--steel); border-top: 1px solid #e4e4e7; margin-top: 22px; }
-  .plan.on .pays { border-color: var(--ink-3); color: var(--fog); }
+  .plan ul { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 10px; font-size: 15px; }
+  .plan li { display: flex; gap: 10px; align-items: flex-start; }
+  .plan li svg.i { width: 18px; height: 18px; margin-top: 1px; }
+  .plan .pays { margin-top: auto; padding-top: 18px; font-size: 14px; color: var(--steel); }
+  .plan .pays span { display: block; border-top: 1px solid var(--rule-l); padding-top: 16px; margin-top: 4px; }
+  .plan.on .pays { color: var(--fog); }
+  .plan.on .pays span { border-color: var(--ink-3); }
   .plan.on .pays b { color: var(--paper); }
 
-  /* ---------- 10. close ---------- */
-  .recap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 36px; }
-  .recap .card { padding: 22px; }
+  /* ---------- 11. close ---------- */
+  .picks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 30px; max-width: 900px; }
+  .pick { text-align: left; border: 1px solid var(--line); background: transparent; border-radius: 18px; padding: 16px 18px; transition: all .35s var(--ease); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .pick b { display: block; font-size: 17px; }
+  .pick small { color: var(--fog); font-size: 13px; }
+  .pick .dot { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; flex: none; transition: all .3s; }
+  .pick .dot svg.i { width: 13px; height: 13px; stroke-width: 3; opacity: 0; }
+  .pick.on { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+  .pick.on small { color: var(--steel); }
+  .pick.on .dot { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  .pick.on .dot svg.i { opacity: 1; }
+  .road { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; max-width: 900px; }
+  .rd { border-radius: 18px; padding: 18px; background: var(--ink-2); border: 1px solid var(--ink-3); transition: all .5s var(--ease); }
+  .rd .when { font-family: var(--mono); font-size: 11px; color: var(--steel); text-transform: uppercase; letter-spacing: .08em; }
+  .rd b { display: block; font-family: var(--display); font-size: 20px; margin-top: 8px; }
+  .rd p { color: var(--fog); font-size: 14px; line-height: 1.5; margin: 6px 0 0; }
+  .rd.lit { border-color: var(--paper); box-shadow: 0 0 0 1px var(--paper); }
+  .cta-row { margin-top: 28px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .btn.xl { padding: 20px 32px; font-size: 18px; }
+  .btn.done { pointer-events: none; }
+  .bit { position: fixed; width: 9px; height: 9px; background: var(--paper); border-radius: 2px; z-index: 50; pointer-events: none; }
+  .bit.o { background: transparent; border: 1.5px solid var(--paper); }
 
-  @media (max-width: 900px) {
-    .algo, .daily, .calc, .growth { grid-template-columns: 1fr; gap: 28px; }
-    .steps { grid-template-columns: 1fr 1fr; }
-    .tiles, .plans, .recap { grid-template-columns: 1fr; }
-    .tile { height: 140px; }
+  @media (max-width: 960px) {
+    .two, .res, .growth { grid-template-columns: 1fr; gap: 28px; }
+    .flow { grid-template-columns: 1fr 1fr; }
+    .qs, .plans, .picks, .road { grid-template-columns: 1fr; }
     .slide { justify-content: flex-start; }
+    .toast { left: 0; }
   }
-  @media (max-width: 520px) { .fields, .steps, .vs { grid-template-columns: 1fr; } .logo span { display: none; } }
-  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  @media (max-width: 520px) { .flow, .duo, .daystats { grid-template-columns: 1fr; } .logo span { display: none; } .dins b { font-size: 15px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; transition-delay: 0s !important; } }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M10 8.5v7l5.5-3.5z"/></symbol>
+  <symbol id="i-comment" viewBox="0 0 24 24"><path d="M21 12a8.5 8.5 0 0 1-12.3 7.6L3 21l1.5-5.2A8.5 8.5 0 1 1 21 12z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 4 14h8l-1 8 9-12h-8z"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 2h6v4H9zM9 11h6M9 15h6M9 19h3"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m16 10 6-4v12l-6-4"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.9 5.6L19.5 10.5l-5.6 1.9L12 18l-1.9-5.6L4.5 10.5l5.6-1.9z"/><path d="M19 17v4M17 19h4"/></symbol>
+  <symbol id="i-cut" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+</svg>
+
 <div class="bar" id="bar"></div>
-<header class="top"><div class="logo">M2<span>Social media that grows your business</span></div><div class="count tnum" id="count">01 / 10</div></header>
+<header class="top"><div class="logo">M2<span>Social media that grows your business</span></div><div class="count tnum" id="count">01 / 11</div></header>
 
 <main class="deck" id="deck">
 
   <!-- 1. Title -->
-  <section class="slide" data-dark>
+  <section class="slide">
     <div class="floaters" aria-hidden="true">
       <i style="left:72%;top:14%;--bd:-1s;--r:4deg"></i><i style="left:84%;top:48%;--bd:-3s;--r:-5deg"></i><i style="left:62%;top:62%;--bd:-5s;--r:3deg"></i>
     </div>
     <div class="wrap">
       <p class="kicker st" style="--i:0">M2 · Growth plan</p>
       <h1 class="st" style="--i:1">Let's grow<br><span class="grey">your business.</span></h1>
-      <p class="lede st" style="--i:2">A quick look at how social media brings in customers, what we'd do for you, and what that could look like in your numbers.</p>
+      <p class="lede st" style="--i:2">How social media brings in customers, what we'd do for you, and what that could look like for your business.</p>
       <div class="hero-name st" style="--i:3">
         <input id="bizName" placeholder="Your business name" autocomplete="off" aria-label="Business name">
-        <button class="btn" data-next>Let's start →</button>
+        <button class="btn" data-next>Let's start <svg class="i"><use href="#i-arrow"/></svg></button>
       </div>
     </div>
   </section>
@@ -267,7 +379,7 @@
         <button class="chip" data-r="Word of mouth is the best customer there is. Social media is word of mouth that runs 24/7.">Word of mouth</button>
         <button class="chip" data-r="Lead sites sell the same names to you and your competitors. Your own page sends people straight to you.">Lead sites</button>
         <button class="chip" data-r="Ads stop the second you stop paying. Content keeps working and keeps building.">Paid ads</button>
-        <button class="chip" data-r="People search you up before they call. Your page is your first impression.">Google search</button>
+        <button class="chip" data-r="People look you up before they call. Your page is your first impression.">Google search</button>
         <button class="chip" data-r="You already have a page. Let's make it work as hard as you do.">Social media</button>
         <button class="chip" data-r="Repeat customers are gold. Staying in their feed keeps you the name they remember.">Repeat customers</button>
       </div>
@@ -277,190 +389,253 @@
 
   <!-- 3. Algorithm -->
   <section class="slide">
-    <div class="wrap algo">
+    <div class="wrap two">
       <div>
         <p class="kicker st" style="--i:0">How the algorithm works</p>
         <h2 class="st" style="--i:1">Every post is<br><span class="grey">a test.</span></h2>
         <p class="lede st" style="--i:2">Facebook and Instagram show a new post to a few people first. If they react, it gets pushed further out. Tap what people do and watch it spread.</p>
         <div class="signals st" style="--i:3" id="signals">
-          <button class="sig" data-w="1"><span class="ic">✋</span><span><b>They stop scrolling</b><small>A strong first second tells the app it's worth a look.</small></span></button>
-          <button class="sig" data-w="1"><span class="ic">▶</span><span><b>They watch it all</b><small>Watch time is the loudest signal there is.</small></span></button>
-          <button class="sig" data-w="1"><span class="ic">💬</span><span><b>They comment</b><small>Conversation means people care.</small></span></button>
-          <button class="sig" data-w="1"><span class="ic">↗</span><span><b>They share or save it</b><small>Sending it to a friend is the strongest vote of all.</small></span></button>
+          <button class="sig"><span class="ic"><svg class="i"><use href="#i-eye"/></svg></span><span><b>They stop scrolling</b><small>A strong first second tells the app it's worth a look.</small></span></button>
+          <button class="sig"><span class="ic"><svg class="i"><use href="#i-play"/></svg></span><span><b>They watch it all</b><small>Watch time is the loudest signal there is.</small></span></button>
+          <button class="sig"><span class="ic"><svg class="i"><use href="#i-comment"/></svg></span><span><b>They comment</b><small>Conversation means people care.</small></span></button>
+          <button class="sig"><span class="ic"><svg class="i"><use href="#i-send"/></svg></span><span><b>They share or save it</b><small>Sending it to a friend is the strongest vote of all.</small></span></button>
         </div>
       </div>
       <div class="st" style="--i:2">
-        <div class="rings" id="rings">
+        <div class="rings">
           <div class="ring r4"><span>New local people</span></div>
           <div class="ring r3"><span>Friends of followers</span></div>
           <div class="ring r2"><span>Your followers</span></div>
           <div class="ring r1"><span>Test group</span></div>
           <div class="people" id="people"></div>
-          <div class="post" id="post">POST</div>
+          <div class="post" id="post"><svg class="i"><use href="#i-play"/></svg></div>
         </div>
-        <p class="reach">Reach: <b class="tnum" id="reachN">a few people</b> · <button class="chip" style="padding:4px 12px;font-size:12px" id="sigReset">Reset</button></p>
+        <p class="reach">Reach: <b id="reachN">a few people</b> · <button class="chip" style="padding:4px 12px;font-size:12px" id="sigReset">Reset</button></p>
       </div>
     </div>
   </section>
 
-  <!-- 4. Daily -->
+  <!-- 4. Daily: more shots -->
   <section class="slide light">
-    <div class="wrap daily">
+    <div class="wrap two">
       <div>
         <p class="kicker st" style="--i:0">Why we post every day</p>
         <h2 class="st" style="--i:1">More shots.<br><span class="grey">More wins.</span></h2>
-        <p class="lede st" style="--i:2">You can't predict which post takes off. You can only take more shots. Posting every day also tells the app you're active, so it keeps showing you.</p>
-        <div class="seg st" style="--i:3" id="freq">
+        <div class="whys">
+          <div class="why st" style="--i:2"><span class="ic"><svg class="i"><use href="#i-target"/></svg></span><span><b>More chances to take off</b><small>Nobody can predict which post will hit. Every day is another shot at the one that does.</small></span></div>
+          <div class="why st" style="--i:3"><span class="ic"><svg class="i"><use href="#i-zap"/></svg></span><span><b>The app rewards active accounts</b><small>Show up every day and Facebook and Instagram keep putting you in front of people.</small></span></div>
+          <div class="why st" style="--i:4"><span class="ic"><svg class="i"><use href="#i-users"/></svg></span><span><b>You stay top of mind</b><small>When someone finally needs your service, yours is the name they've seen all month.</small></span></div>
+        </div>
+        <div class="seg st" style="--i:5" id="freq">
           <button data-f="1">Once a week</button><button data-f="3">3× a week</button><button data-f="7" class="on">Every day</button>
         </div>
-        <div class="daystats st" style="--i:4">
-          <div class="card"><div class="big tnum" id="postsN">30</div><div class="lbl">posts a month</div></div>
-          <div class="card"><div class="big tnum" id="hitsN">5</div><div class="lbl">posts that take off ↗</div></div>
-        </div>
-        <p class="note st" style="--i:5">Illustration: roughly 1 in 6 posts outperforms the rest.</p>
       </div>
       <div class="st" style="--i:3">
         <div class="cal" id="cal"></div>
+        <div class="daystats">
+          <div class="card"><div class="big tnum" id="postsN">30</div><div class="lbl">posts a month</div></div>
+          <div class="card"><div class="big tnum" id="hitsN">5</div><div class="lbl">posts that take off</div></div>
+        </div>
+        <p class="src">Illustration of one month. Outlined days are posts that outperform the rest.</p>
       </div>
     </div>
   </section>
 
-  <!-- 5. Process -->
+  <!-- 5. Daily: the data -->
+  <section class="slide">
+    <div class="wrap two">
+      <div>
+        <p class="kicker st" style="--i:0">What the data says</p>
+        <h2 class="st" style="--i:1">Post more.<br><span class="grey">Grow faster.</span></h2>
+        <p class="lede st" style="--i:2">Buffer studied 2.1 million Instagram posts from 102,000 accounts. The accounts that posted more grew faster, and every post they made reached more people.</p>
+        <p class="ask st" style="--i:3">How often do you post right now?</p>
+        <div class="poll st" style="--i:4;margin-top:14px" id="nowFreq">
+          <button class="chip" data-k="none">Rarely or never</button>
+          <button class="chip" data-k="0">1–2 a week</button>
+          <button class="chip" data-k="1">3–5 a week</button>
+          <button class="chip" data-k="2">Most days</button>
+        </div>
+        <p class="reply" id="freqReply"></p>
+      </div>
+      <div>
+        <div class="card st" style="--i:2">
+          <div class="lbl" style="margin:0">Follower growth rate, by posts per week</div>
+          <div class="bars" id="bars">
+            <div class="brow" data-k="0"><span>1–2 <span class="yt">· you</span></span><div class="btrack"><i style="--w:18%;--k:0"></i></div><b>0.12%</b></div>
+            <div class="brow" data-k="1"><span>3–5 <span class="yt">· you</span></span><div class="btrack"><i style="--w:39%;--k:1"></i></div><b>0.26%</b></div>
+            <div class="brow m2" data-k="2"><span>6–9 <span class="yt">· you</span></span><div class="btrack"><i style="--w:67%;--k:2"></i><em>Every day</em></div><b>0.44%</b></div>
+            <div class="brow" data-k="3"><span>10+</span><div class="btrack"><i style="--w:100%;--k:3"></i></div><b>0.66%</b></div>
+          </div>
+        </div>
+        <div class="duo">
+          <div class="card st" style="--i:3"><div class="big">3.7×</div><div class="lbl">faster follower growth posting daily (6–9 a week) than posting once or twice a week</div></div>
+          <div class="card st" style="--i:4"><div class="big">+18%</div><div class="lbl">more people reached on every single post, on top of having more posts out there</div></div>
+        </div>
+        <p class="src st" style="--i:5">Source: Buffer, "How Often Should You Post on Instagram", 2.1M posts from 102K accounts. Buffer also found that posting less than once or twice a week can mean stagnation or even losing followers.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Process + live dashboard -->
+  <section class="slide light" id="s-process">
+    <div class="wrap two tight">
+      <div>
+        <p class="kicker st" style="--i:0">Our process</p>
+        <h2 class="st" style="--i:1">From first post<br><span class="grey">to booked jobs.</span></h2>
+        <div class="psteps st" style="--i:2" id="psteps">
+          <button class="pstep on"><span class="pn">01</span><span><b>Plan</b><small>Days 1–7</small><p>We learn your business, your best jobs and your customers, then map out your first month of content.</p></span></button>
+          <button class="pstep"><span class="pn">02</span><span><b>Create</b><small>Days 7–30</small><p>We write the scripts and ideas, then film and edit, so every post looks and sounds like you.</p></span></button>
+          <button class="pstep"><span class="pn">03</span><span><b>Grow</b><small>Days 30–60</small><p>We post every day. More of the right local people see your work, follow you and remember you.</p></span></button>
+          <button class="pstep"><span class="pn">04</span><span><b>Convert</b><small>Days 60–90</small><p>Followers turn into messages, messages into calls, and calls into booked jobs.</p></span></button>
+        </div>
+        <button class="btn pnext st" style="--i:3" id="pnext">Next step <svg class="i"><use href="#i-arrow"/></svg></button>
+      </div>
+      <div class="st" style="--i:3">
+        <div class="dwrap">
+          <div class="dash">
+            <div class="dbar"><span>Profile</span><span id="dStage">Day 7</span></div>
+            <div class="dtop">
+              <div class="avatar" id="dAvatar">YB</div>
+              <div class="handle"><b id="dHandle">yourbusiness</b><small>Local business · Your town</small></div>
+            </div>
+            <div class="dstats">
+              <div><b class="tnum" id="dPosts">0</b><small>Posts</small></div>
+              <div class="fol"><span class="plus" id="dPlus"></span><b class="tnum" id="dFol">0</b><small>Followers</small></div>
+              <div><b class="tnum">180</b><small>Following</small></div>
+            </div>
+            <div class="dins">
+              <div><b class="tnum" id="dReach">0</b><small>Accounts reached</small></div>
+              <div><b class="tnum" id="dMsgs">0</b><small>Messages</small></div>
+              <div><b class="tnum" id="dBooked">0</b><small>Booked jobs</small></div>
+            </div>
+            <div class="dgrid" id="dgrid"></div>
+            <div class="dnote">Example account</div>
+          </div>
+          <div class="toast" id="toast"><span class="ic"><svg class="i"><use id="toastIc" href="#i-check"/></svg></span><span><b id="toastT"></b><small id="toastS"></small></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Everything we do -->
   <section class="slide">
     <div class="wrap">
-      <p class="kicker st" style="--i:0">Our process</p>
-      <h2 class="st" style="--i:1">From first post<br><span class="grey">to booked jobs.</span></h2>
-      <div class="steps st" style="--i:2" id="steps">
-        <button class="step on"><span class="n">01</span><h3>Plan</h3><p>We learn your business, your best jobs and your customers, then map out a month of content.</p><span class="when">Week 1</span></button>
-        <button class="step"><span class="n">02</span><h3>Create</h3><p>We shoot photo and video of your work, your team and your results, and write every post in your voice.</p><span class="when">Ongoing</span></button>
-        <button class="step"><span class="n">03</span><h3>Grow</h3><p>We post every day on Facebook and Instagram, so more of the right local people see your work every week.</p><span class="when">Every day</span></button>
-        <button class="step"><span class="n">04</span><h3>Convert</h3><p>Followers turn into messages, messages into calls, calls into booked jobs. We report what's working each month.</p><span class="when">Monthly</span></button>
-      </div>
-      <div class="track st" style="--i:3"><i id="track"></i></div>
-    </div>
-  </section>
-
-  <!-- 6. What we do -->
-  <section class="slide light">
-    <div class="wrap">
-      <p class="kicker st" style="--i:0">What we do for you</p>
-      <h2 class="st" style="--i:1">Completely off<br><span class="grey">your plate.</span></h2>
-      <p class="lede st" style="--i:2">Tap a card to see what's included.</p>
-      <div class="tiles st" style="--i:3" id="tiles">
-        <button class="tile"><div class="in"><div class="f"><span class="e">🎥</span><b>Content shoots</b><small>Photo + video</small></div><div class="b">We come to you and capture real jobs, real team, real results. No stock photos.</div></div></button>
-        <button class="tile"><div class="in"><div class="f"><span class="e">✍️</span><b>Editing & writing</b><small>In your voice</small></div><div class="b">Every reel edited, every caption written, so it sounds like you on your best day.</div></div></button>
-        <button class="tile"><div class="in"><div class="f"><span class="e">📅</span><b>Daily posting</b><small>Facebook + Instagram</small></div><div class="b">Posted on schedule every day, at the times your local customers are scrolling.</div></div></button>
-        <button class="tile"><div class="in"><div class="f"><span class="e">💬</span><b>Engagement</b><small>Comments + messages</small></div><div class="b">We keep the conversation going and flag new leads to you fast.</div></div></button>
-        <button class="tile"><div class="in"><div class="f"><span class="e">📈</span><b>Monthly report</b><small>Plain English</small></div><div class="b">What went out, who saw it, and what turned into calls. No jargon.</div></div></button>
-        <button class="tile"><div class="in"><div class="f"><span class="e">🏠</span><b>Your page, your customers</b><small>Yours to keep</small></div><div class="b">Everything we build stays yours. It keeps growing the longer we run it.</div></div></button>
+      <p class="kicker st" style="--i:0">Everything we do</p>
+      <h2 class="st" style="--i:1">Start to finish.<br><span class="grey">Completely off your plate.</span></h2>
+      <div class="flow">
+        <div class="fcard st" style="--i:2"><span class="ic"><svg class="i"><use href="#i-phone"/></svg></span><span class="n">01</span><b>Strategy call</b><p>We learn your business, your best jobs, your customers and the area you serve.</p></div>
+        <div class="fcard st" style="--i:3"><span class="ic"><svg class="i"><use href="#i-clip"/></svg></span><span class="n">02</span><b>Content plan</b><p>Every month is mapped out ahead of time: what we post, when, and why.</p></div>
+        <div class="fcard st" style="--i:4"><span class="ic"><svg class="i"><use href="#i-pen"/></svg></span><span class="n">03</span><b>Scripts & ideas</b><p>We write every video idea and script, with a hook that stops the scroll.</p></div>
+        <div class="fcard st" style="--i:5"><span class="ic"><svg class="i"><use href="#i-video"/></svg></span><span class="n">04</span><b>Filming</b><p>Our team comes to you and films your work, your crew and your results.</p><span class="tag">Full Package +</span></div>
+        <div class="fcard st" style="--i:6"><span class="ic"><svg class="i"><use href="#i-spark"/></svg></span><span class="n">05</span><b>Scripted skits</b><p>Fully written skits and videos built to go viral, produced start to finish by us.</p><span class="tag">Personality</span></div>
+        <div class="fcard st" style="--i:7"><span class="ic"><svg class="i"><use href="#i-cut"/></svg></span><span class="n">06</span><b>Editing</b><p>Every video cut, captioned and polished so you look and sound your best.</p></div>
+        <div class="fcard st" style="--i:8"><span class="ic"><svg class="i"><use href="#i-cal"/></svg></span><span class="n">07</span><b>Posting</b><p>We post for you on Facebook and Instagram. Every day on the Full Package and up.</p></div>
+        <div class="fcard st" style="--i:9"><span class="ic"><svg class="i"><use href="#i-comment"/></svg></span><span class="n">08</span><b>Engagement</b><p>We answer comments and messages and flag every new lead to you fast.</p></div>
       </div>
     </div>
   </section>
 
-  <!-- 7. Your numbers -->
-  <section class="slide">
+  <!-- 8. Your numbers -->
+  <section class="slide light" id="s-numbers">
     <div class="wrap">
       <p class="kicker st" style="--i:0">Your numbers</p>
-      <h2 class="st" style="--i:1">Let's talk about<br><span class="grey"><span class="bn">your business</span>.</span></h2>
-      <div class="calc">
-        <div class="fields st" style="--i:2">
-          <div class="field"><label for="iValue">Average pay per job</label><div class="row"><em>$</em><input type="number" id="iValue" min="0" step="50" value="1500"></div></div>
-          <div class="field"><label for="iMargin">Profit you keep per job</label><div class="row"><input type="number" id="iMargin" min="1" max="100" value="35"><em>%</em></div></div>
-          <div class="field"><label for="iJobs">Jobs per month now</label><div class="row"><input type="number" id="iJobs" min="0" value="12"></div></div>
-          <div class="field"><label for="iGoal">Jobs per month you want</label><div class="row"><input type="number" id="iGoal" min="1" value="25"></div></div>
-          <div class="field"><label for="iAds">Spent on ads / leads per month</label><div class="row"><em>$</em><input type="number" id="iAds" min="0" step="50" value="1000"></div></div>
-          <div class="field"><label for="iCpl">Cost per lead</label><div class="row"><em>$</em><input type="number" id="iCpl" min="0" step="5" value="60"></div></div>
+      <h2 class="st" style="--i:1">Three quick<br><span class="grey">questions.</span></h2>
+      <div class="qs">
+        <div class="q st" style="--i:2"><span class="qn">01</span><label for="qPay">What do you usually get paid for a job?</label>
+          <div class="qin"><button class="stp" data-for="qPay" data-step="-100" aria-label="Less"><svg class="i"><use href="#i-minus"/></svg></button><span class="val"><em>$</em><input type="number" id="qPay" min="0" step="100" value="1500" inputmode="numeric"></span><button class="stp" data-for="qPay" data-step="100" aria-label="More"><svg class="i"><use href="#i-plus"/></svg></button></div></div>
+        <div class="q st" style="--i:3"><span class="qn">02</span><label for="qJobs">How many jobs do you do in a month right now?</label>
+          <div class="qin"><button class="stp" data-for="qJobs" data-step="-1" aria-label="Less"><svg class="i"><use href="#i-minus"/></svg></button><span class="val"><input type="number" id="qJobs" min="0" value="12" inputmode="numeric"></span><button class="stp" data-for="qJobs" data-step="1" aria-label="More"><svg class="i"><use href="#i-plus"/></svg></button></div></div>
+        <div class="q st" style="--i:4"><span class="qn">03</span><label for="qGoal">How many jobs a month would you like to be doing?</label>
+          <div class="qin"><button class="stp" data-for="qGoal" data-step="-1" aria-label="Less"><svg class="i"><use href="#i-minus"/></svg></button><span class="val"><input type="number" id="qGoal" min="0" value="25" inputmode="numeric"></span><button class="stp" data-for="qGoal" data-step="1" aria-label="More"><svg class="i"><use href="#i-plus"/></svg></button></div></div>
+      </div>
+      <div class="res st" style="--i:5">
+        <div>
+          <div class="blocks" id="blocks"></div>
+          <div class="legend"><span><i></i><em id="lgToday" style="font-style:normal">Today</em></span><span><i class="gap"></i><em id="lgGoal" style="font-style:normal">To reach your goal</em></span><span id="lgPer"></span></div>
         </div>
-        <div class="out st" style="--i:3">
-          <div class="card hero">
-            <div class="lbl">Jobs a month that pay for M2</div>
-            <div class="big tnum" id="oBreak">0</div>
-            <div class="jobsviz" id="oBreakViz"></div>
-            <div class="lbl" style="margin-top:12px" id="oBreakTxt"></div>
-          </div>
-          <div class="vs">
-            <div class="card"><div class="big tnum" id="oProfitNow">$0</div><div class="lbl">profit / month today</div></div>
-            <div class="card"><div class="big tnum" id="oProfitGoal">$0</div><div class="lbl">profit / month at your goal</div></div>
-            <div class="card"><div class="big tnum" id="oAdsYear">$0</div><div class="lbl">a year on ads & leads</div></div>
-            <div class="card"><div class="big tnum" id="oCpj">$0</div><div class="lbl" id="oCpjL">ad cost per booked job</div></div>
-          </div>
+        <div>
+          <div class="big tnum" id="rGap">+13</div>
+          <div class="sub" id="rSub"></div>
+          <div class="cover" id="rCover"></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 8. Growth -->
-  <section class="slide">
-    <div class="wrap">
-      <p class="kicker st" style="--i:0">Your next 24 months</p>
-      <h2 class="st" style="--i:1">Slide forward<br><span class="grey">and see it grow.</span></h2>
+  <!-- 9. Follower growth -->
+  <section class="slide" id="s-growth">
+    <div class="wrap tight">
+      <p class="kicker st" style="--i:0">Your next 12 months</p>
+      <h2 class="st" style="--i:1">More followers.<br><span class="grey">More jobs.</span></h2>
       <div class="growth">
-        <div class="st" style="--i:2">
-          <div class="chart">
-            <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
-              <div class="scen" id="scen">
-                <button class="chip" data-r="0.06">Steady</button><button class="chip on" data-r="0.10">Expected</button><button class="chip" data-r="0.15">Strong</button>
-              </div>
-              <label class="toggle"><input type="checkbox" id="keepAds"> Keep current ad spend</label>
-            </div>
-            <svg id="gsvg" viewBox="0 0 720 340" role="img" aria-label="Projected jobs per month over 24 months"></svg>
-            <div class="slider-row">
-              <input type="range" id="month" min="0" max="24" value="0" aria-label="Month">
-              <span class="month-tag tnum" id="monthTag">Today</span>
-            </div>
+        <div class="chart st" style="--i:2">
+          <div class="ctop">
+            <div class="scen" id="gPlans"><button class="chip">Starter</button><button class="chip on">Full Package</button><button class="chip">Personality</button></div>
+            <label class="assume">Followers today <input type="number" id="gFollow" min="0" value="500" inputmode="numeric"></label>
           </div>
-          <p class="fine">Illustration using your numbers and the M2 plan selected on the pricing slide. Growth compounds monthly and levels off at the most jobs you can handle. Not a guarantee.</p>
+          <svg id="gsvg" viewBox="0 0 720 330" role="img" aria-label="Projected followers and jobs per month over 12 months"></svg>
+          <div class="slider-row">
+            <input type="range" id="month" min="0" max="12" value="0" aria-label="Month">
+            <span class="month-tag tnum" id="monthTag">Today</span>
+          </div>
+          <div class="cfoot">
+            <label class="assume">Every <input type="number" id="gPer" min="1" value="250" inputmode="numeric"> new followers ≈ 1 more job a month</label>
+          </div>
         </div>
         <div class="side st" style="--i:3">
-          <div class="card hero"><div class="lbl">Jobs per month</div><div class="big tnum" id="gJobs">0</div><div class="delta" id="gJobsD"></div></div>
-          <div class="card"><div class="lbl">Revenue per month</div><div class="big tnum" id="gRev">$0</div><div class="delta" id="gRevD"></div></div>
-          <div class="card"><div class="lbl">Profit after expenses</div><div class="big tnum" id="gProfit">$0</div><div class="delta" id="gProfitD"></div></div>
-          <div class="card"><div class="lbl">Extra profit so far</div><div class="big tnum" id="gCum">$0</div><div class="delta" id="gGoal"></div></div>
-          <div class="field" style="padding:12px 16px"><label for="iCap">Most jobs/month you could handle</label><div class="row"><input type="number" id="iCap" min="1" value="40" style="font-size:24px"></div></div>
+          <div class="card hero"><div class="lbl">Followers</div><div class="big tnum" id="gF">0</div><div class="delta" id="gFd"></div></div>
+          <div class="card"><div class="lbl">Jobs per month</div><div class="big tnum" id="gJ">0</div><div class="delta" id="gJd"></div></div>
+          <div class="card"><div class="lbl">Revenue per month</div><div class="big tnum" id="gR">$0</div><div class="delta" id="gRd"></div></div>
+          <div class="card"><div class="lbl">Extra revenue after M2</div><div class="big tnum" id="gX">$0</div><div class="delta" id="gXd"></div></div>
         </div>
       </div>
+      <p class="src">Illustration using your numbers. Monthly follower growth is estimated at 12% (Starter), 22% (Full Package) and 35% (Personality). Not a guarantee.</p>
     </div>
   </section>
 
-  <!-- 9. Pricing -->
-  <section class="slide light">
+  <!-- 10. Pricing -->
+  <section class="slide light" id="s-pricing">
     <div class="wrap">
       <p class="kicker st" style="--i:0">Pricing</p>
-      <h2 class="st" style="--i:1">Simple monthly plans.<br><span class="grey">No contracts to dread.</span></h2>
+      <h2 class="st" style="--i:1">Pick your plan.</h2>
       <div class="plans st" style="--i:2" id="plans">
-        <button class="plan" data-plan="0"><span class="tag">Starter</span><h3>Show up</h3><div class="price">$<span contenteditable="true" spellcheck="false">997</span><small>/mo</small></div>
-          <ul><li>3 posts a week</li><li>Facebook + Instagram</li><li>1 content shoot a month</li><li>Monthly report</li></ul><div class="pays"></div></button>
-        <button class="plan on" data-plan="1"><span class="tag">Most popular</span><h3>Grow</h3><div class="price">$<span contenteditable="true" spellcheck="false">1,497</span><small>/mo</small></div>
-          <ul><li>A post every day</li><li>Facebook + Instagram</li><li>2 content shoots a month</li><li>Comments + messages handled</li><li>Monthly report</li></ul><div class="pays"></div></button>
-        <button class="plan" data-plan="2"><span class="tag">Dominate</span><h3>Scale</h3><div class="price">$<span contenteditable="true" spellcheck="false">2,497</span><small>/mo</small></div>
-          <ul><li>Daily posts + stories</li><li>Weekly content shoots</li><li>Comments + messages handled</li><li>Lead follow-up support</li><li>Monthly strategy call</li></ul><div class="pays"></div></button>
+        <button class="plan"><span class="tag">Starter</span><h3>Starter</h3><span class="desc">You film. We do the rest.</span><div class="price">$2,750<small>/mo</small></div>
+          <ul><li><svg class="i"><use href="#i-check"/></svg>Scripts and video ideas</li><li><svg class="i"><use href="#i-check"/></svg>Professional editing</li><li><svg class="i"><use href="#i-check"/></svg>Captions and posting</li><li><svg class="i"><use href="#i-check"/></svg>Engagement on comments and messages</li></ul><div class="pays"></div></button>
+        <button class="plan on"><span class="tag">The whole package</span><h3>Full Package</h3><span class="desc">We handle everything, in person.</span><div class="price">$5,000<small>/mo</small></div>
+          <ul><li><svg class="i"><use href="#i-check"/></svg>Everything in Starter</li><li><svg class="i"><use href="#i-check"/></svg>In-person filming with our team</li><li><svg class="i"><use href="#i-check"/></svg>A post every day</li><li><svg class="i"><use href="#i-check"/></svg>Facebook and Instagram managed</li></ul><div class="pays"></div></button>
+        <button class="plan"><span class="tag">Go viral</span><h3>Personality</h3><span class="desc">For owners ready to be the face of it.</span><div class="price">$11,000<small>/mo</small></div>
+          <ul><li><svg class="i"><use href="#i-check"/></svg>Everything in Full Package</li><li><svg class="i"><use href="#i-check"/></svg>Fully scripted skits, written by us</li><li><svg class="i"><use href="#i-check"/></svg>Full professional filming</li><li><svg class="i"><use href="#i-check"/></svg>Engagement tracking and reporting</li></ul><div class="pays"></div></button>
       </div>
     </div>
   </section>
 
-  <!-- 10. Close -->
-  <section class="slide">
+  <!-- 11. Close -->
+  <section class="slide" id="s-cta">
     <div class="wrap">
-      <p class="kicker st" style="--i:0">A year from now</p>
-      <h2 class="st" style="--i:1"><span class="bn">Your business</span>,<br><span class="grey">twelve months in.</span></h2>
-      <div class="recap">
-        <div class="card st" style="--i:2"><div class="big tnum" id="cJobs">0</div><div class="lbl" style="color:var(--fog)" id="cJobsL">jobs a month</div></div>
-        <div class="card st" style="--i:3"><div class="big tnum" id="cProfit">$0</div><div class="lbl" style="color:var(--fog)">profit a month after expenses</div></div>
-        <div class="card st" style="--i:4"><div class="big tnum" id="cCum">$0</div><div class="lbl" style="color:var(--fog)">extra profit over the year</div></div>
+      <p class="kicker st" style="--i:0">Your next step</p>
+      <h2 class="st" style="--i:1" id="ctaH">Let's start<br><span class="grey">your 90-day plan.</span></h2>
+      <p class="lede st" style="--i:2">Pick the plan that fits <span class="bn" data-d="your business">your business</span>. We'll set up your strategy call and get to work.</p>
+      <div class="picks st" style="--i:3" id="cPlans">
+        <button class="pick"><span><b>Starter</b><small>We script, you film</small></span><span class="dot"><svg class="i"><use href="#i-check"/></svg></span></button>
+        <button class="pick on"><span><b>Full Package</b><small>We film and post daily</small></span><span class="dot"><svg class="i"><use href="#i-check"/></svg></span></button>
+        <button class="pick"><span><b>Personality</b><small>Skits built to go viral</small></span><span class="dot"><svg class="i"><use href="#i-check"/></svg></span></button>
       </div>
-      <p class="lede st" style="--i:5">Your next customer is already looking you up. Let's make sure they like what they find.</p>
-      <div class="st" style="--i:6;margin-top:28px;display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn" data-go="8">Pick a plan</button>
-        <button class="btn ghost" data-go="7">Back to the chart</button>
+      <div class="road st" style="--i:4" id="road">
+        <div class="rd"><span class="when">Days 1–30</span><b>Launch</b><p>Strategy call, content plan, and your first posts go live.</p></div>
+        <div class="rd"><span class="when">Days 31–60</span><b>Build</b><p>Posting every day. We learn what your area responds to and do more of it.</p></div>
+        <div class="rd"><span class="when">Days 61–90</span><b>Grow</b><p>Followers turn into messages, and messages turn into booked jobs.</p></div>
+      </div>
+      <div class="cta-row st" style="--i:5">
+        <button class="btn xl" id="startBtn">Start my 90-day plan <svg class="i"><use href="#i-arrow"/></svg></button>
       </div>
     </div>
   </section>
 </main>
 
 <nav class="nav" aria-label="Slides">
-  <button class="arrow" id="prevB" aria-label="Previous slide"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+  <button class="arrow" id="prevB" aria-label="Previous"><svg class="i"><use href="#i-left"/></svg></button>
   <div class="dots" id="dots"></div>
-  <button class="arrow" id="nextB" aria-label="Next slide"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+  <button class="arrow" id="nextB" aria-label="Next"><svg class="i"><use href="#i-right"/></svg></button>
 </nav>
 
 <script>
@@ -468,76 +643,99 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var money = function (n) { var neg = n < 0; n = Math.round(Math.abs(n)); return (neg ? '−$' : '$') + n.toLocaleString('en-US'); };
-  var num = function (el, min) { var v = parseFloat(el.value); return isFinite(v) ? Math.max(min || 0, v) : (min || 0); };
+  var int = function (n) { return Math.round(n).toLocaleString('en-US'); };
+  var fmtK = function (n) { n = Math.round(n); return n >= 1000 ? (n / 1000).toFixed(n < 10000 ? 1 : 0).replace(/\.0$/, '') + 'K' : String(n); };
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var PLANS = [
+    { name: 'Starter', price: 2750, rate: 0.12 },
+    { name: 'Full Package', price: 5000, rate: 0.22 },
+    { name: 'Personality', price: 11000, rate: 0.35 }
+  ];
+  // Everything the client tells us, shared by every slide.
+  var S = { pay: 1500, jobs: 12, goal: 25, plan: 1, followers: 500, perJob: 250 };
+
+  function countTo(el, to, fmt) {
+    var from = parseFloat(el.dataset.v); if (!isFinite(from)) from = 0;
+    el.dataset.v = to;
+    var tok = (el._tok || 0) + 1; el._tok = tok;
+    if (reduce || from === to) { el.textContent = fmt(to); return; }
+    var t0 = performance.now(), d = 500;
+    requestAnimationFrame(function f(t) {
+      if (el._tok !== tok) return;
+      var p = Math.max(0, Math.min(1, (t - t0) / d)); p = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(from + (to - from) * p);
+      if (p < 1) requestAnimationFrame(f);
+    });
+  }
 
   /* ---------------- navigation ---------------- */
-  var slides = $$('.slide'), cur = 0, dots = $('#dots');
+  var slides = $$('.slide'), cur = -1, enter = {}, builds = {}, dots = $('#dots');
+  var idx = function (id) { return slides.indexOf($('#' + id)); };
   slides.forEach(function (_, i) { var b = document.createElement('button'); b.setAttribute('aria-label', 'Slide ' + (i + 1)); b.onclick = function () { go(i); }; dots.appendChild(b); });
   function go(i) {
     i = Math.max(0, Math.min(slides.length - 1, i));
+    if (i === cur) return;
+    var back = i < cur;
     slides.forEach(function (s, k) { s.classList.toggle('on', k === i); s.classList.toggle('prev', k < i); });
     $$('button', dots).forEach(function (d, k) { d.classList.toggle('on', k === i); });
     $('#count').textContent = String(i + 1).padStart(2, '0') + ' / ' + String(slides.length).padStart(2, '0');
     $('#bar').style.width = ((i + 1) / slides.length * 100) + '%';
     cur = i;
-    if (enter[i]) enter[i]();
+    if (enter[i]) enter[i](back);
   }
-  $('#prevB').onclick = function () { go(cur - 1); };
-  $('#nextB').onclick = function () { go(cur + 1); };
+  // A slide with steps (the process dashboard) walks through them before moving on.
+  function next() { if (builds[cur] && builds[cur](1)) return; go(cur + 1); }
+  function prev() { if (builds[cur] && builds[cur](-1)) return; go(cur - 1); }
+  $('#prevB').onclick = prev;
+  $('#nextB').onclick = next;
   $$('[data-next]').forEach(function (b) { b.onclick = function () { go(cur + 1); }; });
-  $$('[data-go]').forEach(function (b) { b.onclick = function () { go(+b.dataset.go); }; });
   document.addEventListener('keydown', function (e) {
     var t = e.target;
-    if (t.isContentEditable || (t.tagName === 'INPUT' && t.type !== 'range' && t.type !== 'checkbox')) { if (e.key === 'Enter') t.blur(); return; }
+    if (t.tagName === 'INPUT' && t.type !== 'range') { if (e.key === 'Enter') t.blur(); return; }
     if (t.type === 'range') return;
-    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(cur + 1); }
-    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(cur - 1); }
+    if (t.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
   });
-  var sx = null;
-  document.addEventListener('touchstart', function (e) { sx = e.target.closest('input,.chart,[contenteditable]') ? null : e.touches[0].clientX; }, { passive: true });
-  document.addEventListener('touchend', function (e) { if (sx === null) return; var dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 60) go(cur + (dx < 0 ? 1 : -1)); sx = null; });
-  var enter = {};
-
-  /* count-up for big numbers */
-  function countTo(el, to, fmt) {
-    var from = +el.dataset.v || 0; el.dataset.v = to;
-    var t0 = performance.now(), d = 500;
-    (function f(t) { var p = Math.min(1, (t - t0) / d); p = 1 - Math.pow(1 - p, 3); el.textContent = fmt(from + (to - from) * p); if (p < 1) requestAnimationFrame(f); })(t0);
-  }
+  var sx0 = null;
+  document.addEventListener('touchstart', function (e) { sx0 = e.target.closest('input,.chart') ? null : e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', function (e) { if (sx0 === null) return; var dx = e.changedTouches[0].clientX - sx0; if (Math.abs(dx) > 60) (dx < 0 ? next : prev)(); sx0 = null; });
 
   /* ---------------- 1. name ---------------- */
   var nameIn = $('#bizName');
-  function syncName() { var n = nameIn.value.trim() || 'your business'; $$('.bn').forEach(function (s) { s.textContent = s.closest('h2') && s.parentNode.tagName === 'H2' ? (nameIn.value.trim() || 'Your business') : n; }); }
+  function syncName() {
+    var n = nameIn.value.trim();
+    $$('.bn').forEach(function (s) { s.textContent = n || s.dataset.d; });
+    $('#dHandle').textContent = n ? n.toLowerCase().replace(/[^a-z0-9]+/g, '') : 'yourbusiness';
+    $('#dAvatar').textContent = (n || 'Your Business').split(/\s+/).filter(Boolean).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase();
+  }
   nameIn.addEventListener('input', syncName);
   nameIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(1); });
 
   /* ---------------- 2. poll ---------------- */
+  function say(el, text) { el.style.opacity = 0; setTimeout(function () { el.textContent = text; el.style.opacity = 1; }, 200); }
   $$('#poll .chip').forEach(function (c) {
-    c.onclick = function () {
-      c.classList.toggle('on');
-      var r = $('#reply'); r.style.opacity = 0;
-      setTimeout(function () { r.textContent = c.classList.contains('on') ? c.dataset.r : ''; r.style.opacity = 1; }, 200);
-    };
+    c.onclick = function () { c.classList.toggle('on'); say($('#reply'), c.classList.contains('on') ? c.dataset.r : ''); };
   });
 
   /* ---------------- 3. algorithm ---------------- */
   var people = $('#people'), dotsP = [];
-  var ringR = [[0, .14], [.15, .24], [.26, .36], [.38, .48]], perRing = [6, 14, 26, 44];
+  var ringR = [[.07, .11], [.15, .24], [.26, .36], [.38, .48]], perRing = [6, 14, 26, 44];
   var seed = 7; function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
   ringR.forEach(function (rr, ri) {
     for (var k = 0; k < perRing[ri]; k++) {
-      var a = rnd() * Math.PI * 2, r = rr[0] + .03 + rnd() * (rr[1] - rr[0] - .04);
-      if (ri === 0) r = .1 + rnd() * .03;
+      var a = rnd() * Math.PI * 2, r = rr[0] + .02 + rnd() * (rr[1] - rr[0] - .03);
       var i = document.createElement('i'); i.style.left = (50 + Math.cos(a) * r * 100) + '%'; i.style.top = (50 + Math.sin(a) * r * 100) + '%';
       i.dataset.ring = ri; i.style.transitionDelay = (k * 18) + 'ms'; people.appendChild(i); dotsP.push(i);
     }
   });
-  var ringEls = [$('.r1'), $('.r2'), $('.r3'), $('.r4')], reachTxt = ['a few people', 'your followers', 'friends of your followers', 'new local people'];
+  var ringEls = [$('.r1'), $('.r2'), $('.r3'), $('.r4')], reachTxt = ['a few people', 'your followers', 'friends of your followers', 'new local people', 'way beyond your followers'];
   function algo() {
     var lvl = $$('#signals .sig.on').length;
     ringEls.forEach(function (r, i) { r.classList.toggle('lit', i <= lvl); });
     dotsP.forEach(function (d) { d.classList.toggle('show', +d.dataset.ring <= lvl); });
-    $('#reachN').textContent = lvl >= 4 ? 'way beyond your followers' : reachTxt[Math.min(lvl, 3)];
+    $('#reachN').textContent = reachTxt[lvl];
     var p = $('#post'); p.classList.remove('pulse'); void p.offsetWidth; p.classList.add('pulse');
   }
   $$('#signals .sig').forEach(function (s) { s.onclick = function () { s.classList.toggle('on'); algo(); }; });
@@ -545,11 +743,10 @@
   algo();
 
   /* ---------------- 4. daily ---------------- */
-  var cal = $('#cal');
+  var cal = $('#cal'), days = [];
   ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(function (d) { var h = document.createElement('div'); h.className = 'dh'; h.textContent = d; cal.appendChild(h); });
-  var days = [];
-  for (var d = 1; d <= 28; d++) { var c = document.createElement('div'); c.className = 'd'; c.textContent = d; cal.appendChild(c); days.push(c); }
-  // fixed "breakout" days so the picture is the same every time; every 6th post or so
+  for (var d = 1; d <= 28; d++) { var c = document.createElement('div'); c.className = 'd'; c.innerHTML = d + '<svg class="i"><use href="#i-up"/></svg>'; cal.appendChild(c); days.push(c); }
+  // Fixed "breakout" days, so the picture is the same every time we present it.
   var breakout = { 3: 1, 9: 1, 14: 1, 19: 1, 25: 1 };
   function freq(f) {
     var pattern = f === 7 ? [0, 1, 2, 3, 4, 5, 6] : f === 3 ? [0, 2, 4] : [2];
@@ -560,151 +757,234 @@
       c.style.transitionDelay = (i * 18) + 'ms';
       c.classList.toggle('p', p); c.classList.toggle('hit', !!h);
     });
-    posts = Math.round(posts * 30 / 28);
-    countTo($('#postsN'), posts, function (v) { return Math.round(v); });
+    countTo($('#postsN'), Math.round(posts * 30 / 28), function (v) { return Math.round(v); });
     countTo($('#hitsN'), hits, function (v) { return Math.round(v); });
     $$('#freq button').forEach(function (b) { b.classList.toggle('on', +b.dataset.f === f); });
   }
   $$('#freq button').forEach(function (b) { b.onclick = function () { freq(+b.dataset.f); }; });
   enter[3] = function () { days.forEach(function (c) { c.classList.remove('p', 'hit'); }); setTimeout(function () { freq(+$('#freq .on').dataset.f); }, 400); };
 
-  /* ---------------- 5. process ---------------- */
-  var steps = $$('#steps .step');
-  steps.forEach(function (s, i) { s.onclick = function () { steps.forEach(function (x) { x.classList.toggle('on', x === s); }); $('#track').style.width = ((i + 1) * 25) + '%'; }; });
-
-  /* ---------------- 6. tiles ---------------- */
-  $$('#tiles .tile').forEach(function (t) { t.onclick = function () { t.classList.toggle('flip'); }; });
-
-  /* ---------------- 9. pricing (feeds the calculators) ---------------- */
-  var plans = $$('#plans .plan'), planIdx = 1;
-  function fee() { var v = parseFloat(plans[planIdx].querySelector('[contenteditable]').textContent.replace(/[^0-9.]/g, '')); return isFinite(v) ? v : 0; }
-  plans.forEach(function (p, i) {
-    p.onclick = function (e) { if (e.target.isContentEditable) return; planIdx = i; plans.forEach(function (x) { x.classList.toggle('on', x === p); }); update(); };
-    var ed = p.querySelector('[contenteditable]');
-    ed.addEventListener('input', update);
-    ed.addEventListener('keydown', function (e) { if (e.key === ' ') e.stopPropagation(); });
-    ed.addEventListener('blur', function () { var v = parseFloat(ed.textContent.replace(/[^0-9.]/g, '')) || 0; ed.textContent = Math.round(v).toLocaleString('en-US'); update(); });
+  /* ---------------- 5. the data ---------------- */
+  var freqMsg = {
+    none: 'Buffer found accounts that stop posting fall behind, and posting less than once or twice a week can mean stalling out or even losing followers.',
+    0: 'Posting every day, your page would grow followers about 3.7× faster than it does now, and each post would reach about 18% more people.',
+    1: "You're on the right track. Going to every day grows followers about 1.7× faster than 3–5 posts a week.",
+    2: "You're already showing up. We take it off your plate and make every post count."
+  };
+  $$('#nowFreq .chip').forEach(function (c) {
+    c.onclick = function () {
+      $$('#nowFreq .chip').forEach(function (x) { x.classList.toggle('on', x === c); });
+      $$('#bars .brow').forEach(function (r) { r.classList.toggle('you', r.dataset.k === c.dataset.k); });
+      say($('#freqReply'), freqMsg[c.dataset.k]);
+    };
   });
 
-  /* ---------------- 7 + 8. the model ---------------- */
-  var I = { value: $('#iValue'), margin: $('#iMargin'), jobs: $('#iJobs'), goal: $('#iGoal'), ads: $('#iAds'), cpl: $('#iCpl'), cap: $('#iCap') };
-  var rate = 0.10;
+  /* ---------------- 6. process dashboard ---------------- */
+  var iProc = idx('s-process');
+  var PST = [
+    { stage: 'Day 7', posts: 4, fol: 386, reach: 1100, msgs: 0, booked: 0, tiles: 2, toast: ['i-clip', 'Content plan ready', '30 days of posts mapped out'] },
+    { stage: 'Day 30', posts: 21, fol: 912, reach: 9400, msgs: 6, booked: 1, tiles: 4, toast: ['i-video', 'New reel posted', 'Before & after · 2.3K views'] },
+    { stage: 'Day 60', posts: 52, fol: 2640, reach: 41000, msgs: 27, booked: 6, tiles: 6, toast: ['i-users', 'jamie.m started following you', 'and 214 others this week'] },
+    { stage: 'Day 90', posts: 90, fol: 5180, reach: 96000, msgs: 71, booked: 18, tiles: 8, toast: ['i-check', 'Appointment booked', 'Thursday · 10:00 AM'] }
+  ];
+  var dgrid = $('#dgrid'), psteps = $$('#psteps .pstep'), pstep = 0, toastT;
+  for (var g = 0; g < 8; g++) { var ti = document.createElement('i'); if (g % 3 === 0) ti.innerHTML = '<svg class="i"><use href="#i-play"/></svg>'; dgrid.appendChild(ti); }
+  function setStep(k) {
+    var st = PST[k], before = +$('#dFol').dataset.v || 0;
+    pstep = k;
+    psteps.forEach(function (s, i) { s.classList.toggle('on', i === k); s.classList.toggle('done', i < k); });
+    $('#dStage').textContent = st.stage;
+    countTo($('#dPosts'), st.posts, int);
+    countTo($('#dFol'), st.fol, int);
+    countTo($('#dReach'), st.reach, fmtK);
+    countTo($('#dMsgs'), st.msgs, int);
+    countTo($('#dBooked'), st.booked, int);
+    if (st.fol > before) { var pl = $('#dPlus'); pl.textContent = '+' + int(st.fol - before); pl.classList.remove('go'); void pl.offsetWidth; pl.classList.add('go'); }
+    $$('i', dgrid).forEach(function (t, i) { t.style.transitionDelay = (i * 60) + 'ms'; t.classList.toggle('f', i < st.tiles); });
+    var toast = $('#toast'); toast.classList.remove('show'); clearTimeout(toastT);
+    toastT = setTimeout(function () {
+      $('#toastIc').setAttribute('href', '#' + st.toast[0]); $('#toastT').textContent = st.toast[1]; $('#toastS').textContent = st.toast[2];
+      toast.classList.add('show');
+    }, 450);
+    $('#pnext').firstChild.nodeValue = k < 3 ? 'Next step ' : 'Start over ';
+  }
+  psteps.forEach(function (s, i) { s.onclick = function () { setStep(i); }; });
+  $('#pnext').onclick = function () { setStep(pstep < 3 ? pstep + 1 : 0); };
+  builds[iProc] = function (dir) { var k = pstep + dir; if (k < 0 || k > 3) return false; setStep(k); return true; };
+  enter[iProc] = function (back) {
+    ['#dPosts', '#dFol', '#dReach', '#dMsgs', '#dBooked'].forEach(function (s) { $(s).dataset.v = 0; $(s).textContent = '0'; });
+    $$('i', dgrid).forEach(function (t) { t.classList.remove('f'); });
+    $('#toast').classList.remove('show');
+    setTimeout(function () { if (cur === iProc) setStep(back ? 3 : 0); }, 500);
+  };
 
-  function inputs() {
-    var value = num(I.value), margin = Math.min(100, num(I.margin)) / 100, jobs = num(I.jobs), goal = num(I.goal, 1);
-    var cap = Math.max(num(I.cap, 1), 1);
-    return { value: value, margin: margin, perJob: value * margin, jobs: jobs, goal: goal, ads: num(I.ads), cpl: num(I.cpl), cap: cap, fee: fee() };
+  /* ---------------- 8. your numbers ---------------- */
+  var qPay = $('#qPay'), qJobs = $('#qJobs'), qGoal = $('#qGoal');
+  function readQ() {
+    S.pay = Math.max(0, parseFloat(qPay.value) || 0);
+    S.jobs = Math.max(0, Math.round(parseFloat(qJobs.value) || 0));
+    S.goal = Math.max(0, Math.round(parseFloat(qGoal.value) || 0));
   }
-  // jobs in month t: compounds from today's jobs, levels off at capacity (logistic curve)
-  function jobsAt(m, t) {
-    var start = Math.max(m.jobs, 1), K = Math.max(m.cap, start);
-    if (start >= K) return K;
-    var j = K / (1 + ((K - start) / start) * Math.exp(-rate * t));
-    return m.jobs === 0 ? Math.max(0, j - 1 + Math.min(1, t / 6)) : j; // starting from zero: begin at 0, not 1
-  }
-  function profitAt(m, t, keepAds) {
-    var j = Math.round(jobsAt(m, t)); // whole jobs, so jobs × pay matches the revenue shown
-    var exp = t === 0 ? m.ads : m.fee + (keepAds ? m.ads : 0);
-    return { jobs: j, rev: j * m.value, profit: j * m.perJob - exp };
+  [qPay, qJobs, qGoal].forEach(function (inp) { inp.addEventListener('input', function () { readQ(); renderAll(); }); });
+  $$('.stp').forEach(function (b) {
+    b.onclick = function () {
+      var inp = $('#' + b.dataset.for);
+      inp.value = Math.max(0, (parseFloat(inp.value) || 0) + (+b.dataset.step));
+      readQ(); renderAll();
+    };
+  });
+  function renderNumbers() {
+    var gap = S.goal - S.jobs, plan = PLANS[S.plan];
+    var maxN = Math.max(S.jobs, S.goal, 1), per = Math.ceil(maxN / 60), n = Math.ceil(maxN / per), have = Math.round(S.jobs / per);
+    var viz = $('#blocks');
+    while (viz.children.length < n) { var b = document.createElement('i'); b.className = 'new'; b.style.animationDelay = (viz.children.length % 30) * 25 + 'ms'; viz.appendChild(b); }
+    while (viz.children.length > n) viz.removeChild(viz.lastChild);
+    Array.prototype.forEach.call(viz.children, function (b, i) { b.classList.toggle('gap', i >= have); });
+    $('#lgToday').textContent = 'Today · ' + S.jobs;
+    $('#lgGoal').textContent = 'To reach ' + S.goal;
+    $('#lgPer').textContent = per > 1 ? 'Each square = ' + per + ' jobs' : '';
+    if (gap > 0) {
+      countTo($('#rGap'), gap, function (v) { return '+' + Math.round(v) + (Math.round(v) === 1 ? ' job' : ' jobs'); });
+      $('#rSub').innerHTML = 'a month to hit your goal. That\'s <b>' + money(gap * S.pay) + '</b> more a month, <b>' + money(gap * S.pay * 12) + '</b> a year.';
+    } else {
+      $('#rGap').dataset.v = 0; $('#rGap').textContent = "You're there";
+      $('#rSub').textContent = 'Already at your goal. Let\'s set a bigger one.';
+    }
+    var cover = S.pay > 0 ? Math.ceil(plan.price / S.pay) : 0;
+    $('#rCover').innerHTML = S.pay > 0
+      ? 'Just <b>' + cover + ' new job' + (cover === 1 ? '' : 's') + '</b> a month covers the ' + plan.name + ' plan. Everything after that is yours.'
+      : 'Enter what you get paid for a job.';
   }
 
-  function calc() {
-    var m = inputs();
-    var breakEven = m.perJob > 0 ? Math.ceil(m.fee / m.perJob) : 0;
-    countTo($('#oBreak'), breakEven, function (v) { return Math.round(v) + (Math.round(v) === 1 ? ' job' : ' jobs'); });
-    var viz = $('#oBreakViz'); viz.innerHTML = '';
-    for (var k = 0; k < Math.min(breakEven, 60); k++) { var i = document.createElement('i'); i.style.setProperty('--k', k); viz.appendChild(i); }
-    $('#oBreakTxt').textContent = m.perJob > 0
-      ? 'You keep ' + money(m.perJob) + ' per job, so ' + breakEven + ' extra job' + (breakEven === 1 ? '' : 's') + ' covers a ' + money(m.fee) + '/mo plan. Everything after that is profit.'
-      : 'Enter your pay per job and profit % to see this.';
-    countTo($('#oProfitNow'), m.jobs * m.perJob - m.ads, money);
-    countTo($('#oProfitGoal'), m.goal * m.perJob - m.fee, money);
-    countTo($('#oAdsYear'), m.ads * 12, money);
-    countTo($('#oCpj'), m.jobs > 0 ? m.ads / m.jobs : 0, money);
-    var leads = m.cpl > 0 ? Math.round(m.ads / m.cpl) : 0;
-    $('#oCpjL').textContent = 'ad cost per job' + (leads ? ' · about ' + leads + ' paid leads/mo' : '');
-    $$('#plans .pays').forEach(function (el, i) {
-      var f = parseFloat(plans[i].querySelector('[contenteditable]').textContent.replace(/[^0-9.]/g, '')) || 0;
-      var n = m.perJob > 0 ? Math.ceil(f / m.perJob) : 0;
-      el.innerHTML = 'Pays for itself with <b>' + n + ' extra job' + (n === 1 ? '' : 's') + '</b> a month';
+  /* ---------------- 9. follower growth ---------------- */
+  var iGrowth = idx('s-growth');
+  // Followers compound monthly. Small pages grow from a floor of 300, since daily posts reach people who don't follow you yet.
+  function fAt(p, t) { var F0 = S.followers; return F0 + Math.max(F0, 300) * (Math.pow(1 + PLANS[p].rate, t) - 1); }
+  // Every `perJob` new followers adds one job a month on top of what they do today.
+  function jAt(p, t) { return S.jobs + Math.floor((fAt(p, t) - S.followers) / S.perJob); }
+
+  var gsvg = $('#gsvg'), NS = 'http://www.w3.org/2000/svg', GW = 720, GH = 330, GL = 52, GR = 18, FT = 26, FB = 196, JT = 236, JB = 300;
+  function el(n, a, p) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); (p || gsvg).appendChild(e); return e; }
+  function txt(x, y, s, cls, anchor) { el('text', { x: x, y: y, 'class': cls || 'ax', 'text-anchor': anchor || 'start' }).textContent = s; }
+  function xs(m) { return GL + m / 12 * (GW - GL - GR); }
+  function niceStep(max) { var c = [50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000]; for (var i = 0; i < c.length; i++) if (max / c[i] <= 5) return c[i]; return c[c.length - 1]; }
+  function renderGrowth() {
+    var t = +$('#month').value, sel = S.plan, plan = PLANS[sel];
+    var maxF = Math.max(fAt(sel, 12), 100) * 1.12, maxJ = Math.max(jAt(sel, 12), S.goal, 1) * 1.2;
+    var yF = function (v) { return FB - v / maxF * (FB - FT); }, yJ = function (v) { return JB - v / maxJ * (JB - JT); };
+    var path = function (p) { var pts = []; for (var m = 0; m <= 12; m += .25) pts.push(xs(m).toFixed(1) + ' ' + yF(fAt(p, m)).toFixed(1)); return 'M' + pts.join(' L'); };
+    gsvg.innerHTML = '';
+    var defs = el('defs', {}), gr = el('linearGradient', { id: 'gfill', x1: 0, x2: 0, y1: 0, y2: 1 }, defs);
+    el('stop', { offset: 0, 'stop-color': '#fff', 'stop-opacity': .22 }, gr); el('stop', { offset: 1, 'stop-color': '#fff', 'stop-opacity': 0 }, gr);
+    el('rect', { x: 0, y: 0, width: xs(t) + .5, height: GH }, el('clipPath', { id: 'gclip' }, defs));
+    el('rect', { x: 0, y: FT - 10, width: GW, height: FB - FT + 10 }, el('clipPath', { id: 'gplot' }, defs));
+
+    var step = niceStep(maxF);
+    for (var v = 0; v <= maxF; v += step) { el('line', { x1: GL, x2: GW - GR, y1: yF(v), y2: yF(v), stroke: '#27272a' }); txt(GL - 10, yF(v) + 4, fmtK(v), 'ax', 'end'); }
+    txt(GL, 12, 'FOLLOWERS');
+    txt(GL, JT - 12, 'JOBS / MONTH');
+    el('line', { x1: GL, x2: GW - GR, y1: JB, y2: JB, stroke: '#27272a' });
+    [0, 3, 6, 9, 12].forEach(function (m) { txt(xs(m), GH - 6, m === 0 ? 'Now' : m + ' mo', 'ax', 'middle'); });
+    el('line', { x1: xs(3), x2: xs(3), y1: FT - 8, y2: JB, stroke: '#52525b', 'stroke-dasharray': '3 5' });
+    txt(xs(3) + 6, FT + 2, '90 days');
+
+    PLANS.forEach(function (p, k) {
+      if (k === sel) return;
+      el('path', { d: path(k), fill: 'none', stroke: '#3f3f46', 'stroke-width': 1.5, 'clip-path': 'url(#gplot)' });
+      var ty = yF(fAt(k, 12));
+      if (ty >= FT) txt(xs(12) - 2, ty - 8, p.name, 'ax', 'end');
+      else { var mx = 0; while (mx < 12 && yF(fAt(k, mx + .25)) >= FT) mx += .25; txt(xs(mx) - 6, FT + 2, p.name + ' ↑', 'ax', 'end'); }
+    });
+    var d = path(sel);
+    el('path', { d: d + ' L' + xs(12) + ' ' + FB + ' L' + xs(0) + ' ' + FB + ' Z', fill: 'url(#gfill)', 'clip-path': 'url(#gclip)' });
+    el('path', { d: d, fill: 'none', stroke: '#71717a', 'stroke-width': 2, 'stroke-dasharray': '2 6', 'stroke-linecap': 'round' });
+    el('path', { d: d, fill: 'none', stroke: '#fff', 'stroke-width': 3, 'stroke-linecap': 'round', 'clip-path': 'url(#gclip)' });
+    txt(xs(12) - 2, yF(fAt(sel, 12)) - 10, plan.name, 'ax hi', 'end');
+
+    var bw = (GW - GL - GR) / 12 * .5;
+    for (var m = 0; m <= 12; m++) {
+      var jm = jAt(sel, m);
+      el('rect', { x: xs(m) - bw / 2, y: yJ(jm), width: bw, height: Math.max(1, JB - yJ(jm)), rx: 3, fill: m <= t ? '#fff' : '#27272a', 'fill-opacity': m < t ? .4 : 1 });
+    }
+    if (S.goal > 0) { el('line', { x1: GL, x2: GW - GR, y1: yJ(S.goal), y2: yJ(S.goal), stroke: '#a1a1aa', 'stroke-dasharray': '4 6' }); txt(GL - 10, yJ(S.goal) + 4, 'Goal', 'ax', 'end'); }
+
+    var f = fAt(sel, t), jt = jAt(sel, t);
+    el('line', { x1: xs(t), x2: xs(t), y1: FT - 8, y2: JB, stroke: '#fff', 'stroke-opacity': .25 });
+    el('circle', { cx: xs(t), cy: yF(f), r: 12, fill: '#fff', 'fill-opacity': .15 });
+    el('circle', { cx: xs(t), cy: yF(f), r: 6, fill: '#fff', stroke: '#0a0a0a', 'stroke-width': 3 });
+    txt(xs(t), yJ(jt) - 7, String(jt), 'ax hi', 'middle');
+
+    var newJobs = jt - S.jobs;
+    countTo($('#gF'), f, int);
+    $('#gFd').textContent = t === 0 ? 'where you are today' : '+' + int(f - S.followers) + ' new followers';
+    countTo($('#gJ'), jt, int);
+    $('#gJd').textContent = t === 0 ? 'today' : '+' + newJobs + ' vs today';
+    countTo($('#gR'), jt * S.pay, money);
+    $('#gRd').textContent = t === 0 ? money(S.pay) + ' a job' : '+' + money(newJobs * S.pay) + ' vs today';
+    countTo($('#gX'), t === 0 ? 0 : newJobs * S.pay - plan.price, money);
+    var hit = -1; for (var k = 0; k <= 12; k++) { if (jAt(sel, k) >= S.goal) { hit = k; break; } }
+    $('#gXd').textContent = hit === 0 ? 'already at your goal' : hit > 0 ? 'goal of ' + S.goal + ' jobs around month ' + hit : 'goal of ' + S.goal + ' jobs takes longer than a year';
+    $('#monthTag').textContent = t === 0 ? 'Today' : t === 3 ? 'Day 90' : 'Month ' + t;
+  }
+  var userSlid = false;
+  $('#month').addEventListener('input', function () { userSlid = true; renderGrowth(); });
+  $('#gFollow').addEventListener('input', function () { S.followers = Math.max(0, parseFloat(this.value) || 0); renderGrowth(); });
+  $('#gPer').addEventListener('input', function () { S.perJob = Math.max(1, parseFloat(this.value) || 1); renderGrowth(); });
+  enter[iGrowth] = function () {
+    var s = $('#month'); userSlid = false; s.value = 0; renderGrowth();
+    if (reduce) { s.value = 12; renderGrowth(); return; }
+    // Plays the year once so the curve sweeps in; touching the slider takes over.
+    var t0 = performance.now() + 600;
+    requestAnimationFrame(function f(ts) {
+      if (cur !== iGrowth || userSlid) return;
+      var v = Math.max(0, Math.min(12, Math.floor((ts - t0) / 170)));
+      if (+s.value !== v) { s.value = v; renderGrowth(); }
+      if (v < 12) requestAnimationFrame(f);
+    });
+  };
+
+  /* ---------------- 10. pricing + plan selection everywhere ---------------- */
+  function renderPricing() {
+    $$('#plans .plan').forEach(function (p, i) {
+      var n = S.pay > 0 ? Math.ceil(PLANS[i].price / S.pay) : 0;
+      $('.pays', p).innerHTML = S.pay > 0 ? '<span>Pays for itself with <b>' + n + ' new job' + (n === 1 ? '' : 's') + '</b> a month</span>' : '';
     });
   }
-
-  /* chart */
-  var svg = $('#gsvg'), W = 720, H = 340, P = { l: 44, r: 16, t: 16, b: 30 }, NS = 'http://www.w3.org/2000/svg';
-  function el(n, a, p) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); (p || svg).appendChild(e); return e; }
-  var lastPath = '';
-  function chart() {
-    var m = inputs(), keep = $('#keepAds').checked, t = +$('#month').value;
-    var maxY = Math.max(m.cap, m.goal, m.jobs) * 1.1, sx = function (x) { return P.l + x / 24 * (W - P.l - P.r); }, sy = function (y) { return H - P.b - y / maxY * (H - P.t - P.b); };
-    svg.innerHTML = '';
-    var g = el('g', { 'class': 'grid' }), ax = el('g', { 'class': 'axis' });
-    var step = Math.max(1, Math.ceil(maxY / 5 / 5) * 5);
-    for (var y = 0; y <= maxY; y += step) { el('line', { x1: P.l, x2: W - P.r, y1: sy(y), y2: sy(y) }, g); el('text', { x: P.l - 8, y: sy(y) + 4, 'text-anchor': 'end' }, ax).textContent = y; }
-    [0, 6, 12, 18, 24].forEach(function (x) { el('text', { x: sx(x), y: H - 8, 'text-anchor': 'middle' }, ax).textContent = x === 0 ? 'Now' : x + ' mo'; });
-    // goal line
-    el('line', { x1: P.l, x2: W - P.r, y1: sy(m.goal), y2: sy(m.goal), stroke: '#a1a1aa', 'stroke-dasharray': '4 6' });
-    el('text', { x: W - P.r, y: sy(m.goal) - 8, 'text-anchor': 'end', fill: '#a1a1aa', 'font-family': 'JetBrains Mono, monospace', 'font-size': 11 }).textContent = 'Your goal · ' + m.goal + '/mo';
-    // today baseline
-    el('line', { x1: P.l, x2: W - P.r, y1: sy(m.jobs), y2: sy(m.jobs), stroke: '#3f3f46' });
-    var pts = [], d = '', area = '';
-    for (var x = 0; x <= 24; x += .25) pts.push([sx(x), sy(jobsAt(m, x))]);
-    d = 'M' + pts.map(function (p) { return p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' L');
-    var defs = el('defs', {}), gr = el('linearGradient', { id: 'fillG', x1: 0, x2: 0, y1: 0, y2: 1 }, defs);
-    el('stop', { offset: 0, 'stop-color': '#fff', 'stop-opacity': .22 }, gr); el('stop', { offset: 1, 'stop-color': '#fff', 'stop-opacity': 0 }, gr);
-    var clip = el('clipPath', { id: 'upTo' }, defs); el('rect', { x: 0, y: 0, width: sx(t), height: H }, clip);
-    area = d + ' L' + sx(24) + ' ' + sy(0) + ' L' + sx(0) + ' ' + sy(0) + ' Z';
-    el('path', { d: area, fill: 'url(#fillG)', 'clip-path': 'url(#upTo)' });
-    el('path', { d: d, fill: 'none', stroke: '#3f3f46', 'stroke-width': 2, 'stroke-dasharray': '2 5' });
-    var line = el('path', { d: d, fill: 'none', stroke: '#fff', 'stroke-width': 3, 'stroke-linecap': 'round', 'clip-path': 'url(#upTo)' });
-    if (d !== lastPath && cur === 7) { var L = line.getTotalLength(); line.style.strokeDasharray = L; line.style.strokeDashoffset = L; line.getBoundingClientRect(); line.style.transition = 'stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1)'; line.style.strokeDashoffset = 0; lastPath = d; }
-    var j = jobsAt(m, t);
-    el('line', { x1: sx(t), x2: sx(t), y1: P.t, y2: H - P.b, stroke: '#fff', 'stroke-opacity': .25 });
-    el('circle', { cx: sx(t), cy: sy(j), r: 12, fill: '#fff', 'fill-opacity': .15 });
-    el('circle', { cx: sx(t), cy: sy(j), r: 6, fill: '#fff', stroke: '#0a0a0a', 'stroke-width': 3 });
-
-    // side stats
-    var now = profitAt(m, 0, keep), at = profitAt(m, t, keep);
-    countTo($('#gJobs'), at.jobs, function (v) { return Math.round(v); });
-    countTo($('#gRev'), at.rev, money);
-    countTo($('#gProfit'), at.profit, money);
-    var dj = Math.round(at.jobs) - Math.round(now.jobs);
-    $('#gJobsD').textContent = t === 0 ? 'where you are today' : (dj >= 0 ? '+' : '') + dj + ' vs today';
-    $('#gRevD').textContent = t === 0 ? '' : '+' + money(at.rev - now.rev) + ' vs today';
-    $('#gProfitD').textContent = t === 0 ? 'after ' + money(m.ads) + ' ads' : 'after ' + money(m.fee + (keep ? m.ads : 0)) + ' in marketing';
-    var cum = 0; for (var k = 1; k <= t; k++) cum += profitAt(m, k, keep).profit - now.profit;
-    countTo($('#gCum'), cum, money);
-    var hit = -1; for (var k2 = 0; k2 <= 24; k2++) { if (jobsAt(m, k2) >= m.goal - 0.5) { hit = k2; break; } }
-    $('#gGoal').textContent = hit === 0 ? 'already at your goal' : hit > 0 ? 'goal reached around month ' + hit : 'goal beyond 24 months at this pace';
-    $('#monthTag').textContent = t === 0 ? 'Today' : 'Month ' + t;
-    return m;
+  function setPlan(i) {
+    S.plan = i;
+    ['#plans .plan', '#gPlans .chip', '#cPlans .pick'].forEach(function (sel) { $$(sel).forEach(function (b, k) { b.classList.toggle('on', k === i); }); });
+    renderAll();
   }
+  ['#plans .plan', '#gPlans .chip', '#cPlans .pick'].forEach(function (sel) { $$(sel).forEach(function (b, k) { b.addEventListener('click', function () { setPlan(k); }); }); });
 
-  function closeSlide() {
-    var m = inputs(), keep = $('#keepAds').checked, a = profitAt(m, 12, keep), now = profitAt(m, 0, keep), cum = 0;
-    for (var k = 1; k <= 12; k++) cum += profitAt(m, k, keep).profit - now.profit;
-    countTo($('#cJobs'), a.jobs, function (v) { return Math.round(v); });
-    $('#cJobsL').textContent = 'jobs a month (up from ' + Math.round(m.jobs) + ')';
-    countTo($('#cProfit'), a.profit, money);
-    countTo($('#cCum'), cum, money);
+  /* ---------------- 11. close ---------------- */
+  function burst(target) {
+    if (reduce) return;
+    var r = target.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    for (var k = 0; k < 40; k++) {
+      var p = document.createElement('i'); p.className = 'bit' + (k % 3 ? '' : ' o');
+      p.style.left = cx + 'px'; p.style.top = cy + 'px';
+      document.body.appendChild(p);
+      var a = Math.random() * Math.PI * 2, dist = 90 + Math.random() * 200;
+      p.animate([
+        { transform: 'translate(-50%, -50%) rotate(0deg)', opacity: 1 },
+        { transform: 'translate(calc(-50% + ' + (Math.cos(a) * dist).toFixed(0) + 'px), calc(-50% + ' + (Math.sin(a) * dist).toFixed(0) + 'px)) rotate(' + Math.round(Math.random() * 360) + 'deg)', opacity: 0 }
+      ], { duration: 900 + Math.random() * 600, easing: 'cubic-bezier(.2,.8,.2,1)' }).onfinish = (function (p) { return function () { p.remove(); }; })(p);
+    }
   }
-
-  function update() { calc(); chart(); }
-  Object.keys(I).forEach(function (k) { I[k].addEventListener('input', update); });
-  $('#month').addEventListener('input', chart);
-  $('#keepAds').addEventListener('change', chart);
-  $$('#scen .chip').forEach(function (c) { c.onclick = function () { rate = +c.dataset.r; $$('#scen .chip').forEach(function (x) { x.classList.toggle('on', x === c); }); chart(); }; });
-
-  enter[6] = calc;
-  enter[7] = function () {
-    lastPath = ''; var s = $('#month'); s.value = 0; chart();
-    // auto-play the slider once so the curve sweeps in
-    var t0 = null; (function f(ts) { if (cur !== 7) return; if (!t0) t0 = ts; var v = Math.min(12, Math.round((ts - t0) / 110)); if (+s.value !== v) { s.value = v; chart(); } if (v < 12) requestAnimationFrame(f); })(performance.now());
+  $('#startBtn').onclick = function () {
+    var b = this, n = nameIn.value.trim();
+    b.classList.add('done');
+    b.innerHTML = '<svg class="i"><use href="#i-check"/></svg> You\'re in. Day 1 starts now.';
+    burst(b);
+    var h = $('#ctaH');
+    h.innerHTML = 'Welcome to M2' + (n ? ',' : '.') + '<br><span class="grey"></span>';
+    $('span', h).textContent = n ? n + '.' : "Let's get to work.";
+    $$('#road .rd').forEach(function (r, i) { setTimeout(function () { r.classList.add('lit'); }, 300 + i * 350); });
   };
-  enter[8] = calc;
-  enter[9] = closeSlide;
 
-  syncName(); update(); go(0);
+  function renderAll() { renderNumbers(); renderGrowth(); renderPricing(); }
+  syncName(); readQ(); renderAll(); go(0);
 })();
 </script>
 </body>
