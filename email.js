@@ -3,7 +3,7 @@
 // Branded M2 email footer (signature), built from the sender's profile.
 // Email clients need table layout and inline styles; the logo must be a hosted PNG.
 
-const DEFAULT_WEBSITE = process.env.WEBSITE_URL || 'https://m2-landing-production.up.railway.app';
+const DEFAULT_WEBSITE = process.env.WEBSITE_URL || 'https://m2-mediamanagement.com';
 
 function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
