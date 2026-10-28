@@ -120,26 +120,13 @@
   .reach { text-align: center; margin-top: 18px; font-family: var(--mono); color: var(--fog); font-size: 13px; }
   .reach b { color: var(--paper); font-size: 15px; }
 
-  /* ---------- 4. daily ---------- */
-  .seg { display: inline-flex; border: 1px solid var(--soft); border-radius: 999px; padding: 4px; margin-top: 26px; gap: 4px; flex-wrap: wrap; }
-  .seg button { border: 0; background: transparent; border-radius: 999px; padding: 10px 16px; font-weight: 600; transition: all .3s var(--ease); }
-  .seg button.on { background: var(--ink); color: var(--paper); }
-  .whys { display: grid; gap: 16px; margin-top: 30px; max-width: 520px; }
+  /* ---------- why we post every day ---------- */
+  .whys { display: grid; gap: 12px; margin-top: 24px; max-width: 520px; }
   .why { display: flex; gap: 14px; align-items: flex-start; }
-  .why .ic { width: 42px; height: 42px; border-radius: 12px; background: var(--ink); color: var(--paper); display: grid; place-items: center; flex: none; }
-  .why b { display: block; font-size: 17px; }
-  .why small { color: var(--steel); font-size: 14px; line-height: 1.45; display: block; margin-top: 2px; }
-  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-  .cal .d { aspect-ratio: 1; border-radius: 10px; background: var(--mist); position: relative; transition: all .45s var(--ease); display: grid; place-items: center; font-family: var(--mono); font-size: 11px; color: var(--soft); }
-  .cal .d.p { background: var(--ink); color: var(--fog); }
-  .cal .d.hit { color: var(--paper); box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink); }
-  .cal .d svg { position: absolute; top: 4px; right: 4px; width: 13px; height: 13px; opacity: 0; transition: opacity .3s; }
-  .cal .d.hit svg { opacity: 1; }
-  .cal .dh { text-align: center; font-family: var(--mono); font-size: 11px; color: var(--steel); }
-  .daystats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
-  .daystats .card { padding: 16px 18px; }
+  .why .ic { width: 38px; height: 38px; border-radius: 11px; background: var(--ink-3); color: var(--paper); display: grid; place-items: center; flex: none; }
+  .why b { display: block; font-size: 16px; }
+  .why small { color: var(--fog); font-size: 14px; line-height: 1.4; display: block; margin-top: 2px; }
 
-  /* ---------- 5. data ---------- */
   .bars { display: grid; gap: 14px; margin-top: 18px; }
   .brow { display: grid; grid-template-columns: 96px 1fr 58px; gap: 12px; align-items: center; font-size: 14px; color: var(--fog); transition: color .3s; }
   .brow b { font-family: var(--mono); font-size: 13px; text-align: right; color: var(--fog); }
@@ -156,7 +143,7 @@
   .brow .yt { display: none; }
   .brow.you .yt { display: inline; color: var(--paper); font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
   .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
-  .ask { font-weight: 700; margin: 30px 0 0; font-size: 17px; }
+  .ask { font-weight: 700; margin: 26px 0 0; font-size: 17px; }
 
   /* ---------- 6. process + dashboard ---------- */
   .psteps { display: grid; gap: 10px; margin-top: 28px; }
@@ -447,7 +434,7 @@
         <div class="stat st" style="--i:3">
           <div class="ringwrap"><svg viewBox="0 0 120 120"><circle class="track" r="52" cx="60" cy="60"/><circle class="arc" r="52" cx="60" cy="60" style="--o:49;--i:3"/></svg><b class="tnum" data-to="85">85%</b></div>
           <p>of people say watching a video convinced them to buy a product or service.</p>
-          <div class="us"><span class="ic"><svg class="i"><use href="#i-check"/></svg></span>That's why we film real video, on site.</div>
+          <div class="us"><span class="ic"><svg class="i"><use href="#i-check"/></svg></span>That's why every plan is built on video.</div>
           <span class="src">Wyzowl, State of Video Marketing 2026</span>
         </div>
         <div class="stat st" style="--i:4">
@@ -488,41 +475,19 @@
     </div>
   </section>
 
-  <!-- 4. Daily: more shots -->
-  <section class="slide light" id="s-daily">
-    <div class="wrap two">
+  <!-- Why we post every day: the reasons, the data, and where they are today -->
+  <section class="slide" id="s-daily">
+    <div class="wrap two tight">
       <div>
         <p class="kicker st" style="--i:0">Why we post every day</p>
-        <h2 class="st" style="--i:1">More shots.<br><span class="grey">More wins.</span></h2>
+        <h2 class="st" style="--i:1">More shots.<br><span class="grey">Faster growth.</span></h2>
         <div class="whys">
-          <div class="why st" style="--i:2"><span class="ic"><svg class="i"><use href="#i-target"/></svg></span><span><b>More chances to take off</b><small>Nobody can predict which post will hit. Every day is another shot at the one that does.</small></span></div>
-          <div class="why st" style="--i:3"><span class="ic"><svg class="i"><use href="#i-zap"/></svg></span><span><b>The app rewards active accounts</b><small>Show up every day and Facebook and Instagram keep putting you in front of people.</small></span></div>
-          <div class="why st" style="--i:4"><span class="ic"><svg class="i"><use href="#i-users"/></svg></span><span><b>You stay top of mind</b><small>When someone finally needs your service, yours is the name they've seen all month.</small></span></div>
+          <div class="why st" style="--i:2"><span class="ic"><svg class="i"><use href="#i-target"/></svg></span><span><b>More chances to take off</b><small>Nobody can predict which post will hit. Every day is another shot.</small></span></div>
+          <div class="why st" style="--i:3"><span class="ic"><svg class="i"><use href="#i-zap"/></svg></span><span><b>The app rewards active accounts</b><small>Show up every day and Facebook and Instagram keep showing you.</small></span></div>
+          <div class="why st" style="--i:4"><span class="ic"><svg class="i"><use href="#i-users"/></svg></span><span><b>You stay top of mind</b><small>When someone needs your service, yours is the name they've seen all month.</small></span></div>
         </div>
-        <div class="seg st" style="--i:5" id="freq">
-          <button data-f="1">Once a week</button><button data-f="3">3× a week</button><button data-f="7" class="on">Every day</button>
-        </div>
-      </div>
-      <div class="st" style="--i:3">
-        <div class="cal" id="cal"></div>
-        <div class="daystats">
-          <div class="card"><div class="big tnum" id="postsN">30</div><div class="lbl">posts a month</div></div>
-          <div class="card"><div class="big tnum" id="hitsN">5</div><div class="lbl">posts that take off</div></div>
-        </div>
-        <p class="src">Illustration of one month. Outlined days are posts that outperform the rest.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- 5. Daily: the data -->
-  <section class="slide">
-    <div class="wrap two">
-      <div>
-        <p class="kicker st" style="--i:0">What the data says</p>
-        <h2 class="st" style="--i:1">Post more.<br><span class="grey">Grow faster.</span></h2>
-        <p class="lede st" style="--i:2">Buffer studied 2.1 million Instagram posts from 102,000 accounts. The accounts that posted more grew faster, and every post they made reached more people.</p>
-        <p class="ask st" style="--i:3">How often do you post right now?</p>
-        <div class="poll st" style="--i:4;margin-top:14px" id="nowFreq">
+        <p class="ask st" style="--i:5">How often do you post right now?</p>
+        <div class="poll st" style="--i:6;margin-top:14px" id="nowFreq">
           <button class="chip" data-k="none">Rarely or never</button>
           <button class="chip" data-k="0">1–2 a week</button>
           <button class="chip" data-k="1">3–5 a week</button>
@@ -557,7 +522,7 @@
         <h2 class="st" style="--i:1">From first post<br><span class="grey">to booked jobs.</span></h2>
         <div class="psteps st" style="--i:2" id="psteps">
           <button class="pstep on"><span class="pn">01</span><span><b>Plan</b><small>Days 1–7</small><p>We learn your business, your best jobs and your customers, then map out your first month of content.</p></span></button>
-          <button class="pstep"><span class="pn">02</span><span><b>Create</b><small>Days 7–30</small><p>We write the scripts and hooks, film on site, and edit every reel, photo and story so it looks and sounds like you.</p></span></button>
+          <button class="pstep"><span class="pn">02</span><span><b>Create</b><small>Days 7–30</small><p>We write the scripts and hooks, film on site or coach you through it, and edit every reel, photo and story so it looks and sounds like you.</p></span></button>
           <button class="pstep"><span class="pn">03</span><span><b>Grow</b><small>Days 30–60</small><p>We post every day, then put ad spend behind the videos already working, so more of the right local people see you.</p></span></button>
           <button class="pstep"><span class="pn">04</span><span><b>Convert</b><small>Days 60–90</small><p>Followers turn into messages, messages into calls, and calls into booked jobs.</p></span></button>
         </div>
@@ -598,10 +563,10 @@
       <div class="flow">
         <div class="fcard st" style="--i:2"><span class="ic"><svg class="i"><use href="#i-phone"/></svg></span><span class="n">01</span><b>Strategy & setup</b><p>A strategy workshop, a 90-day bank of hooks, and your accounts and tracking set up right.</p></div>
         <div class="fcard st" style="--i:3"><span class="ic"><svg class="i"><use href="#i-pen"/></svg></span><span class="n">02</span><b>Scripts & hooks</b><p>We write every video, with a first second that stops the scroll.</p><span class="tag">Skits on Market Leader</span></div>
-        <div class="fcard st" style="--i:4"><span class="ic"><svg class="i"><use href="#i-video"/></svg></span><span class="n">03</span><b>On-site filming</b><p>Our team comes to you and films your work, your crew and your results.</p></div>
+        <div class="fcard st" style="--i:4"><span class="ic"><svg class="i"><use href="#i-video"/></svg></span><span class="n">03</span><b>On-site filming</b><p>Our team comes to you and films your work, your crew and your results.</p><span class="tag">Growth Engine and up</span></div>
         <div class="fcard st" style="--i:5"><span class="ic"><svg class="i"><use href="#i-cut"/></svg></span><span class="n">04</span><b>Editing</b><p>Every reel, photo and story polished, plus ad versions of your best videos.</p></div>
         <div class="fcard st" style="--i:6"><span class="ic"><svg class="i"><use href="#i-cal"/></svg></span><span class="n">05</span><b>Daily posting</b><p>A post every day across your platforms, at the times your customers scroll.</p></div>
-        <div class="fcard st" style="--i:7"><span class="ic"><svg class="i"><use href="#i-comment"/></svg></span><span class="n">06</span><b>Community</b><p>We answer comments, messages and reviews, and send every lead straight to you.</p></div>
+        <div class="fcard st" style="--i:7"><span class="ic"><svg class="i"><use href="#i-comment"/></svg></span><span class="n">06</span><b>Community</b><p>We answer comments, messages and reviews every day, and send every lead straight to you.</p></div>
         <div class="fcard st" style="--i:8"><span class="ic"><svg class="i"><use href="#i-zap"/></svg></span><span class="n">07</span><b>Ads that amplify</b><p>We put ad spend behind the videos already winning, in ad accounts you own.</p></div>
         <div class="fcard st" style="--i:9"><span class="ic"><svg class="i"><use href="#i-chart"/></svg></span><span class="n">08</span><b>Testing & reporting</b><p>We test hooks, track what turns into calls, and walk you through it on strategy calls.</p></div>
       </div>
@@ -703,11 +668,11 @@
       <h2 class="st" style="--i:1">Pick your plan.</h2>
       <div class="plans st" style="--i:2" id="plans">
         <button class="plan"><span class="tag">For multi-location and regional brands</span><h3>Market Leader</h3><div class="price">$12,500<small>/mo</small></div>
-          <ul><li><svg class="i"><use href="#i-check"/></svg>32 videos a month (16 reels + 16 ad cuts)</li><li><svg class="i"><use href="#i-check"/></svg>2 full shoot days a month</li><li><svg class="i"><use href="#i-check"/></svg>Fully scripted skits, written by us</li><li><svg class="i"><use href="#i-check"/></svg>A post every day on up to 5 platforms</li><li><svg class="i"><use href="#i-check"/></svg>Ads on Meta, TikTok and Google</li><li><svg class="i"><use href="#i-check"/></svg>Senior strategist and weekly calls</li></ul><div class="terms">$5,000 one-time onboarding · Ad spend $10K–$30K/mo, paid by you</div><div class="pays"></div></button>
+          <ul><li><svg class="i"><use href="#i-check"/></svg>32 videos a month (16 reels + 16 ad cuts)</li><li><svg class="i"><use href="#i-check"/></svg>2 full shoot days a month</li><li><svg class="i"><use href="#i-check"/></svg>Fully scripted skits, written by us</li><li><svg class="i"><use href="#i-check"/></svg>A post every day on up to 5 platforms</li><li><svg class="i"><use href="#i-check"/></svg>Ads on Meta, TikTok and Google</li><li><svg class="i"><use href="#i-check"/></svg>Comments and messages, every day</li><li><svg class="i"><use href="#i-check"/></svg>Senior strategist and weekly calls</li></ul><div class="terms">Ad spend $10K–$30K/mo, paid by you</div><div class="pays"></div></button>
         <button class="plan on"><span class="rec">Recommended</span><span class="tag">For businesses ready to scale</span><h3>Growth Engine</h3><div class="price">$9,000<small>/mo</small></div>
-          <ul><li><svg class="i"><use href="#i-check"/></svg>20 videos a month (12 reels + 8 ad cuts)</li><li><svg class="i"><use href="#i-check"/></svg>1 full shoot day a month</li><li><svg class="i"><use href="#i-check"/></svg>A post every day on 3 platforms</li><li><svg class="i"><use href="#i-check"/></svg>Ads on Meta, plus TikTok or Google</li><li><svg class="i"><use href="#i-check"/></svg>Comments and messages 7 days a week</li><li><svg class="i"><use href="#i-check"/></svg>Bi-weekly calls and a live dashboard</li></ul><div class="terms">$3,500 one-time onboarding · Ad spend $5K–$15K/mo, paid by you</div><div class="pays"></div></button>
+          <ul><li><svg class="i"><use href="#i-check"/></svg>20 videos a month (12 reels + 8 ad cuts)</li><li><svg class="i"><use href="#i-check"/></svg>1 full shoot day a month</li><li><svg class="i"><use href="#i-check"/></svg>A post every day on 3 platforms</li><li><svg class="i"><use href="#i-check"/></svg>Ads on Meta, plus TikTok or Google</li><li><svg class="i"><use href="#i-check"/></svg>Comments and messages, every day</li><li><svg class="i"><use href="#i-check"/></svg>Bi-weekly calls and a live dashboard</li></ul><div class="terms">Ad spend $5K–$15K/mo, paid by you</div><div class="pays"></div></button>
         <button class="plan"><span class="tag">For established businesses</span><h3>Foundation</h3><div class="price">$5,500<small>/mo</small></div>
-          <ul><li><svg class="i"><use href="#i-check"/></svg>12 videos a month (8 reels + 4 ad cuts)</li><li><svg class="i"><use href="#i-check"/></svg>A half-day shoot every month</li><li><svg class="i"><use href="#i-check"/></svg>A post every day on 2 platforms</li><li><svg class="i"><use href="#i-check"/></svg>Facebook and Instagram ads</li><li><svg class="i"><use href="#i-check"/></svg>Comments and messages, Mon–Fri</li><li><svg class="i"><use href="#i-check"/></svg>Monthly strategy call and report</li></ul><div class="terms">$2,500 one-time onboarding · Ad spend $2.5K–$7.5K/mo, paid by you</div><div class="pays"></div></button>
+          <ul><li><svg class="i"><use href="#i-check"/></svg>12 videos a month (8 reels + 4 ad cuts)</li><li><svg class="i"><use href="#i-check"/></svg>Scripts and filming instructions: you film, we edit</li><li><svg class="i"><use href="#i-check"/></svg>A post every day on 2 platforms</li><li><svg class="i"><use href="#i-check"/></svg>Facebook and Instagram ads</li><li><svg class="i"><use href="#i-check"/></svg>Comments and messages, every day</li><li><svg class="i"><use href="#i-check"/></svg>Monthly strategy call and report</li></ul><div class="terms">Ad spend $2.5K–$7.5K/mo, paid by you</div><div class="pays"></div></button>
       </div>
       <div class="allplans st" style="--i:3"><span><svg class="i"><use href="#i-check"/></svg>6-month start, then month-to-month</span><span><svg class="i"><use href="#i-check"/></svg>You own every video, page and ad account</span><span><svg class="i"><use href="#i-check"/></svg>Ad spend goes on your card, in your accounts</span></div>
     </div>
@@ -722,10 +687,10 @@
       <div class="picks st" style="--i:3" id="cPlans">
         <button class="pick"><span><b>Market Leader</b><small>Own your region</small></span><span class="dot"><svg class="i"><use href="#i-check"/></svg></span></button>
         <button class="pick on"><span><b>Growth Engine</b><small>Scale fast · Recommended</small></span><span class="dot"><svg class="i"><use href="#i-check"/></svg></span></button>
-        <button class="pick"><span><b>Foundation</b><small>Build the base</small></span><span class="dot"><svg class="i"><use href="#i-check"/></svg></span></button>
+        <button class="pick"><span><b>Foundation</b><small>We script, you film</small></span><span class="dot"><svg class="i"><use href="#i-check"/></svg></span></button>
       </div>
       <div class="road st" style="--i:4" id="road">
-        <div class="rd"><span class="when">Days 1–30</span><b>Launch</b><p>Strategy workshop, tracking set up, first shoot, and your first posts go live.</p></div>
+        <div class="rd"><span class="when">Days 1–30</span><b>Launch</b><p>Strategy workshop, tracking set up, first videos made, and your first posts go live.</p></div>
         <div class="rd"><span class="when">Days 31–60</span><b>Build</b><p>Posting every day and testing hooks. Ads go behind the videos that win.</p></div>
         <div class="rd"><span class="when">Days 61–90</span><b>Grow</b><p>We double down on what works. Followers and ads turn into booked jobs.</p></div>
       </div>
@@ -849,29 +814,7 @@
   $('#sigReset').onclick = function () { $$('#signals .sig').forEach(function (s) { s.classList.remove('on'); }); algo(); };
   algo();
 
-  /* ---------------- 4. daily ---------------- */
-  var cal = $('#cal'), days = [];
-  ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(function (d) { var h = document.createElement('div'); h.className = 'dh'; h.textContent = d; cal.appendChild(h); });
-  for (var d = 1; d <= 28; d++) { var c = document.createElement('div'); c.className = 'd'; c.innerHTML = d + '<svg class="i"><use href="#i-up"/></svg>'; cal.appendChild(c); days.push(c); }
-  // Fixed "breakout" days, so the picture is the same every time we present it.
-  var breakout = { 3: 1, 9: 1, 14: 1, 19: 1, 25: 1 };
-  function freq(f) {
-    var pattern = f === 7 ? [0, 1, 2, 3, 4, 5, 6] : f === 3 ? [0, 2, 4] : [2];
-    var posts = 0, hits = 0;
-    days.forEach(function (c, i) {
-      var p = pattern.indexOf(i % 7) > -1, h = p && breakout[i];
-      if (p) posts++; if (h) hits++;
-      c.style.transitionDelay = (i * 18) + 'ms';
-      c.classList.toggle('p', p); c.classList.toggle('hit', !!h);
-    });
-    countTo($('#postsN'), Math.round(posts * 30 / 28), function (v) { return Math.round(v); });
-    countTo($('#hitsN'), hits, function (v) { return Math.round(v); });
-    $$('#freq button').forEach(function (b) { b.classList.toggle('on', +b.dataset.f === f); });
-  }
-  $$('#freq button').forEach(function (b) { b.onclick = function () { freq(+b.dataset.f); }; });
-  enter[idx('s-daily')] = function () { days.forEach(function (c) { c.classList.remove('p', 'hit'); }); setTimeout(function () { freq(+$('#freq .on').dataset.f); }, 400); };
-
-  /* ---------------- 5. the data ---------------- */
+  /* ---------------- why we post every day ---------------- */
   var freqMsg = {
     none: 'Buffer found accounts that stop posting fall behind, and posting less than once or twice a week can mean stalling out or even losing followers.',
     0: 'Posting every day, your page would grow followers about 3.7× faster than it does now, and each post would reach about 18% more people.',
