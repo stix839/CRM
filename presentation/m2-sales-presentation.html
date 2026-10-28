@@ -257,7 +257,7 @@
   .delta { font-family: var(--mono); font-size: 12px; color: var(--fog); margin-top: 6px; }
 
   /* ---------- 10. pricing ---------- */
-  .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 34px; align-items: stretch; }
+  .plans { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 34px; align-items: stretch; max-width: 900px; }
   .plan { position: relative; text-align: left; border: 1px solid var(--rule-l); background: var(--mist); border-radius: 24px; padding: 24px; display: flex; flex-direction: column; transition: all .5s var(--ease); }
   .plan:hover { transform: translateY(-4px); }
   .plan.on { background: var(--ink); color: var(--paper); border-color: var(--ink); transform: translateY(-10px); box-shadow: 0 30px 60px rgba(0,0,0,.18); }
@@ -272,7 +272,7 @@
   .plan.on .rec { background: var(--paper); color: var(--ink); }
   .plan .terms { margin-top: 16px; font-size: 13px; color: var(--steel); line-height: 1.45; }
   .plan.on .terms { color: var(--fog); }
-  .allplans { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 22px; margin-top: 22px; font-size: 14px; color: var(--steel); }
+  .allplans { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 8px 22px; margin-top: 22px; font-size: 14px; color: var(--steel); }
   .allplans span { display: inline-flex; align-items: center; gap: 8px; }
   .allplans svg.i { width: 16px; height: 16px; }
   .plan li { display: flex; gap: 10px; align-items: flex-start; }
@@ -321,7 +321,7 @@
   .onehire b { color: var(--paper); }
 
   /* ---------- 11. close ---------- */
-  .picks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 30px; max-width: 900px; }
+  .picks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 30px; max-width: 900px; }
   .pick { text-align: left; border: 1px solid var(--line); background: transparent; border-radius: 18px; padding: 16px 18px; transition: all .35s var(--ease); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
   .pick b { display: block; font-size: 17px; }
   .pick small { color: var(--fog); font-size: 13px; }
@@ -562,8 +562,8 @@
       <h2 class="st" style="--i:1">Start to finish.<br><span class="grey">Completely off your plate.</span></h2>
       <div class="flow">
         <div class="fcard st" style="--i:2"><span class="ic"><svg class="i"><use href="#i-phone"/></svg></span><span class="n">01</span><b>Strategy & setup</b><p>A strategy workshop, a 90-day bank of hooks, and your accounts and tracking set up right.</p></div>
-        <div class="fcard st" style="--i:3"><span class="ic"><svg class="i"><use href="#i-pen"/></svg></span><span class="n">02</span><b>Scripts & hooks</b><p>We write every video, with a first second that stops the scroll.</p><span class="tag">Skits on Market Leader</span></div>
-        <div class="fcard st" style="--i:4"><span class="ic"><svg class="i"><use href="#i-video"/></svg></span><span class="n">03</span><b>On-site filming</b><p>Our team comes to you and films your work, your crew and your results.</p><span class="tag">Growth Engine and up</span></div>
+        <div class="fcard st" style="--i:3"><span class="ic"><svg class="i"><use href="#i-pen"/></svg></span><span class="n">02</span><b>Scripts & hooks</b><p>We write every video, with a first second that stops the scroll.</p></div>
+        <div class="fcard st" style="--i:4"><span class="ic"><svg class="i"><use href="#i-video"/></svg></span><span class="n">03</span><b>On-site filming</b><p>Our team comes to you and films your work, your crew and your results.</p><span class="tag">Growth Engine</span></div>
         <div class="fcard st" style="--i:5"><span class="ic"><svg class="i"><use href="#i-cut"/></svg></span><span class="n">04</span><b>Editing</b><p>Every reel, photo and story polished, plus ad versions of your best videos.</p></div>
         <div class="fcard st" style="--i:6"><span class="ic"><svg class="i"><use href="#i-cal"/></svg></span><span class="n">05</span><b>Daily posting</b><p>A post every day across your platforms, at the times your customers scroll.</p></div>
         <div class="fcard st" style="--i:7"><span class="ic"><svg class="i"><use href="#i-comment"/></svg></span><span class="n">06</span><b>Community</b><p>We answer comments, messages and reviews every day, and send every lead straight to you.</p></div>
@@ -580,11 +580,11 @@
       <h2 class="st" style="--i:1">Three quick<br><span class="grey">questions.</span></h2>
       <div class="qs">
         <div class="q st" style="--i:2"><span class="qn">01</span><label for="qPay">What do you usually get paid for a job?</label>
-          <div class="qin"><button class="stp" data-for="qPay" data-step="-250" aria-label="Less"><svg class="i"><use href="#i-minus"/></svg></button><span class="val"><em>$</em><input type="number" id="qPay" min="0" step="250" value="3000" inputmode="numeric"></span><button class="stp" data-for="qPay" data-step="250" aria-label="More"><svg class="i"><use href="#i-plus"/></svg></button></div></div>
+          <div class="qin"><button class="stp" data-for="qPay" data-step="-250" aria-label="Less"><svg class="i"><use href="#i-minus"/></svg></button><span class="val"><em>$</em><input type="number" id="qPay" min="0" step="250" value="2000" inputmode="numeric"></span><button class="stp" data-for="qPay" data-step="250" aria-label="More"><svg class="i"><use href="#i-plus"/></svg></button></div></div>
         <div class="q st" style="--i:3"><span class="qn">02</span><label for="qJobs">How many jobs do you do in a month right now?</label>
-          <div class="qin"><button class="stp" data-for="qJobs" data-step="-1" aria-label="Less"><svg class="i"><use href="#i-minus"/></svg></button><span class="val"><input type="number" id="qJobs" min="0" value="70" inputmode="numeric"></span><button class="stp" data-for="qJobs" data-step="1" aria-label="More"><svg class="i"><use href="#i-plus"/></svg></button></div></div>
+          <div class="qin"><button class="stp" data-for="qJobs" data-step="-1" aria-label="Less"><svg class="i"><use href="#i-minus"/></svg></button><span class="val"><input type="number" id="qJobs" min="0" value="20" inputmode="numeric"></span><button class="stp" data-for="qJobs" data-step="1" aria-label="More"><svg class="i"><use href="#i-plus"/></svg></button></div></div>
         <div class="q st" style="--i:4"><span class="qn">03</span><label for="qGoal">How many jobs a month would you like to be doing?</label>
-          <div class="qin"><button class="stp" data-for="qGoal" data-step="-1" aria-label="Less"><svg class="i"><use href="#i-minus"/></svg></button><span class="val"><input type="number" id="qGoal" min="0" value="100" inputmode="numeric"></span><button class="stp" data-for="qGoal" data-step="1" aria-label="More"><svg class="i"><use href="#i-plus"/></svg></button></div></div>
+          <div class="qin"><button class="stp" data-for="qGoal" data-step="-1" aria-label="Less"><svg class="i"><use href="#i-minus"/></svg></button><span class="val"><input type="number" id="qGoal" min="0" value="30" inputmode="numeric"></span><button class="stp" data-for="qGoal" data-step="1" aria-label="More"><svg class="i"><use href="#i-plus"/></svg></button></div></div>
       </div>
       <div class="res st" style="--i:5">
         <div>
@@ -608,8 +608,8 @@
       <div class="growth">
         <div class="chart st" style="--i:2">
           <div class="ctop">
-            <div class="scen" id="gPlans"><button class="chip">Market Leader</button><button class="chip on">Growth Engine</button><button class="chip">Foundation</button></div>
-            <label class="assume">Followers today <input type="number" id="gFollow" min="0" value="1500" inputmode="numeric"></label>
+            <div class="scen" id="gPlans"><button class="chip on">Growth Engine</button><button class="chip">Foundation</button></div>
+            <label class="assume">Followers today <input type="number" id="gFollow" min="0" value="1000" inputmode="numeric"></label>
           </div>
           <svg id="gsvg" viewBox="0 0 720 330" role="img" aria-label="Projected followers and jobs per month over 12 months"></svg>
           <div class="slider-row">
@@ -624,10 +624,10 @@
           <div class="card hero"><div class="lbl">Followers</div><div class="big tnum" id="gF">0</div><div class="delta" id="gFd"></div></div>
           <div class="card"><div class="lbl">Jobs per month</div><div class="big tnum" id="gJ">0</div><div class="delta" id="gJd"></div></div>
           <div class="card"><div class="lbl">Revenue per month</div><div class="big tnum" id="gR">$0</div><div class="delta" id="gRd"></div></div>
-          <div class="card"><div class="lbl">Extra revenue after M2 + ads</div><div class="big tnum" id="gX">$0</div><div class="delta" id="gXd"></div></div>
+          <div class="card"><div class="lbl">Extra revenue after M2</div><div class="big tnum" id="gX">$0</div><div class="delta" id="gXd"></div></div>
         </div>
       </div>
-      <p class="src">Illustration using your numbers. Monthly follower growth is estimated at 20% (Market Leader), 15% (Growth Engine) and 10% (Foundation). Extra revenue subtracts the plan and its minimum ad spend. Not a guarantee.</p>
+      <p class="src">Illustration using your numbers. Monthly follower growth is estimated at 15% (Growth Engine) and 10% (Foundation). Extra revenue subtracts the monthly plan; ad spend is separate. Not a guarantee.</p>
     </div>
   </section>
 
@@ -636,7 +636,7 @@
     <div class="wrap two tight">
       <div>
         <p class="kicker st" style="--i:0">The other option</p>
-        <h2 class="st" style="--i:1">An in-house team<br><span class="grey">costs $25,500&nbsp;a&nbsp;month.</span></h2>
+        <h2 class="st" style="--i:1">An in-house team<br><span class="grey">costs $25,500/mo.</span></h2>
         <p class="lede st" style="--i:2">Doing what we do in-house takes at least three full-time hires. That's before cameras, software, recruiting, turnover, and the time it takes to manage them.</p>
         <div class="roles">
           <div class="role st" style="--i:3"><span class="ic"><svg class="i"><use href="#i-users"/></svg></span><span><b>Social media manager</b><small>Posting, comments and messages</small></span><em>$8,400</em></div>
@@ -650,31 +650,28 @@
           <div class="lbl" style="margin:0">Monthly cost compared</div>
           <div class="crows">
             <div class="crow self"><span>In-house team</span><div class="btrack"><i style="--w:100%;--k:0"></i></div><b>$25,500</b></div>
-            <div class="crow"><span>Market Leader</span><div class="btrack"><i style="--w:49%;--k:1"></i><em>49%</em></div><b>$12,500</b></div>
-            <div class="crow rec"><span>Growth Engine</span><div class="btrack"><i style="--w:35%;--k:2"></i><em>35%</em></div><b>$9,000</b></div>
-            <div class="crow"><span>Foundation</span><div class="btrack"><i style="--w:22%;--k:3"></i><em>22%</em></div><b>$5,500</b></div>
+            <div class="crow rec"><span>Growth Engine</span><div class="btrack"><i style="--w:20%;--k:1"></i><em>20%</em></div><b>$5,000</b></div>
+            <div class="crow"><span>Foundation</span><div class="btrack"><i style="--w:12%;--k:2"></i><em>12%</em></div><b>$3,000</b></div>
           </div>
         </div>
-        <p class="onehire st" style="--i:4">For about the cost of <b>one marketing hire</b>, Growth Engine gives you a strategist, a director and videographer, an editor, a community manager and an ads specialist.</p>
+        <p class="onehire st" style="--i:4">For less than the cost of <b>one marketing hire</b>, Growth Engine gives you a strategist, a director and videographer, an editor, a community manager and an ads specialist.</p>
         <p class="src st" style="--i:5">Dallas–Fort Worth median salaries (social media manager $69,280, video editor $65,000, marketing specialist $75,240), loaded for taxes and benefits with BLS data (wages are 68.5% of total compensation). Excludes software, equipment, recruiting and management time.</p>
       </div>
     </div>
   </section>
 
-  <!-- 10. Pricing (highest first; Growth Engine is the one to sell) -->
+  <!-- 10. Pricing (recommended plan first) -->
   <section class="slide light" id="s-pricing">
     <div class="wrap">
       <p class="kicker st" style="--i:0">Pricing</p>
       <h2 class="st" style="--i:1">Pick your plan.</h2>
       <div class="plans st" style="--i:2" id="plans">
-        <button class="plan"><span class="tag">For multi-location and regional brands</span><h3>Market Leader</h3><div class="price">$12,500<small>/mo</small></div>
-          <ul><li><svg class="i"><use href="#i-check"/></svg>32 videos a month (16 reels + 16 ad cuts)</li><li><svg class="i"><use href="#i-check"/></svg>2 full shoot days a month</li><li><svg class="i"><use href="#i-check"/></svg>Fully scripted skits, written by us</li><li><svg class="i"><use href="#i-check"/></svg>A post every day on up to 5 platforms</li><li><svg class="i"><use href="#i-check"/></svg>Ads on Meta, TikTok and Google</li><li><svg class="i"><use href="#i-check"/></svg>Comments and messages, every day</li><li><svg class="i"><use href="#i-check"/></svg>Senior strategist and weekly calls</li></ul><div class="terms">Ad spend $10K–$30K/mo, paid by you</div><div class="pays"></div></button>
-        <button class="plan on"><span class="rec">Recommended</span><span class="tag">For businesses ready to scale</span><h3>Growth Engine</h3><div class="price">$9,000<small>/mo</small></div>
-          <ul><li><svg class="i"><use href="#i-check"/></svg>20 videos a month (12 reels + 8 ad cuts)</li><li><svg class="i"><use href="#i-check"/></svg>1 full shoot day a month</li><li><svg class="i"><use href="#i-check"/></svg>A post every day on 3 platforms</li><li><svg class="i"><use href="#i-check"/></svg>Ads on Meta, plus TikTok or Google</li><li><svg class="i"><use href="#i-check"/></svg>Comments and messages, every day</li><li><svg class="i"><use href="#i-check"/></svg>Bi-weekly calls and a live dashboard</li></ul><div class="terms">Ad spend $5K–$15K/mo, paid by you</div><div class="pays"></div></button>
-        <button class="plan"><span class="tag">For established businesses</span><h3>Foundation</h3><div class="price">$5,500<small>/mo</small></div>
-          <ul><li><svg class="i"><use href="#i-check"/></svg>12 videos a month (8 reels + 4 ad cuts)</li><li><svg class="i"><use href="#i-check"/></svg>Scripts and filming instructions: you film, we edit</li><li><svg class="i"><use href="#i-check"/></svg>A post every day on 2 platforms</li><li><svg class="i"><use href="#i-check"/></svg>Facebook and Instagram ads</li><li><svg class="i"><use href="#i-check"/></svg>Comments and messages, every day</li><li><svg class="i"><use href="#i-check"/></svg>Monthly strategy call and report</li></ul><div class="terms">Ad spend $2.5K–$7.5K/mo, paid by you</div><div class="pays"></div></button>
+        <button class="plan on"><span class="rec">Recommended</span><span class="tag">We do everything</span><h3>Growth Engine</h3><div class="price">$5,000<small>/mo</small></div>
+          <ul><li><svg class="i"><use href="#i-check"/></svg>12 videos a month (8 reels + 4 ad cuts)</li><li><svg class="i"><use href="#i-check"/></svg>A half-day shoot with our team every month</li><li><svg class="i"><use href="#i-check"/></svg>A post every day on Facebook and Instagram</li><li><svg class="i"><use href="#i-check"/></svg>Facebook and Instagram ads managed</li><li><svg class="i"><use href="#i-check"/></svg>Comments and messages, every day</li><li><svg class="i"><use href="#i-check"/></svg>Monthly strategy call and report</li></ul><div class="terms">$1,500 one-time onboarding · Ad spend paid by you</div><div class="pays"></div></button>
+        <button class="plan"><span class="tag">We script, you film</span><h3>Foundation</h3><div class="price">$3,000<small>/mo</small></div>
+          <ul><li><svg class="i"><use href="#i-check"/></svg>8 reels a month, edited by us</li><li><svg class="i"><use href="#i-check"/></svg>Scripts and filming instructions for every video</li><li><svg class="i"><use href="#i-check"/></svg>A post every day on Facebook and Instagram</li><li><svg class="i"><use href="#i-check"/></svg>Comments and messages, every day</li><li><svg class="i"><use href="#i-check"/></svg>Monthly report</li></ul><div class="terms">$1,000 one-time onboarding</div><div class="pays"></div></button>
       </div>
-      <div class="allplans st" style="--i:3"><span><svg class="i"><use href="#i-check"/></svg>6-month start, then month-to-month</span><span><svg class="i"><use href="#i-check"/></svg>You own every video, page and ad account</span><span><svg class="i"><use href="#i-check"/></svg>Ad spend goes on your card, in your accounts</span></div>
+      <div class="allplans st" style="--i:3"><span><svg class="i"><use href="#i-check"/></svg>6-month start, then month-to-month</span><span><svg class="i"><use href="#i-check"/></svg>You own every video, page and ad account</span><span><svg class="i"><use href="#i-check"/></svg>Onboarding covers your strategy workshop and account setup</span></div>
     </div>
   </section>
 
@@ -685,13 +682,12 @@
       <h2 class="st" style="--i:1" id="ctaH">Let's start<br><span class="grey">your 90-day plan.</span></h2>
       <p class="lede st" style="--i:2">Pick the plan that fits <span class="bn" data-d="your business">your business</span>. We'll set up your strategy call and get to work.</p>
       <div class="picks st" style="--i:3" id="cPlans">
-        <button class="pick"><span><b>Market Leader</b><small>Own your region</small></span><span class="dot"><svg class="i"><use href="#i-check"/></svg></span></button>
-        <button class="pick on"><span><b>Growth Engine</b><small>Scale fast · Recommended</small></span><span class="dot"><svg class="i"><use href="#i-check"/></svg></span></button>
+        <button class="pick on"><span><b>Growth Engine</b><small>We do everything · Recommended</small></span><span class="dot"><svg class="i"><use href="#i-check"/></svg></span></button>
         <button class="pick"><span><b>Foundation</b><small>We script, you film</small></span><span class="dot"><svg class="i"><use href="#i-check"/></svg></span></button>
       </div>
       <div class="road st" style="--i:4" id="road">
         <div class="rd"><span class="when">Days 1–30</span><b>Launch</b><p>Strategy workshop, tracking set up, first videos made, and your first posts go live.</p></div>
-        <div class="rd"><span class="when">Days 31–60</span><b>Build</b><p>Posting every day and testing hooks. Ads go behind the videos that win.</p></div>
+        <div class="rd"><span class="when">Days 31–60</span><b>Build</b><p>Posting every day and testing hooks. On Growth Engine, ads go behind the videos that win.</p></div>
         <div class="rd"><span class="when">Days 61–90</span><b>Grow</b><p>We double down on what works. Followers and ads turn into booked jobs.</p></div>
       </div>
       <div class="cta-row st" style="--i:5">
@@ -716,14 +712,13 @@
   var fmtK = function (n) { n = Math.round(n); return n >= 1000 ? (n / 1000).toFixed(n < 10000 ? 1 : 0).replace(/\.0$/, '') + 'K' : String(n); };
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Highest first, the order the client sees them. minAd is each tier's minimum monthly ad spend.
+  // Recommended first, the order the client sees them.
   var PLANS = [
-    { name: 'Market Leader', price: 12500, minAd: 10000, rate: 0.20 },
-    { name: 'Growth Engine', price: 9000, minAd: 5000, rate: 0.15 },
-    { name: 'Foundation', price: 5500, minAd: 2500, rate: 0.10 }
+    { name: 'Growth Engine', price: 5000, rate: 0.15 },
+    { name: 'Foundation', price: 3000, rate: 0.10 }
   ];
   // Everything the client tells us, shared by every slide.
-  var S = { pay: 3000, jobs: 70, goal: 100, plan: 1, followers: 1500, perJob: 200 };
+  var S = { pay: 2000, jobs: 20, goal: 30, plan: 0, followers: 1000, perJob: 200 };
 
   var jobsTxt = function (n) { return n + ' new job' + (n === 1 ? '' : 's'); };
 
@@ -912,9 +907,9 @@
       $('#rGap').dataset.v = 0; $('#rGap').textContent = "You're there";
       $('#rSub').textContent = 'Already at your goal. Let\'s set a bigger one.';
     }
-    var cover = S.pay > 0 ? Math.ceil(plan.price / S.pay) : 0, coverAds = S.pay > 0 ? Math.ceil((plan.price + plan.minAd) / S.pay) : 0;
+    var cover = S.pay > 0 ? Math.ceil(plan.price / S.pay) : 0;
     $('#rCover').innerHTML = S.pay > 0
-      ? 'Just <b>' + jobsTxt(cover) + '</b> a month covers ' + plan.name + ', or <b>' + coverAds + '</b> counting its minimum ad spend. Everything after that is yours.'
+      ? 'Just <b>' + jobsTxt(cover) + '</b> a month covers ' + plan.name + '. Everything after that is yours.'
       : 'Enter what you get paid for a job.';
   }
 
@@ -983,7 +978,7 @@
     $('#gJd').textContent = t === 0 ? 'today' : '+' + newJobs + ' vs today';
     countTo($('#gR'), jt * S.pay, money);
     $('#gRd').textContent = t === 0 ? money(S.pay) + ' a job' : '+' + money(newJobs * S.pay) + ' vs today';
-    countTo($('#gX'), t === 0 ? 0 : newJobs * S.pay - plan.price - plan.minAd, money);
+    countTo($('#gX'), t === 0 ? 0 : newJobs * S.pay - plan.price, money);
     var hit = -1; for (var k = 0; k <= 12; k++) { if (jAt(sel, k) >= S.goal) { hit = k; break; } }
     $('#gXd').textContent = hit === 0 ? 'already at your goal' : hit > 0 ? 'goal of ' + S.goal + ' jobs around month ' + hit : 'goal of ' + S.goal + ' jobs takes longer than a year';
     $('#monthTag').textContent = t === 0 ? 'Today' : t === 3 ? 'Day 90' : 'Month ' + t;
@@ -1008,8 +1003,8 @@
   /* ---------------- 10. pricing + plan selection everywhere ---------------- */
   function renderPricing() {
     $$('#plans .plan').forEach(function (p, i) {
-      var pl = PLANS[i], n = S.pay > 0 ? Math.ceil(pl.price / S.pay) : 0, n2 = S.pay > 0 ? Math.ceil((pl.price + pl.minAd) / S.pay) : 0;
-      $('.pays', p).innerHTML = S.pay > 0 ? '<span><b>' + jobsTxt(n) + '</b> a month covers it · ' + n2 + ' with ad spend</span>' : '';
+      var n = S.pay > 0 ? Math.ceil(PLANS[i].price / S.pay) : 0;
+      $('.pays', p).innerHTML = S.pay > 0 ? '<span>Pays for itself with <b>' + jobsTxt(n) + '</b> a month</span>' : '';
     });
   }
   function setPlan(i) {
