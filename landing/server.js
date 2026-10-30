@@ -30,6 +30,60 @@ const PAGE_FOR_FILE = Object.fromEntries(Object.entries(PAGES).map(([url, file])
 
 const gzipCache = new Map();
 
+// Inquiry form: the browser talks only to this server, which forwards to the CRM with
+// the shared key. The CRM address and key never reach the browser.
+const CRM_URL = (process.env.CRM_URL || '').replace(/\/$/, '');
+const INQUIRY_KEY = process.env.INQUIRY_KEY || '';
+const submissions = new Map();
+function tooMany(ip) {
+  const now = Date.now();
+  const list = (submissions.get(ip) || []).filter((t) => now - t < 3600e3);
+  list.push(now);
+  submissions.set(ip, list);
+  return list.length > 6;
+}
+
+function json(res, status, body) {
+  const data = JSON.stringify(body);
+  res.writeHead(status, { 'Content-Type': TYPES['.json'], 'Cache-Control': 'no-store', 'Content-Length': Buffer.byteLength(data) });
+  res.end(data);
+}
+
+async function crm(method, pathName, body) {
+  const r = await fetch(`${CRM_URL}${pathName}`, {
+    method, headers: { 'Content-Type': 'application/json', 'X-Inquiry-Key': INQUIRY_KEY },
+    body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(15000),
+  });
+  return { status: r.status, body: await r.json().catch(() => ({})) };
+}
+
+async function handleInquiryApi(req, res, urlPath) {
+  if (!CRM_URL || !INQUIRY_KEY) return json(res, 503, { error: 'The form is not available right now.' });
+  try {
+    if (urlPath === '/api/slots' && req.method === 'GET') {
+      const r = await crm('GET', '/api/public/slots');
+      return json(res, r.status, r.body);
+    }
+    if (urlPath === '/api/inquiry' && req.method === 'POST') {
+      const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+      let raw = '';
+      for await (const chunk of req) { raw += chunk; if (raw.length > 20000) return json(res, 413, { error: 'Too much data' }); }
+      let body;
+      try { body = JSON.parse(raw); } catch { return json(res, 400, { error: 'Invalid form data' }); }
+      // Bots fill the hidden "website" field or submit instantly; pretend it worked.
+      if (body.website || !(Number(body.elapsed) > 2500)) return json(res, 200, { ok: true, booked: null });
+      if (tooMany(ip)) return json(res, 429, { error: 'Too many requests. Please try again later.' });
+      const { website: _w, elapsed: _e, ...clean } = body;
+      const r = await crm('POST', '/api/public/inquiry', clean);
+      return json(res, r.status, r.body);
+    }
+    return json(res, 404, { error: 'Not found' });
+  } catch (e) {
+    console.error('inquiry forward failed:', e.message);
+    return json(res, 502, { error: 'Something went wrong sending your request. Please try again.' });
+  }
+}
+
 function redirect(res, location) {
   res.writeHead(301, { Location: location, 'Cache-Control': 'public, max-age=3600' });
   res.end();
@@ -81,6 +135,7 @@ http.createServer((req, res) => {
     search = u.search;
   } catch { urlPath = '/'; }
   if (urlPath === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); }
+  if (urlPath === '/api/slots' || urlPath === '/api/inquiry') return handleInquiryApi(req, res, urlPath);
   if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405, { Allow: 'GET, HEAD' }); return res.end(); }
 
   // The railway.app address and www both forward to the main domain.

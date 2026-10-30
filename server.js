@@ -218,6 +218,168 @@ app.post('/api/logout', wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
+/* ---------------------------------------------------------------- website inquiries */
+// The website's inquiry form posts here through the landing server, which adds the
+// shared INQUIRY_KEY. New leads go to the inquiry owner's pipeline (Caden's), in the
+// stage named like "Hot Lead" (else stage 5 unless it's a won stage, else the first stage);
+// booked calls go on their calendar.
+
+const INQUIRY = {
+  key: process.env.INQUIRY_KEY || '',
+  ownerEmail: (process.env.INQUIRY_OWNER_EMAIL || 'caden.dorman839@outlook.com').toLowerCase(),
+  stageName: process.env.INQUIRY_STAGE || 'hot lead',
+  tz: process.env.BOOKING_TZ || 'America/Chicago',
+  days: (process.env.BOOKING_DAYS || '1,2,3,4,5').split(',').map(Number), // 0 = Sunday
+  open: process.env.BOOKING_OPEN || '09:00',
+  close: process.env.BOOKING_CLOSE || '17:00',
+  minutes: Number(process.env.BOOKING_MINUTES || 20),
+  step: Number(process.env.BOOKING_STEP || 30),
+  noticeHours: Number(process.env.BOOKING_NOTICE_HOURS || 12),
+  horizonDays: Number(process.env.BOOKING_HORIZON_DAYS || 14),
+};
+const REVENUE_OPTIONS = ['Under $250K', '$250K – $1M', '$1M – $5M', '$5M+', 'Prefer not to say'];
+
+function inquiryAuth(req, res, next) {
+  const given = Buffer.from(String(req.get('x-inquiry-key') || ''));
+  const want = Buffer.from(INQUIRY.key);
+  if (!INQUIRY.key) return bad(res, 'Inquiries are not configured', 503);
+  if (given.length !== want.length || !crypto.timingSafeEqual(given, want)) return bad(res, 'Not allowed', 403);
+  next();
+}
+
+// Wall-clock date/time in a time zone → UTC Date (two passes handle DST).
+function zonedOffset(ts, tz) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+    timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).formatToParts(new Date(ts)).map((x) => [x.type, x.value]));
+  return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second) - Math.floor(ts / 1000) * 1000;
+}
+function zonedToUtc(date, time, tz) {
+  const [y, m, d] = date.split('-').map(Number);
+  const [hh, mm] = time.split(':').map(Number);
+  const guess = Date.UTC(y, m - 1, d, hh, mm);
+  let ts = guess - zonedOffset(guess, tz);
+  ts = guess - zonedOffset(ts, tz);
+  return new Date(ts);
+}
+
+async function inquiryTarget(client) {
+  const { rows: owner } = await client.query(
+    `SELECT id, name FROM users WHERE lower(email) = $1
+     UNION ALL SELECT id, name FROM users WHERE role = 'owner' LIMIT 1`, [INQUIRY.ownerEmail],
+  );
+  if (!owner[0]) throw new Error('No user to receive website inquiries');
+  const { rows: pipe } = await client.query('SELECT id FROM pipelines WHERE user_id = $1 ORDER BY position, id LIMIT 1', [owner[0].id]);
+  if (!pipe[0]) throw new Error('The inquiry owner has no pipeline');
+  const { rows: stages } = await client.query(
+    `SELECT id, name, position FROM pipeline_stages WHERE pipeline_id = $1
+     ORDER BY (lower(name) LIKE $2) DESC, (position = 5 AND kind <> 'won') DESC, position LIMIT 1`,
+    [pipe[0].id, `%${INQUIRY.stageName.toLowerCase()}%`],
+  );
+  return { userId: owner[0].id, pipelineId: pipe[0].id, stage: stages[0] };
+}
+
+// Open start times over the booking horizon, skipping the owner's scheduled appointments.
+async function openSlots(client = db) {
+  const { userId } = await inquiryTarget(client);
+  const now = Date.now();
+  const earliest = now + INQUIRY.noticeHours * 3600e3;
+  const until = now + INQUIRY.horizonDays * 86400e3;
+  const { rows: busy } = await client.query(
+    `SELECT starts_at, ends_at FROM appointments WHERE user_id = $1 AND status = 'scheduled' AND ends_at > now() AND starts_at < $2`,
+    [userId, new Date(until)],
+  );
+  const slots = [];
+  const [oh, om] = INQUIRY.open.split(':').map(Number);
+  const [ch, cm] = INQUIRY.close.split(':').map(Number);
+  for (let i = 0; i <= INQUIRY.horizonDays; i++) {
+    const date = new Intl.DateTimeFormat('en-CA', { timeZone: INQUIRY.tz }).format(new Date(now + i * 86400e3));
+    const weekday = new Date(`${date}T12:00:00Z`).getUTCDay();
+    if (!INQUIRY.days.includes(weekday)) continue;
+    for (let min = oh * 60 + om; min + INQUIRY.minutes <= ch * 60 + cm; min += INQUIRY.step) {
+      const start = zonedToUtc(date, `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`, INQUIRY.tz);
+      const end = new Date(start.getTime() + INQUIRY.minutes * 60e3);
+      if (start.getTime() < earliest || start.getTime() > until) continue;
+      if (busy.some((b) => start < new Date(b.ends_at) && end > new Date(b.starts_at))) continue;
+      slots.push(start.toISOString());
+    }
+  }
+  return slots;
+}
+
+app.get('/api/public/slots', inquiryAuth, wrap(async (_req, res) => {
+  res.json({ timezone: INQUIRY.tz, minutes: INQUIRY.minutes, slots: await openSlots(), revenue: REVENUE_OPTIONS });
+}));
+
+app.post('/api/public/inquiry', inquiryAuth, wrap(async (req, res) => {
+  const b = req.body || {};
+  const booking = b.type === 'appointment';
+  const name = cleanText(b.name, 120);
+  const business = cleanText(b.business, 160);
+  const phone = cleanText(b.phone, 40);
+  const emailAddr = cleanText(b.email, 200);
+  const revenue = REVENUE_OPTIONS.includes(b.revenue) ? b.revenue : null;
+  const message = cleanText(b.message, 2000);
+  const meeting = b.meeting === 'in_person' ? 'At their business' : 'Zoom';
+  if (!name) return bad(res, 'Please add your name');
+  if (!business) return bad(res, 'Please add your business name');
+  if (phoneDigits(phone).length < 10) return bad(res, 'Please add a phone number we can reach you at');
+  if (!emailAddr || !EMAIL_RE.test(emailAddr)) return bad(res, 'Please add a valid email address');
+  let start = null;
+  if (booking) {
+    start = parseTime(b.slot);
+    if (!start) return bad(res, 'Please pick a time for your call');
+  }
+
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    // One booking at a time, so two visitors can't take the same slot.
+    await client.query('SELECT pg_advisory_xact_lock(4207731)');
+    const target = await inquiryTarget(client);
+    if (booking && !(await openSlots(client)).includes(start.toISOString())) {
+      await client.query('ROLLBACK');
+      return bad(res, 'Sorry, that time was just taken. Please pick another.', 409);
+    }
+    const [first, ...rest] = name.split(/\s+/);
+    const extra = { 'Website inquiry': booking ? 'Booked a call' : 'Requested information' };
+    if (revenue) extra['Annual revenue (est.)'] = revenue;
+    if (booking) extra['Meeting preference'] = meeting;
+    const { rows } = await client.query(
+      `INSERT INTO leads (first_name, last_name, company, phone, phone_digits, email, source, notes, extra, pipeline_id, stage_id, position)
+       VALUES ($1,$2,$3,$4,$5,$6,'Website',$7,$8,$9,$10,$11) RETURNING *`,
+      [first, rest.join(' ') || null, business, phone, phoneDigits(phone), emailAddr, message, extra,
+        target.pipelineId, target.stage.id, await nextPosition(client, target.stage.id)],
+    );
+    const lead = rows[0];
+    await logActivity(client, lead.id, null, 'created',
+      `From the website: ${booking ? 'booked a call' : 'requested more information'}. Added to ${target.stage.name}.`);
+    if (message) await logActivity(client, lead.id, null, 'note', `Message from the website form:\n${message}`);
+    let appointment = null;
+    if (booking) {
+      const end = new Date(start.getTime() + INQUIRY.minutes * 60e3);
+      const title = `Intro call — ${business}`;
+      const notes = [`Booked from the website.`, `${name} · ${phone} · ${emailAddr}`, revenue ? `Annual revenue (est.): ${revenue}` : null, message]
+        .filter(Boolean).join('\n');
+      const { rows: appt } = await client.query(
+        `INSERT INTO appointments (lead_id, user_id, title, starts_at, ends_at, location, notes)
+         VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id, starts_at, ends_at`,
+        [lead.id, target.userId, title, start, end, meeting, notes],
+      );
+      appointment = appt[0];
+      await logActivity(client, lead.id, null, 'appointment', title,
+        { appointment_id: appointment.id, starts_at: start.toISOString(), event: 'booked', invited: false, source: 'website' });
+    }
+    await client.query('COMMIT');
+    res.json({ ok: true, booked: appointment ? { starts_at: appointment.starts_at, timezone: INQUIRY.tz, minutes: INQUIRY.minutes } : null });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}));
+
 app.use('/api', requireAuth);
 
 /* ---------------------------------------------------------------- users */

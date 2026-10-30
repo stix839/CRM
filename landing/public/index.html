@@ -227,7 +227,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
     /* Layout: black stage hero with parallax post cards → white "how it works" with a sticky phone that plays
-       Create / Grow / Scale → black band of scroll-driven giant type → contact cards → black closing call. */
+       Create / Grow / Scale → black band of scroll-driven giant type → inquiry form → black closing call. */
     :root {
       --ink: #0a0a0a;        /* M2 black */
       --ink-2: #18181b;      /* raised black */
@@ -485,27 +485,41 @@
     .contact-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: end; margin-bottom: 48px; }
     .contact-head h2 { margin-top: 18px; }
     .contact-head p { margin: 0; color: #3f3f46; font-size: 18px; max-width: 30em; }
-    .people { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-    .person { position: relative; background: var(--paper); border: 1px solid var(--rule-l); border-radius: 26px; padding: 30px; display: flex; flex-direction: column; gap: 24px; overflow: hidden; transition: transform .4s var(--ease), box-shadow .4s var(--ease), border-color .3s; }
-    .person::before { content: ""; position: absolute; inset: 0; background: radial-gradient(420px circle at var(--x, 50%) var(--y, 0%), rgba(10, 10, 10, .06), transparent 60%); opacity: 0; transition: opacity .3s; pointer-events: none; }
-    .person:hover { transform: translateY(-4px); box-shadow: 0 30px 60px -30px rgba(10, 10, 10, .35); border-color: #d4d4d8; }
-    .person:hover::before { opacity: 1; }
-    .person-top { display: flex; align-items: center; gap: 18px; }
-    .p-av { width: 68px; height: 68px; border-radius: 20px; background: var(--ink); color: var(--paper); display: grid; place-items: center; font: 900 23px/1 var(--display); font-stretch: 115%; flex: none; transition: transform .4s var(--ease); }
-    .person:hover .p-av { transform: rotate(-6deg); }
-    .person h3 { font-size: clamp(24px, 2.4vw, 30px); font-weight: 900; font-stretch: 110%; line-height: 1.05; letter-spacing: -.015em; }
-    .role { margin-top: 6px; font: 700 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--steel); }
-    .p-lines { display: flex; flex-direction: column; gap: 8px; }
-    .p-line { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--rule-l); text-decoration: none; font-weight: 600; font-size: 16px; min-width: 0; transition: border-color .15s, background .15s; }
-    .p-line:hover { border-color: var(--ink); }
-    .p-line .txt { min-width: 0; }
-    .p-line .k { display: block; font: 700 10.5px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--steel); }
-    .p-line .v { display: block; overflow-wrap: anywhere; }
-    .p-line .go { margin-left: auto; color: var(--fog); transition: transform .25s var(--ease), color .2s; }
-    .p-line:hover .go { color: var(--ink); transform: translateX(3px); }
-    .p-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-    .p-actions .btn { height: 48px; font-size: 14px; padding: 0 10px; }
-    .p-actions .btn svg { width: 16px; height: 16px; }
+    .inq { position: relative; background: var(--paper); border: 1px solid var(--rule-l); border-radius: 26px; padding: clamp(22px, 3vw, 34px); display: flex; flex-direction: column; gap: 22px; box-shadow: 0 30px 60px -40px rgba(10, 10, 10, .35); }
+    .inq-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 6px; border-radius: 999px; background: var(--mist); }
+    .inq-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 48px; border: 0; border-radius: 999px; background: transparent; color: var(--steel); font: 700 15px/1 var(--body); cursor: pointer; transition: background .2s, color .2s; }
+    .inq-tabs button.on { background: var(--ink); color: var(--paper); }
+    .inq-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .fld { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+    .fld.wide { grid-column: 1 / -1; }
+    .fld .k { font: 700 10.5px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--steel); }
+    .fld .k em { font-style: normal; color: var(--fog); margin-left: 6px; }
+    .fld input, .fld select, .fld textarea { width: 100%; min-height: 52px; padding: 13px 16px; border: 1px solid var(--rule-l); border-radius: 14px; background: var(--paper); color: var(--ink); font: 600 16px/1.3 var(--body); outline: none; transition: border-color .15s; -webkit-appearance: none; appearance: none; }
+    .fld select { background-image: linear-gradient(45deg, transparent 50%, var(--steel) 50%), linear-gradient(135deg, var(--steel) 50%, transparent 50%); background-position: calc(100% - 22px) 50%, calc(100% - 16px) 50%; background-size: 6px 6px; background-repeat: no-repeat; }
+    .fld textarea { resize: vertical; min-height: 96px; }
+    .fld input:focus, .fld select:focus, .fld textarea:focus { border-color: var(--ink); }
+    .fld.err input { border-color: #b91c1c; }
+    .inq-book { display: flex; flex-direction: column; gap: 18px; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--rule-l); background: var(--paper); color: var(--ink); font: 600 14.5px/1 var(--body); cursor: pointer; transition: border-color .15s, background .15s, color .15s; }
+    .chip:hover { border-color: var(--ink); }
+    .chip.on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+    .chip small { display: block; font: 700 10px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; opacity: .7; }
+    #inq-days .chip { height: 56px; }
+    .inq-note { color: var(--steel); font-size: 15px; }
+    .inq-foot { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+    .inq-foot .btn { cursor: pointer; }
+    .inq-foot .btn[disabled] { opacity: .5; cursor: wait; transform: none; }
+    .inq-msg { margin: 0; flex: 1; min-width: 220px; color: var(--steel); font-size: 14.5px; }
+    .inq-msg.bad { color: #b91c1c; font-weight: 600; }
+    .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+    .inq-done { text-align: center; padding: clamp(20px, 5vw, 48px) 0; }
+    .inq-done .ok { width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 18px; background: var(--ink); color: var(--paper); display: grid; place-items: center; }
+    .inq-done .ok svg { width: 28px; height: 28px; stroke-width: 3; }
+    .inq-done h3 { font-size: clamp(26px, 3vw, 36px); font-weight: 900; font-stretch: 110%; letter-spacing: -.015em; }
+    .inq-done p { margin: 10px auto 0; color: #3f3f46; max-width: 30em; }
+    .inq [hidden], .inq.sent > :not(.inq-done) { display: none !important; }
+    @media (max-width: 640px) { .inq-grid { grid-template-columns: minmax(0, 1fr); } .inq-foot .btn { width: 100%; } }
 
     /* closing */
     .close { background: var(--ink); color: var(--paper); padding-block: clamp(90px, 11vw, 150px) 0; overflow: hidden; overflow: clip; }
@@ -579,11 +593,7 @@
       .ghost-m2 { font-size: 260px; right: -20%; }
       h2, .step h3 { font-stretch: 100%; }
       .marquee { font-size: clamp(56px, 18vw, 96px); font-stretch: 100%; }
-      .people { grid-template-columns: minmax(0, 1fr); }
-      .person { padding: 22px; }
       .qa p { padding-right: 0; }
-      .p-actions { grid-template-columns: 1fr 1fr; }
-      .p-actions .btn:last-child { grid-column: span 2; }
       .nav .btn span { display: none; }
       .nav .btn { width: 44px; padding: 0; }
       .ctas .btn { flex: 1 1 auto; }
@@ -825,32 +835,33 @@
           <div class="rv"><span class="kicker">Contact</span><h2>Let's grow your business.</h2></div>
           <p class="rv rv-d1">Grab 20 minutes with us at your place of business or on a quick Zoom. We'll show you what we'd post for you and what it would cost.</p>
         </div>
-        <div class="people">
-          <div class="person rv">
-            <div class="person-top"><div class="p-av">CD</div><div><h3>Caden Dorman</h3><div class="role">Owner</div></div></div>
-            <div class="p-lines">
-              <a class="p-line" href="tel:+13252495262"><svg class="i"><use href="#i-phone"/></svg><span class="txt"><span class="k">Phone</span><span class="v">(325) 249-5262</span></span><svg class="i go"><use href="#i-arrow"/></svg></a>
-              <a class="p-line" href="mailto:caden.dorman839@outlook.com"><svg class="i"><use href="#i-mail"/></svg><span class="txt"><span class="k">Email</span><span class="v">caden.dorman839@outlook.com</span></span><svg class="i go"><use href="#i-arrow"/></svg></a>
-            </div>
-            <div class="p-actions">
-              <a class="btn black" href="tel:+13252495262"><svg class="i"><use href="#i-phone"/></svg>Call</a>
-              <a class="btn line" href="sms:+13252495262"><svg class="i"><use href="#i-msg"/></svg>Text</a>
-              <a class="btn line" href="/caden-dorman.vcf" download><svg class="i"><use href="#i-download"/></svg>Save contact</a>
-            </div>
+        <form class="inq rv rv-d1" id="inq" novalidate>
+          <div class="inq-tabs" role="radiogroup" aria-label="What would you like to do?">
+            <button type="button" class="on" role="radio" aria-checked="true" data-type="appointment"><svg class="i"><use href="#i-cal"/></svg>Book a call</button>
+            <button type="button" role="radio" aria-checked="false" data-type="info"><svg class="i"><use href="#i-msg"/></svg>Get more info</button>
           </div>
-          <div class="person rv rv-d1">
-            <div class="person-top"><div class="p-av">HL</div><div><h3>Houston Lindop</h3><div class="role">Co-Founder</div></div></div>
-            <div class="p-lines">
-              <a class="p-line" href="tel:+14694078842"><svg class="i"><use href="#i-phone"/></svg><span class="txt"><span class="k">Phone</span><span class="v">(469) 407-8842</span></span><svg class="i go"><use href="#i-arrow"/></svg></a>
-              <a class="p-line" href="mailto:houstonlindop257@outlook.com"><svg class="i"><use href="#i-mail"/></svg><span class="txt"><span class="k">Email</span><span class="v">houstonlindop257@outlook.com</span></span><svg class="i go"><use href="#i-arrow"/></svg></a>
-            </div>
-            <div class="p-actions">
-              <a class="btn black" href="tel:+14694078842"><svg class="i"><use href="#i-phone"/></svg>Call</a>
-              <a class="btn line" href="sms:+14694078842"><svg class="i"><use href="#i-msg"/></svg>Text</a>
-              <a class="btn line" href="/houston-lindop.vcf" download><svg class="i"><use href="#i-download"/></svg>Save contact</a>
-            </div>
+          <div class="inq-grid">
+            <label class="fld"><span class="k">Your name</span><input name="name" autocomplete="name" required maxlength="120"></label>
+            <label class="fld"><span class="k">Business name</span><input name="business" autocomplete="organization" required maxlength="160"></label>
+            <label class="fld"><span class="k">Phone</span><input name="phone" type="tel" autocomplete="tel" inputmode="tel" required maxlength="40"></label>
+            <label class="fld"><span class="k">Email</span><input name="email" type="email" autocomplete="email" required maxlength="200"></label>
+            <label class="fld wide"><span class="k">Annual revenue <em>Optional</em></span>
+              <select name="revenue"><option value="">Choose a range</option><option>Under $250K</option><option>$250K – $1M</option><option>$1M – $5M</option><option>$5M+</option><option>Prefer not to say</option></select></label>
           </div>
-        </div>
+          <div class="inq-book">
+            <div class="fld"><span class="k">Pick a day</span><div class="chips" id="inq-days"><span class="inq-note">Loading open times…</span></div></div>
+            <div class="fld"><span class="k">Pick a time <em id="inq-tz"></em></span><div class="chips" id="inq-times"></div></div>
+            <div class="fld"><span class="k">Where should we meet?</span>
+              <div class="chips" id="inq-meet"><button type="button" class="chip on" data-meet="zoom">Zoom</button><button type="button" class="chip" data-meet="in_person">At my business</button></div></div>
+          </div>
+          <label class="fld inq-info" hidden><span class="k">What can we help with? <em>Optional</em></span><textarea name="message" rows="3" maxlength="2000"></textarea></label>
+          <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <div class="inq-foot">
+            <button class="btn black" type="submit"><span id="inq-go">Book my call</span><svg class="i go"><use href="#i-arrow"/></svg></button>
+            <p class="inq-msg" id="inq-msg" role="status" aria-live="polite">Takes about 30 seconds. We'll only use this to reach you. <a href="/privacy">Privacy</a></p>
+          </div>
+          <div class="inq-done" hidden><div class="ok"><svg class="i"><use href="#i-check"/></svg></div><h3 id="inq-done-h">You're booked.</h3><p id="inq-done-p"></p></div>
+        </form>
       </div>
     </section>
 
@@ -950,6 +961,100 @@
         $$('.step-media .screen').forEach(function (s) { mio.observe(s); });
       }
 
+      // Inquiry form: book a call (creates a CRM lead + calendar appointment) or ask for info.
+      (function () {
+        var form = document.getElementById('inq');
+        if (!form) return;
+        var shown = Date.now();
+        var type = 'appointment', meet = 'zoom', slot = null, data = null, day = null;
+        var msg = document.getElementById('inq-msg');
+        var daysEl = document.getElementById('inq-days'), timesEl = document.getElementById('inq-times');
+        var defaultMsg = msg.innerHTML;
+        function zoneParts(iso, opts) { return new Date(iso).toLocaleString('en-US', Object.assign({ timeZone: data.timezone }, opts)); }
+        function dayKey(iso) { return new Date(iso).toLocaleDateString('en-CA', { timeZone: data.timezone }); }
+        function drawTimes() {
+          timesEl.innerHTML = '';
+          var list = (data.slots || []).filter(function (s) { return dayKey(s) === day; });
+          // Label the zone for the chosen day, so it reads CST or CDT correctly across DST changes.
+          if (list[0]) document.getElementById('inq-tz').textContent = zoneParts(list[0], { timeZoneName: 'short' }).split(' ').pop() + ' · ' + data.minutes + ' min';
+          list.forEach(function (s) {
+            var b = document.createElement('button');
+            b.type = 'button'; b.className = 'chip' + (s === slot ? ' on' : ''); b.dataset.slot = s;
+            b.textContent = zoneParts(s, { hour: 'numeric', minute: '2-digit' });
+            timesEl.appendChild(b);
+          });
+        }
+        function drawDays() {
+          var keys = [];
+          (data.slots || []).forEach(function (s) { var k = dayKey(s); if (keys.indexOf(k) < 0) keys.push(k); });
+          if (!keys.length) { daysEl.innerHTML = '<span class="inq-note">No open times right now. Choose “Get more info” and we\'ll reach out.</span>'; return; }
+          day = day && keys.indexOf(day) > -1 ? day : keys[0];
+          daysEl.innerHTML = keys.slice(0, 10).map(function (k) {
+            var d = new Date(k + 'T12:00:00Z');
+            return '<button type="button" class="chip' + (k === day ? ' on' : '') + '" data-day="' + k + '"><small>' +
+              d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }) + '</small>' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) + '</button>';
+          }).join('');
+          drawTimes();
+        }
+        function loadSlots() {
+          fetch('/api/slots').then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (d) {
+            data = d;
+            drawDays();
+          }).catch(function () { daysEl.innerHTML = '<span class="inq-note">Couldn\'t load open times. Choose “Get more info” and we\'ll reach out.</span>'; });
+        }
+        loadSlots();
+        form.addEventListener('click', function (e) {
+          var t = e.target.closest('button[type=button]');
+          if (!t) return;
+          if (t.dataset.type) {
+            type = t.dataset.type;
+            Array.prototype.forEach.call(form.querySelectorAll('.inq-tabs button'), function (x) { x.classList.toggle('on', x === t); x.setAttribute('aria-checked', x === t); });
+            form.querySelector('.inq-book').hidden = type !== 'appointment';
+            form.querySelector('.inq-info').hidden = type === 'appointment';
+            document.getElementById('inq-go').textContent = type === 'appointment' ? 'Book my call' : 'Send request';
+          } else if (t.dataset.day) { day = t.dataset.day; slot = null; drawDays(); }
+          else if (t.dataset.slot) { slot = t.dataset.slot; drawTimes(); }
+          else if (t.dataset.meet) {
+            meet = t.dataset.meet;
+            Array.prototype.forEach.call(form.querySelectorAll('[data-meet]'), function (x) { x.classList.toggle('on', x === t); });
+          }
+        });
+        function say(text, isBad) { msg.textContent = text; msg.classList.toggle('bad', !!isBad); }
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var f = form.elements, missing = null;
+          ['name', 'business', 'phone', 'email'].forEach(function (n) {
+            var ok = f[n].value.trim() && (n !== 'email' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f[n].value.trim())) && (n !== 'phone' || f[n].value.replace(/\D/g, '').length >= 10);
+            f[n].parentNode.classList.toggle('err', !ok);
+            if (!ok && !missing) missing = f[n];
+          });
+          if (missing) { missing.focus(); return say('Please fill in your name, business, phone and email.', true); }
+          if (type === 'appointment' && !slot) return say('Please pick a day and time for your call.', true);
+          var btn = form.querySelector('button[type=submit]');
+          btn.disabled = true; say('Sending…');
+          fetch('/api/inquiry', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+            type: type, name: f.name.value, business: f.business.value, phone: f.phone.value, email: f.email.value,
+            revenue: f.revenue.value, message: type === 'info' ? f.message.value : '', slot: type === 'appointment' ? slot : null,
+            meeting: meet, website: f.website.value, elapsed: Date.now() - shown,
+          }) }).then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); }).then(function (r) {
+            btn.disabled = false;
+            if (!r.ok) { if (r.status === 409) { slot = null; loadSlots(); } return say(r.body.error || 'Something went wrong. Please try again.', true); }
+            var first = f.name.value.trim().split(/\s+/)[0];
+            if (r.body.booked) {
+              document.getElementById('inq-done-h').textContent = 'You\'re booked, ' + first + '.';
+              document.getElementById('inq-done-p').textContent = 'Your ' + data.minutes + '-minute call is set for ' + zoneParts(r.body.booked.starts_at, { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) +
+                (meet === 'zoom' ? ' on Zoom' : ' at your business') + '. We\'ll reach out beforehand to confirm.';
+            } else {
+              document.getElementById('inq-done-h').textContent = 'Thanks, ' + first + '.';
+              document.getElementById('inq-done-p').textContent = 'We got your request and will reach out soon.';
+            }
+            form.querySelector('.inq-done').hidden = false;
+            form.classList.add('sent');
+            msg.innerHTML = defaultMsg;
+          }).catch(function () { btn.disabled = false; say('Couldn\'t send. Check your connection and try again.', true); });
+        });
+      })();
+
       if (reduce) return;
       play(screens[0]);
 
@@ -1000,14 +1105,6 @@
         hero.addEventListener('pointerleave', function () { cards.forEach(function (c) { c.style.translate = ''; }); });
       }
 
-      // Contact cards: a soft light follows the pointer.
-      $$('.person').forEach(function (card) {
-        card.addEventListener('pointermove', function (e) {
-          var r = card.getBoundingClientRect();
-          card.style.setProperty('--x', (e.clientX - r.left) + 'px');
-          card.style.setProperty('--y', (e.clientY - r.top) + 'px');
-        });
-      });
     })();
   </script>
 </body>
