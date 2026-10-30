@@ -65,7 +65,8 @@ async function handleInquiryApi(req, res, urlPath) {
       return json(res, r.status, r.body);
     }
     if (urlPath === '/api/inquiry' && req.method === 'POST') {
-      const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+      // Cloudflare sends the visitor's address in CF-Connecting-IP.
+      const ip = String(req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
       let raw = '';
       for await (const chunk of req) { raw += chunk; if (raw.length > 20000) return json(res, 413, { error: 'Too much data' }); }
       let body;
