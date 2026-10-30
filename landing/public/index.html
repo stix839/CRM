@@ -480,46 +480,97 @@
     .checks .ok { width: 26px; height: 26px; border-radius: 50%; background: var(--paper); color: var(--ink); display: grid; place-items: center; flex: none; }
     .checks .ok svg { width: 14px; height: 14px; stroke-width: 3; }
 
-    /* contact */
-    .contact { background: var(--mist); color: var(--ink); padding-block: clamp(84px, 10vw, 140px); }
+    /* contact: a dark, living stage that pulls the eye to the inquiry form */
+    .contact { position: relative; isolation: isolate; overflow: hidden; overflow: clip; background: var(--ink); color: var(--paper); padding-block: clamp(84px, 10vw, 140px); }
+    .contact .kicker { color: var(--fog); }
     .contact-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: end; margin-bottom: 48px; }
     .contact-head h2 { margin-top: 18px; }
-    .contact-head p { margin: 0; color: #3f3f46; font-size: 18px; max-width: 30em; }
-    .inq { position: relative; background: var(--paper); border: 1px solid var(--rule-l); border-radius: 26px; padding: clamp(22px, 3vw, 34px); display: flex; flex-direction: column; gap: 22px; box-shadow: 0 30px 60px -40px rgba(10, 10, 10, .35); }
-    .inq-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 6px; border-radius: 999px; background: var(--mist); }
-    .inq-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 48px; border: 0; border-radius: 999px; background: transparent; color: var(--steel); font: 700 15px/1 var(--body); cursor: pointer; transition: background .2s, color .2s; }
-    .inq-tabs button.on { background: var(--ink); color: var(--paper); }
+    .contact-head p { margin: 0; color: #d4d4d8; font-size: 18px; max-width: 30em; }
+    .contact + .close { border-top: 1px solid var(--rule-d); }
+    .contact-fx { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+    .contact-fx .grid { position: absolute; inset: 0; overflow: hidden; mask-image: radial-gradient(ellipse 75% 65% at 50% 62%, #000 20%, transparent 78%); -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 62%, #000 20%, transparent 78%); }
+    .contact-fx .grid::before { content: ""; position: absolute; left: 0; right: 0; top: -64px; height: calc(100% + 64px); background-image: linear-gradient(rgba(255, 255, 255, .085) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .085) 1px, transparent 1px); background-size: 64px 64px; animation: grid-drift 9s linear infinite; }
+    .contact-fx .orb { position: absolute; width: min(620px, 110vw); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 255, 255, .16), transparent); will-change: transform; }
+    .contact-fx .orb.a { left: -12%; top: 18%; animation: orb-a 17s ease-in-out infinite alternate; }
+    .contact-fx .orb.b { right: -14%; bottom: -6%; animation: orb-b 21s ease-in-out infinite alternate; }
+    @keyframes orb-a { to { transform: translate(38vw, 26vh) scale(1.15); } }
+    @keyframes orb-b { to { transform: translate(-42vw, -34vh) scale(.9); } }
+    .contact-fx .glow { position: absolute; left: 50%; top: 62%; width: min(1150px, 150vw); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 255, 255, .2), rgba(255, 255, 255, .06) 55%, transparent); transform: translate(-50%, -50%); animation: breathe 8s ease-in-out infinite; }
+    .contact-fx .spot { position: absolute; inset: 0; background: radial-gradient(520px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, .1), transparent 65%); opacity: 0; transition: opacity .6s; }
+    .contact-fx.track .spot { opacity: 1; }
+    .contact-fx .ghost { position: absolute; left: 0; bottom: clamp(6px, 2vw, 30px); white-space: nowrap; font: 900 clamp(96px, 15vw, 230px)/1 var(--display); font-stretch: 125%; letter-spacing: -.03em; color: transparent; -webkit-text-stroke: 1.5px rgba(255, 255, 255, .1); user-select: none; animation: ghost-slide 70s linear infinite; }
+    @keyframes grid-drift { to { transform: translate3d(0, 64px, 0); } }
+    @keyframes breathe { 0%, 100% { transform: translate(-50%, -50%) scale(.9); opacity: .7; } 50% { transform: translate(-50%, -50%) scale(1.06); opacity: 1; } }
+    @keyframes ghost-slide { to { transform: translateX(-50%); } }
+    @keyframes ping { from { transform: scale(.5); opacity: .9; } to { transform: scale(2.2); opacity: 0; } }
+    @keyframes cta-pulse { 0% { box-shadow: 0 0 0 0 rgba(10, 10, 10, .4); } 70%, 100% { box-shadow: 0 0 0 16px rgba(10, 10, 10, 0); } }
+    @keyframes sweep { 0% { transform: translateX(-120%) skewX(-18deg); } 55%, 100% { transform: translateX(220%) skewX(-18deg); } }
+    @keyframes nudge { 50% { transform: translateX(5px); } }
+    @keyframes tick { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+    .inq-next { display: inline-flex; align-items: center; gap: 11px; margin-top: 22px; padding: 10px 16px 10px 14px; border-radius: 999px; border: 1px solid var(--rule-d); background: rgba(255, 255, 255, .05); font: 700 11.5px/1.3 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #e4e4e7; }
+    .inq-next[hidden] { display: none; }
+    .inq-next i { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--paper); flex: none; }
+    .inq-next i::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 1.5px solid var(--paper); animation: ping 1.8s var(--ease) infinite; }
+
+    /* the form card: beams of light circle its edge */
+    .inq-ring { position: relative; border-radius: 28px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 60px 160px -40px rgba(255, 255, 255, .25); }
+    .inq-halo { position: absolute; inset: -30px; border-radius: 58px; overflow: hidden; pointer-events: none; container-type: size; filter: blur(16px); }
+    .inq-halo::before { content: ""; position: absolute; left: 50%; top: 50%; width: 300%; width: 150cqmax; aspect-ratio: 1; background: conic-gradient(transparent 0deg 120deg, rgba(255, 255, 255, .35) 165deg, rgba(255, 255, 255, .55) 178deg, transparent 182deg 300deg, rgba(255, 255, 255, .65) 345deg, rgba(255, 255, 255, .9) 357deg, transparent 360deg); transform: translate(-50%, -50%) rotate(0deg); will-change: transform; animation: halo 7s linear infinite; }
+    @keyframes halo { to { transform: translate(-50%, -50%) rotate(360deg); } }
+    .inq { position: relative; z-index: 1; background: var(--paper); color: var(--ink); border-radius: 26.5px; padding: clamp(22px, 3vw, 36px); display: flex; flex-direction: column; gap: 22px; }
+    .inq.stagger:not(.live) .st { opacity: 0; }
+    .inq.live .st { animation: rise .7s var(--ease) both; animation-delay: calc(var(--i, 0) * 70ms + .1s); }
+    .inq-tabs { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 6px; border-radius: 999px; background: var(--mist); }
+    .inq-tabs::before { content: ""; position: absolute; top: 6px; bottom: 6px; left: 6px; width: calc(50% - 9px); border-radius: 999px; background: var(--ink); box-shadow: 0 10px 24px -10px rgba(10, 10, 10, .6); transition: transform .55s var(--ease); }
+    .inq-tabs[data-on="info"]::before { transform: translateX(calc(100% + 6px)); }
+    .inq-tabs button { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 50px; border: 0; border-radius: 999px; background: transparent; color: var(--steel); font: 700 15px/1 var(--body); cursor: pointer; transition: color .3s; }
+    .inq-tabs button:hover { color: var(--ink); }
+    .inq-tabs button.on { color: var(--paper); }
     .inq-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
     .fld { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
     .fld.wide { grid-column: 1 / -1; }
-    .fld .k { font: 700 10.5px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--steel); }
+    .fld .k { font: 700 10.5px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--steel); transition: color .2s; }
+    .fld:focus-within > .k { color: var(--ink); }
     .fld .k em { font-style: normal; color: var(--fog); margin-left: 6px; }
-    .fld input, .fld select, .fld textarea { width: 100%; min-height: 52px; padding: 13px 16px; border: 1px solid var(--rule-l); border-radius: 14px; background: var(--paper); color: var(--ink); font: 600 16px/1.3 var(--body); outline: none; transition: border-color .15s; -webkit-appearance: none; appearance: none; }
+    .fld input, .fld select, .fld textarea { width: 100%; min-height: 54px; padding: 13px 16px; border: 1px solid var(--rule-l); border-radius: 14px; background: var(--paper); color: var(--ink); font: 600 16px/1.3 var(--body); outline: none; transition: border-color .2s, box-shadow .25s; -webkit-appearance: none; appearance: none; }
     .fld select { background-image: linear-gradient(45deg, transparent 50%, var(--steel) 50%), linear-gradient(135deg, var(--steel) 50%, transparent 50%); background-position: calc(100% - 22px) 50%, calc(100% - 16px) 50%; background-size: 6px 6px; background-repeat: no-repeat; }
     .fld textarea { resize: vertical; min-height: 96px; }
-    .fld input:focus, .fld select:focus, .fld textarea:focus { border-color: var(--ink); }
-    .fld.err input { border-color: #b91c1c; }
+    .fld input:hover, .fld select:hover, .fld textarea:hover { border-color: #a1a1aa; }
+    .fld input:focus, .fld select:focus, .fld textarea:focus { border-color: var(--ink); box-shadow: 0 0 0 4px rgba(10, 10, 10, .08); }
+    .fld.done input { padding-right: 46px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230a0a0a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") no-repeat right 17px center / 16px; }
+    .fld.err input { border-color: #b91c1c; box-shadow: 0 0 0 4px rgba(185, 28, 28, .08); }
     .inq-book { display: flex; flex-direction: column; gap: 18px; }
     .chips { display: flex; gap: 8px; flex-wrap: wrap; }
-    .chip { height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--rule-l); background: var(--paper); color: var(--ink); font: 600 14.5px/1 var(--body); cursor: pointer; transition: border-color .15s, background .15s, color .15s; }
-    .chip:hover { border-color: var(--ink); }
-    .chip.on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+    .chip { height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--rule-l); background: var(--paper); color: var(--ink); font: 600 14.5px/1 var(--body); cursor: pointer; transition: border-color .15s, background .2s, color .2s, transform .35s var(--ease), box-shadow .35s var(--ease); }
+    .chip:hover { border-color: var(--ink); transform: translateY(-2px); }
+    .chip.on { background: var(--ink); border-color: var(--ink); color: var(--paper); transform: scale(1.06); box-shadow: 0 12px 24px -12px rgba(10, 10, 10, .7); }
     .chip small { display: block; font: 700 10px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; opacity: .7; }
-    #inq-days .chip { height: 56px; }
+    #inq-days .chip { height: 58px; min-width: 76px; }
+    #inq-days .chip, #inq-times .chip { animation: pop .45s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 25ms); }
     .inq-note { color: var(--steel); font-size: 15px; }
+    .inq-progress { display: flex; align-items: center; gap: 14px; }
+    .inq-progress .bar { flex: 1; max-width: 280px; height: 6px; border-radius: 999px; background: var(--mist); overflow: hidden; }
+    .inq-progress .bar i { display: block; height: 100%; width: calc(var(--p, 0) * 100%); border-radius: inherit; background: var(--ink); transition: width .7s var(--ease); }
+    .inq-progress .lbl { font: 700 11px/1.3 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--steel); }
+    .inq.ready .inq-progress .lbl { color: var(--ink); }
     .inq-foot { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-    .inq-foot .btn { cursor: pointer; }
-    .inq-foot .btn[disabled] { opacity: .5; cursor: wait; transform: none; }
+    .btn.cta { position: relative; overflow: hidden; isolation: isolate; height: 60px; padding: 0 32px; font-size: 16.5px; cursor: pointer; animation: cta-pulse 2.6s var(--ease) infinite; }
+    .btn.cta::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 45%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .32), transparent); pointer-events: none; animation: sweep 3.4s var(--ease) infinite; }
+    .inq.ready .btn.cta { animation-duration: 1.3s; }
+    .inq.ready .btn.cta .go { animation: nudge 1s ease-in-out infinite; }
+    .btn.cta[disabled] { opacity: .5; cursor: wait; transform: none; animation: none; }
     .inq-msg { margin: 0; flex: 1; min-width: 220px; color: var(--steel); font-size: 14.5px; }
     .inq-msg.bad { color: #b91c1c; font-weight: 600; }
     .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-    .inq-done { text-align: center; padding: clamp(20px, 5vw, 48px) 0; }
-    .inq-done .ok { width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 18px; background: var(--ink); color: var(--paper); display: grid; place-items: center; }
-    .inq-done .ok svg { width: 28px; height: 28px; stroke-width: 3; }
-    .inq-done h3 { font-size: clamp(26px, 3vw, 36px); font-weight: 900; font-stretch: 110%; letter-spacing: -.015em; }
-    .inq-done p { margin: 10px auto 0; color: #3f3f46; max-width: 30em; }
+    .inq-done { text-align: center; padding: clamp(24px, 6vw, 64px) 0; }
+    .inq-done .ok { position: relative; width: 76px; height: 76px; border-radius: 50%; margin: 0 auto 22px; background: var(--ink); color: var(--paper); display: grid; place-items: center; animation: pop .6s var(--ease) both; }
+    .inq-done .ok::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--ink); animation: ping 1.3s .25s var(--ease) both; }
+    .inq-done .ok svg { width: 32px; height: 32px; stroke-width: 3; }
+    .inq-done .ok path { stroke-dasharray: 24; animation: tick .5s .3s var(--ease) both; }
+    .inq-done h3 { font-size: clamp(28px, 3.4vw, 40px); font-weight: 900; font-stretch: 110%; letter-spacing: -.015em; animation: rise .6s .35s var(--ease) both; }
+    .inq-done p { margin: 12px auto 0; color: #3f3f46; max-width: 30em; animation: rise .6s .45s var(--ease) both; }
     .inq [hidden], .inq.sent > :not(.inq-done) { display: none !important; }
-    @media (max-width: 640px) { .inq-grid { grid-template-columns: minmax(0, 1fr); } .inq-foot .btn { width: 100%; } }
+    @media (max-width: 640px) { .inq-grid { grid-template-columns: minmax(0, 1fr); } .inq-foot .btn { width: 100%; } .inq-progress .bar { max-width: none; } }
 
     /* closing */
     .close { background: var(--ink); color: var(--paper); padding-block: clamp(90px, 11vw, 150px) 0; overflow: hidden; overflow: clip; }
@@ -830,38 +881,46 @@
 
     <!-- contact -->
     <section id="contact" class="contact">
+      <div class="contact-fx" aria-hidden="true"><div class="orb a"></div><div class="orb b"></div><div class="glow"></div><div class="grid"></div><div class="spot"></div>
+        <div class="ghost">Let's grow · Book a call · Let's grow · Book a call · </div></div>
       <div class="wrap">
         <div class="contact-head">
           <div class="rv"><span class="kicker">Contact</span><h2>Let's grow your business.</h2></div>
-          <p class="rv rv-d1">Grab 20 minutes with us at your place of business or on a quick Zoom. We'll show you what we'd post for you and what it would cost.</p>
+          <div class="rv rv-d1">
+            <p>Grab 20 minutes with us at your place of business or on a quick Zoom. We'll show you what we'd post for you and what it would cost.</p>
+            <span class="inq-next" id="inq-next" hidden><i></i><span></span></span>
+          </div>
         </div>
-        <form class="inq rv rv-d1" id="inq" novalidate>
-          <div class="inq-tabs" role="radiogroup" aria-label="What would you like to do?">
+        <div class="inq-ring rv rv-d1"><div class="inq-halo" aria-hidden="true"></div>
+        <form class="inq" id="inq" novalidate>
+          <div class="inq-tabs st" style="--i:0" data-on="appointment" role="radiogroup" aria-label="What would you like to do?">
             <button type="button" class="on" role="radio" aria-checked="true" data-type="appointment"><svg class="i"><use href="#i-cal"/></svg>Book a call</button>
             <button type="button" role="radio" aria-checked="false" data-type="info"><svg class="i"><use href="#i-msg"/></svg>Get more info</button>
           </div>
           <div class="inq-grid">
-            <label class="fld"><span class="k">Your name</span><input name="name" autocomplete="name" required maxlength="120"></label>
-            <label class="fld"><span class="k">Business name</span><input name="business" autocomplete="organization" required maxlength="160"></label>
-            <label class="fld"><span class="k">Phone</span><input name="phone" type="tel" autocomplete="tel" inputmode="tel" required maxlength="40"></label>
-            <label class="fld"><span class="k">Email</span><input name="email" type="email" autocomplete="email" required maxlength="200"></label>
-            <label class="fld wide"><span class="k">Annual revenue <em>Optional</em></span>
+            <label class="fld st" style="--i:1"><span class="k">Your name</span><input name="name" autocomplete="name" required maxlength="120"></label>
+            <label class="fld st" style="--i:2"><span class="k">Business name</span><input name="business" autocomplete="organization" required maxlength="160"></label>
+            <label class="fld st" style="--i:3"><span class="k">Phone</span><input name="phone" type="tel" autocomplete="tel" inputmode="tel" required maxlength="40"></label>
+            <label class="fld st" style="--i:4"><span class="k">Email</span><input name="email" type="email" autocomplete="email" required maxlength="200"></label>
+            <label class="fld wide st" style="--i:5"><span class="k">Annual revenue <em>Optional</em></span>
               <select name="revenue"><option value="">Choose a range</option><option>Under $250K</option><option>$250K – $1M</option><option>$1M – $5M</option><option>$5M+</option><option>Prefer not to say</option></select></label>
           </div>
-          <div class="inq-book">
+          <div class="inq-book st" style="--i:6">
             <div class="fld"><span class="k">Pick a day</span><div class="chips" id="inq-days"><span class="inq-note">Loading open times…</span></div></div>
             <div class="fld"><span class="k">Pick a time <em id="inq-tz"></em></span><div class="chips" id="inq-times"></div></div>
             <div class="fld"><span class="k">Where should we meet?</span>
               <div class="chips" id="inq-meet"><button type="button" class="chip on" data-meet="zoom">Zoom</button><button type="button" class="chip" data-meet="in_person">At my business</button></div></div>
           </div>
-          <label class="fld inq-info" hidden><span class="k">What can we help with? <em>Optional</em></span><textarea name="message" rows="3" maxlength="2000"></textarea></label>
+          <label class="fld inq-info st" style="--i:6" hidden><span class="k">What can we help with? <em>Optional</em></span><textarea name="message" rows="3" maxlength="2000"></textarea></label>
           <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-          <div class="inq-foot">
-            <button class="btn black" type="submit"><span id="inq-go">Book my call</span><svg class="i go"><use href="#i-arrow"/></svg></button>
-            <p class="inq-msg" id="inq-msg" role="status" aria-live="polite">Takes about 30 seconds. We'll only use this to reach you. <a href="/privacy">Privacy</a></p>
+          <div class="inq-progress st" style="--i:7" aria-hidden="true"><span class="bar"><i id="inq-bar"></i></span><span class="lbl" id="inq-prog">4 quick details + a time · about 30 seconds</span></div>
+          <div class="inq-foot st" style="--i:8">
+            <button class="btn black cta" type="submit"><span id="inq-go">Book my call</span><svg class="i go"><use href="#i-arrow"/></svg></button>
+            <p class="inq-msg" id="inq-msg" role="status" aria-live="polite">We'll only use this to reach you. <a href="/privacy">Privacy</a></p>
           </div>
-          <div class="inq-done" hidden><div class="ok"><svg class="i"><use href="#i-check"/></svg></div><h3 id="inq-done-h">You're booked.</h3><p id="inq-done-p"></p></div>
+          <div class="inq-done" hidden><div class="ok"><svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div><h3 id="inq-done-h">You're booked.</h3><p id="inq-done-p"></p></div>
         </form>
+        </div>
       </div>
     </section>
 
@@ -965,10 +1024,64 @@
         var form = document.getElementById('inq');
         if (!form) return;
         var shown = Date.now();
+        var f = form.elements;
         var type = 'appointment', meet = 'zoom', slot = null, data = null, day = null;
         var msg = document.getElementById('inq-msg');
         var daysEl = document.getElementById('inq-days'), timesEl = document.getElementById('inq-times');
+        var tabs = form.querySelector('.inq-tabs');
+        var bar = document.getElementById('inq-bar'), prog = document.getElementById('inq-prog');
         var defaultMsg = msg.innerHTML;
+        var REQUIRED = ['name', 'business', 'phone', 'email'];
+        var $q = function (s) { return Array.prototype.slice.call(form.querySelectorAll(s)); };
+
+        // Fields rise in one after another the first time the form scrolls into view.
+        if (hasIO && !reduce) {
+          form.classList.add('stagger');
+          var lio = new IntersectionObserver(function (es) {
+            if (es[0].isIntersecting) { form.classList.add('live'); lio.disconnect(); }
+          }, { threshold: 0.12 });
+          lio.observe(form);
+        }
+        // A soft light follows the pointer across the section.
+        var fx = document.querySelector('.contact-fx');
+        if (fx && !reduce && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+          var sec = document.getElementById('contact');
+          sec.addEventListener('pointermove', function (e) {
+            var r = sec.getBoundingClientRect();
+            fx.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+            fx.style.setProperty('--my', (e.clientY - r.top) + 'px');
+            fx.classList.add('track');
+          });
+          sec.addEventListener('pointerleave', function () { fx.classList.remove('track'); });
+        }
+
+        function valid(n) {
+          var v = f[n].value.trim();
+          if (!v) return false;
+          if (n === 'email') return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+          if (n === 'phone') return v.replace(/\D/g, '').length >= 10;
+          return true;
+        }
+        // Progress meter: fills as each required detail is completed.
+        function progress() {
+          var done = 0;
+          REQUIRED.forEach(function (n) {
+            var ok = valid(n);
+            f[n].parentNode.classList.toggle('done', ok);
+            if (ok) { f[n].parentNode.classList.remove('err'); done++; }
+          });
+          var booking = type === 'appointment';
+          var total = REQUIRED.length + (booking ? 1 : 0);
+          if (booking && slot) done++;
+          bar.style.setProperty('--p', done / total);
+          prog.textContent = done === total ? (booking ? 'All set. Book it below' : 'All set. Send it below')
+            : done === 0 ? (booking ? '4 quick details + a time · about 30 seconds' : '4 quick details · about 30 seconds')
+            : booking && !slot && done === REQUIRED.length ? 'Last step: pick a time'
+            : done + ' of ' + total + ' done';
+          form.classList.toggle('ready', done === total);
+        }
+        form.addEventListener('input', progress);
+
         function zoneParts(iso, opts) { return new Date(iso).toLocaleString('en-US', Object.assign({ timeZone: data.timezone }, opts)); }
         function dayKey(iso) { return new Date(iso).toLocaleDateString('en-CA', { timeZone: data.timezone }); }
         function drawTimes() {
@@ -976,9 +1089,10 @@
           var list = (data.slots || []).filter(function (s) { return dayKey(s) === day; });
           // Label the zone for the chosen day, so it reads CST or CDT correctly across DST changes.
           if (list[0]) document.getElementById('inq-tz').textContent = zoneParts(list[0], { timeZoneName: 'short' }).split(' ').pop() + ' · ' + data.minutes + ' min';
-          list.forEach(function (s) {
+          list.forEach(function (s, i) {
             var b = document.createElement('button');
             b.type = 'button'; b.className = 'chip' + (s === slot ? ' on' : ''); b.dataset.slot = s;
+            b.style.setProperty('--i', i);
             b.textContent = zoneParts(s, { hour: 'numeric', minute: '2-digit' });
             timesEl.appendChild(b);
           });
@@ -988,9 +1102,9 @@
           (data.slots || []).forEach(function (s) { var k = dayKey(s); if (keys.indexOf(k) < 0) keys.push(k); });
           if (!keys.length) { daysEl.innerHTML = '<span class="inq-note">No open times right now. Choose “Get more info” and we\'ll reach out.</span>'; return; }
           day = day && keys.indexOf(day) > -1 ? day : keys[0];
-          daysEl.innerHTML = keys.slice(0, 10).map(function (k) {
+          daysEl.innerHTML = keys.slice(0, 10).map(function (k, i) {
             var d = new Date(k + 'T12:00:00Z');
-            return '<button type="button" class="chip' + (k === day ? ' on' : '') + '" data-day="' + k + '"><small>' +
+            return '<button type="button" class="chip' + (k === day ? ' on' : '') + '" style="--i:' + i + '" data-day="' + k + '"><small>' +
               d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }) + '</small>' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) + '</button>';
           }).join('');
           drawTimes();
@@ -999,31 +1113,45 @@
           fetch('/api/slots').then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (d) {
             data = d;
             drawDays();
+            var next = document.getElementById('inq-next');
+            if (d.slots && d.slots[0]) {
+              next.lastChild.textContent = 'Next open · ' + zoneParts(d.slots[0], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+              next.hidden = false;
+            } else next.hidden = true;
           }).catch(function () { daysEl.innerHTML = '<span class="inq-note">Couldn\'t load open times. Choose “Get more info” and we\'ll reach out.</span>'; });
         }
         loadSlots();
+
         form.addEventListener('click', function (e) {
           var t = e.target.closest('button[type=button]');
           if (!t) return;
           if (t.dataset.type) {
             type = t.dataset.type;
-            Array.prototype.forEach.call(form.querySelectorAll('.inq-tabs button'), function (x) { x.classList.toggle('on', x === t); x.setAttribute('aria-checked', x === t); });
+            tabs.dataset.on = type;
+            $q('.inq-tabs button').forEach(function (x) { x.classList.toggle('on', x === t); x.setAttribute('aria-checked', x === t); });
             form.querySelector('.inq-book').hidden = type !== 'appointment';
             form.querySelector('.inq-info').hidden = type === 'appointment';
             document.getElementById('inq-go').textContent = type === 'appointment' ? 'Book my call' : 'Send request';
-          } else if (t.dataset.day) { day = t.dataset.day; slot = null; drawDays(); }
-          else if (t.dataset.slot) { slot = t.dataset.slot; drawTimes(); }
-          else if (t.dataset.meet) {
+          } else if (t.dataset.day) {
+            day = t.dataset.day; slot = null;
+            $q('[data-day]').forEach(function (x) { x.classList.toggle('on', x === t); });
+            drawTimes();
+          } else if (t.dataset.slot) {
+            slot = t.dataset.slot;
+            $q('[data-slot]').forEach(function (x) { x.classList.toggle('on', x === t); });
+          } else if (t.dataset.meet) {
             meet = t.dataset.meet;
-            Array.prototype.forEach.call(form.querySelectorAll('[data-meet]'), function (x) { x.classList.toggle('on', x === t); });
+            $q('[data-meet]').forEach(function (x) { x.classList.toggle('on', x === t); });
           }
+          progress();
         });
+
         function say(text, isBad) { msg.textContent = text; msg.classList.toggle('bad', !!isBad); }
         form.addEventListener('submit', function (e) {
           e.preventDefault();
-          var f = form.elements, missing = null;
-          ['name', 'business', 'phone', 'email'].forEach(function (n) {
-            var ok = f[n].value.trim() && (n !== 'email' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f[n].value.trim())) && (n !== 'phone' || f[n].value.replace(/\D/g, '').length >= 10);
+          var missing = null;
+          REQUIRED.forEach(function (n) {
+            var ok = valid(n);
             f[n].parentNode.classList.toggle('err', !ok);
             if (!ok && !missing) missing = f[n];
           });
@@ -1037,7 +1165,7 @@
             meeting: meet, website: f.website.value, elapsed: Date.now() - shown,
           }) }).then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); }).then(function (r) {
             btn.disabled = false;
-            if (!r.ok) { if (r.status === 409) { slot = null; loadSlots(); } return say(r.body.error || 'Something went wrong. Please try again.', true); }
+            if (!r.ok) { if (r.status === 409) { slot = null; loadSlots(); progress(); } return say(r.body.error || 'Something went wrong. Please try again.', true); }
             var first = f.name.value.trim().split(/\s+/)[0];
             if (r.body.booked) {
               document.getElementById('inq-done-h').textContent = 'You\'re booked, ' + first + '.';
